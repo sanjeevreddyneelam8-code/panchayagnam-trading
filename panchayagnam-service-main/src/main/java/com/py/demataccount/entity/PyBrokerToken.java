@@ -2,6 +2,7 @@ package com.py.demataccount.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.py.crypto.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -18,14 +19,17 @@ public class PyBrokerToken {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private PyBrokerAccountEntity brokerAccount;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "access_token", columnDefinition = "TEXT")
-    private String accessToken;        // AES-256 encrypted
+    private String accessToken;        // AES-256-GCM encrypted
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "refresh_token", columnDefinition = "TEXT")
-    private String refreshToken;       // Some brokers have refresh token
+    private String refreshToken;       // AES-256-GCM encrypted
 
-    @Column(name = "feed_token", length = 255)
-    private String feedToken;          // Angel One WebSocket feed token
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "feed_token", length = 500)
+    private String feedToken;          // Angel One WebSocket feed token - AES-256-GCM encrypted
 
     @Column(name = "token_type", length = 50)
     private String tokenType;          // Bearer etc

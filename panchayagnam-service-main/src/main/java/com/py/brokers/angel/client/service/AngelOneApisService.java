@@ -43,7 +43,9 @@ public class AngelOneApisService {
             JSONObject loginResult = apiRequestHandler.postRequest(
                     request.getApiKey(), routes.getLoginUrl(), params);
 
-            log.info("AngelOne login raw response: {}", loginResult);
+            log.info("AngelOne login response received: status={}, errorCode={}",
+                    loginResult.optString("status"),
+                    loginResult.optString("errorCode", loginResult.optString("errorcode", "")));
 
             boolean successBool = loginResult.optBoolean("success", false);
             boolean successString = "true".equalsIgnoreCase(loginResult.optString("status", ""));

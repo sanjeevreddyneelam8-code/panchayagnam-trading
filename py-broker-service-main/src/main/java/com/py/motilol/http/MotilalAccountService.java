@@ -89,7 +89,7 @@ public class MotilalAccountService {
                 headers(apiKey, apiSecret, vendorInfo, null, null));
 
         JSONObject json = post(LOGIN_URL, entity);
-        log.info("Motilal login response: {}", json);
+        log.info("Motilal login response received: status={}", json.optString("status"));
         assertSuccess(json, "Motilal login");
         return json;
     }
@@ -102,7 +102,7 @@ public class MotilalAccountService {
                 headers(apiKey, apiSecret, vendorInfo, authToken, null));
 
         JSONObject json = post(ACCESS_TOKEN_URL, entity);
-        log.info("Motilal access token response: {}", json);
+        log.info("Motilal access token response received: status={}", json.optString("status"));
         assertSuccess(json, "Motilal access token");
         return json;
     }

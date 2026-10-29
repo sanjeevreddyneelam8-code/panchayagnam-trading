@@ -175,8 +175,8 @@ public class PyTokenValidationService {
                     secret.getPassword() + secret.getApiKey());
             String baseUrl = getBaseUrl(account);
 
-            log.info("Motilal re-login — clientId={} twoFa={} totp={}",
-                    account.getClientId(), secret.getTwoFa(), totp);
+            log.info("Motilal re-login initiated for clientId={}",
+                    account.getClientId());
 
             // ── Step 1: Login → get AuthToken ─────────────────────────────
             JSONObject loginResponse = motilalClient.login(

@@ -1,6 +1,7 @@
 package com.py.demataccount.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.py.crypto.EncryptedStringConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -17,20 +18,24 @@ public class PyBrokerSecret {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private PyBrokerAccountEntity brokerAccount;
 
-    @Column(name = "api_key", length = 255)
-    private String apiKey;             // AES-256 encrypted
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "api_key", length = 500)
+    private String apiKey;             // AES-256-GCM encrypted
 
-    @Column(name = "api_secret", length = 255)
-    private String apiSecret;          // AES-256 encrypted
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "api_secret", length = 500)
+    private String apiSecret;          // AES-256-GCM encrypted
 
     @Column(name = "app_id", length = 255)
     private String appId;              // Some brokers need app ID
 
-    @Column(name = "password", length = 255)
-    private String password;           // AES-256 encrypted
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "password", length = 500)
+    private String password;           // AES-256-GCM encrypted
 
-    @Column(name = "totp_secret", length = 255)
-    private String totpSecret;         // Zerodha TOTP secret - AES-256 encrypted
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "totp_secret", length = 500)
+    private String totpSecret;         // Zerodha/AngelOne TOTP secret - AES-256-GCM encrypted
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -44,10 +49,12 @@ public class PyBrokerSecret {
     @Column(name = "vender_info")
     private String venderInfo;
 
-    @Column(name = "DOB")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "DOB", length = 500)
     private String twoFa;
     
-    @Column(name ="Mobile")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name ="Mobile", length = 500)
     private String mobileNo;
     
     @Column(name ="Redirect_Url")

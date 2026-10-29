@@ -48,6 +48,9 @@ twilio:
   enabled: ${TWILIO_ENABLED:false}
 
 app:
+  crypto:
+    broker-encryption-key: ${BROKER_ENCRYPTION_KEY:}
+    allow-legacy-plaintext: ${ALLOW_LEGACY_PLAINTEXT:true}
   mail:
     from: ${APP_MAIL_FROM:customersupport@panchayagnam.com}
     alert-to: ${APP_MAIL_ALERT_TO:admin@panchayagnam.com}

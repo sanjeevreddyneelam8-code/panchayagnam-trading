@@ -53,7 +53,7 @@ public class DhanAccountService {
     // ── LOGIN ────────────────────────────────────────────────────────────────
     public JSONObject login(String clientId, String mpin, String totp) {
         try {
-            log.info("Dhan login attempt for clientId={} totp={}", clientId, totp);
+            log.info("Dhan login attempt for clientId={}", clientId);
 
             String url = LOGIN_URL
                     + "?dhanClientId=" + clientId
@@ -69,10 +69,10 @@ public class DhanAccountService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JSONObject json = new JSONObject(response.body());
 
-            log.info("Dhan login response for clientId={}: {}", clientId, json);
+            log.info("Dhan login response received for clientId={}: hasAccessToken={}", clientId, json.has("accessToken"));
 
             if (!json.has("accessToken") || json.optString("accessToken", "").isEmpty()) {
-                throw new RuntimeException("Dhan login failed — no accessToken in response: " + json);
+                throw new RuntimeException("Dhan login failed — no accessToken in response for clientId=" + clientId);
             }
 
             log.info("Dhan login SUCCESS for clientId={}", clientId);

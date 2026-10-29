@@ -125,7 +125,9 @@ public class BrokerTokenSecretManager {
      * @return expiry LocalDateTime
      */
     public LocalDateTime getTokenExpiry(BrokerType brokerType) {
-        // Token validity differs by broker
+        // Token validity differs by broker.
+        // NOTE: In Phase 1, existing expiry behavior is preserved unchanged pending formal
+        // broker-specific session rule verification with live accounts.
         LocalDateTime now = LocalDateTime.now();
         return switch (brokerType) {
             case ANGELONE ->
