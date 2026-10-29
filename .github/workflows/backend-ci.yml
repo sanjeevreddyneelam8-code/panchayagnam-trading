@@ -23,7 +23,7 @@ jobs:
 
       - name: Run Core Service Unit Tests
         working-directory: ./panchayagnam-service-main
-        run: mvn test -Dtest=TwilioOtpServiceTest -B
+        run: mvn test -Dtest=TwilioOtpServiceTest,CryptoServiceTest,PyBrokerSecretEncryptionIntegrationTest -B
 
       - name: Build Panchayagnam Core Service
         working-directory: ./panchayagnam-service-main
