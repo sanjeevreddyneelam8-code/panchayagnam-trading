@@ -48,6 +48,7 @@ abstract class TradingRemoteDataSource {
     required String productType,
     required String variety,
     required String side,
+    String? idempotencyKey,
   });
   Future<String> modifyOrder({
     required int accId,
@@ -341,14 +342,23 @@ class TradingRemoteDataSourceImpl implements TradingRemoteDataSource {
     required String productType,
     required String variety,
     required String side,
+    String? idempotencyKey,
   }) async {
+    final clientKey = (idempotencyKey != null && idempotencyKey.isNotEmpty)
+        ? idempotencyKey
+        : 'UI-${DateTime.now().millisecondsSinceEpoch}-${tradingSymbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-$quantity';
+
     final endpoint = side.toUpperCase() == 'BUY'
         ? '$_baseUrl/pyBrokerApi/order/buy'
         : '$_baseUrl/pyBrokerApi/order/sell';
+
+    final requestHeaders = Map<String, String>.from(_headers);
+    requestHeaders['Idempotency-Key'] = clientKey;
+
     final response = await _client
         .post(
           Uri.parse(endpoint),
-          headers: _headers,
+          headers: requestHeaders,
           body: jsonEncode({
             'accId': accId,
             'tradingSymbol': tradingSymbol,
@@ -359,6 +369,7 @@ class TradingRemoteDataSourceImpl implements TradingRemoteDataSource {
             'price': price,
             'productType': productType == "NRML" ? "CARRYFORWARD" : productType,
             'variety': variety,
+            'idempotencyKey': clientKey,
           }),
         )
         .timeout(_timeout);

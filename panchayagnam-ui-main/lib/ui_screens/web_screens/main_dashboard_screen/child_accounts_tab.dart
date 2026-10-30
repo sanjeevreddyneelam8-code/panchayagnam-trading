@@ -23,7 +23,16 @@ import '../../../service/service_class.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Brokers that support OAuth connect flow
-const Set<String> _oauthBrokers = {'PROFITMART', 'GOODWILL'};
+const Set<String> _oauthBrokers = {
+  'PROFITMART',
+  'GOODWILL',
+  'ZERODHA',
+  'UPSTOX',
+  'ANGELONE',
+  'MOTILAL',
+  'DHAN',
+  'GROWW',
+};
 
 /// Returns true if this broker needs the Connect button
 bool _supportsOAuth(String broker) =>
@@ -73,6 +82,12 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
     final upper = brokerDisplay.toUpperCase();
     if (upper.contains('ANGEL')) return 'ANGELONE';
     if (upper.contains('MOTILAL')) return 'MOTILAL';
+    if (upper.contains('DHAN')) return 'DHAN';
+    if (upper.contains('PROFITMART') || upper.contains('PROFIT MART')) return 'PROFITMART';
+    if (upper.contains('GOODWILL') || upper.contains('GOOD WELL')) return 'GOODWILL';
+    if (upper.contains('ZERODHA')) return 'ZERODHA';
+    if (upper.contains('UPSTOX')) return 'UPSTOX';
+    if (upper.contains('GROWW')) return 'GROWW';
     return upper;
   }
 
@@ -101,13 +116,21 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
         final broker = (a['broker'] as String).toUpperCase();
         switch (_brokerFilter) {
           case 'PROFITMART':
-            return broker.contains('PROFITMART');
+            return broker.contains('PROFITMART') || broker.contains('PROFIT MART');
           case 'GOODWILL':
-            return broker.contains('GOODWILL');
+            return broker.contains('GOODWILL') || broker.contains('GOOD WELL');
           case 'ANGELONE':
             return broker.contains('ANGEL');
           case 'MOTILAL':
             return broker.contains('MOTILAL');
+          case 'DHAN':
+            return broker.contains('DHAN');
+          case 'ZERODHA':
+            return broker.contains('ZERODHA');
+          case 'UPSTOX':
+            return broker.contains('UPSTOX');
+          case 'GROWW':
+            return broker.contains('GROWW');
           default:
             return true;
         }
@@ -233,6 +256,99 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
     );
   }
 
+  // ── Delete / Remove account dialog ─────────────────────────
+  void _showDeleteAccountDialog(Map<String, dynamic> account) {
+    final clientCode = account['clientCode']?.toString() ?? '';
+    final name = account['name']?.toString() ?? 'Account';
+    final broker = account['broker']?.toString() ?? '';
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Remove Broker Account',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to remove account "$name" ($clientCode - $broker)?',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: const Text(
+                'This will permanently disconnect and remove this broker account from the system.',
+                style: TextStyle(color: Color(0xFF991B1B), fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.delete_outline, size: 16),
+            label: const Text('Delete'),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              _deleteAccount(account);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteAccount(Map<String, dynamic> account) {
+    final clientCode = account['clientCode']?.toString() ?? '';
+    setState(() => _pendingStatusUpdate.add(clientCode));
+
+    context.read<AddDematBloc>().add(
+      AddDematAccountEvent(
+        id: account['id'] as int?,
+        clientId: clientCode,
+        broker: _resolveBrokerApi(account['broker'] as String? ?? ''),
+        mobileNumber: account['mobileNumber'] as String? ?? '',
+        apiKey: account['apiKey'] as String? ?? '',
+        mpin: '',
+        password: '',
+        totpReferenceKey: '',
+        dob: null,
+        isAdmin: false,
+        childIds: [],
+        nickName: account['name'] as String? ?? '',
+        actionType: 'DELETE',
+        isOwn: account['isOwn'] == true,
+        apiSecretKey: null,
+        vendorInfo: null,
+        ip: account['ip'] as String? ?? '',
+      ),
+    );
+  }
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -256,43 +372,106 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
     );
   }
 
-  // ── Connect / OAuth dialog ──────────────────────────────────────────────────
+  // ── Connect / OAuth popup ───────────────────────────────────────────────────
   void _showConnectDialog(Map<String, dynamic> account) {
     final broker = _resolveBrokerApi(account['broker'] as String);
+    final clientCode = account['clientCode'] as String? ?? '';
+    final brokerUpper = broker.toUpperCase();
 
-    if (broker.toUpperCase().contains('GOODWILL')) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Row(
-            children: const [
-              Icon(Icons.info_outline, color: Color(0xFFD97706)),
-              SizedBox(width: 8),
-              Text('Goodwill Integration Pending', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: const Text(
-            'API Integration Pending — Coming Soon.\n\nGoodwill live trading and broker connection are currently unavailable until official API access is provisioned by the broker.',
-            style: TextStyle(fontSize: 13, height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+    _openOAuthPopup(brokerUpper, clientCode);
+  }
+
+  void _openOAuthPopup(String broker, String clientId) {
+    const backendUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8081');
+    final connectUrl = '$backendUrl/api/v1/oauth/connect/$broker?clientId=${Uri.encodeComponent(clientId)}';
+
+    // Open popup window
+    html.window.open(connectUrl, 'BrokerAuth_$clientId', 'width=650,height=750,menubar=no,toolbar=no,location=no');
+
+    // Subscribe to postMessage callback from popup
+    StreamSubscription? sub;
+    sub = html.window.onMessage.listen((event) {
+      try {
+        if (event.data is Map) {
+          final data = event.data as Map;
+          final type = data['type']?.toString();
+          final targetClient = data['clientId']?.toString();
+
+          if (type == 'BROKER_CONNECTED' && (targetClient == clientId || targetClient == null)) {
+            sub?.cancel();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$broker account ($clientId) connected successfully!'),
+                backgroundColor: const Color(0xFF059669),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+            // Refresh account list automatically!
+            _load();
+          } else if (type == 'BROKER_AUTH_FAILED' && (targetClient == clientId || targetClient == null)) {
+            sub?.cancel();
+            final errMsg = data['error']?.toString() ?? 'Authentication rejected';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to connect $broker: $errMsg'),
+                backgroundColor: const Color(0xFFDC2626),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+            _load();
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    });
+  }
+
+  void _showDirectReconnectDialog(Map<String, dynamic> account, String broker) {
+    final clientCode = account['clientCode'] as String? ?? '';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.sync_lock_rounded, color: Color(0xFF0284C7)),
+            const SizedBox(width: 8),
+            Text('Reconnect $broker', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Client ID: $clientCode', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            const Text(
+              'To reconnect this account with the official broker API, click below to verify or update your trading credentials.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.4),
             ),
           ],
         ),
-      );
-      return;
-    }
-
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (ctx) => BlocProvider.value(
-        value: context.read<BrokerOAuthBloc>(),
-        child: _BrokerConnectDialog(account: account, broker: broker),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showEditAccountDialog(account, []);
+            },
+            child: const Text('Update & Authenticate'),
+          ),
+        ],
       ),
     );
   }
@@ -479,6 +658,9 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                 'ip': item.ip ?? '',
                 'mobileNumber': item.mobileNumber ?? '',
                 'tokenUpdated': item.tokenUpdated ?? false,
+                'lastLoginStatus': item.lastLoginStatus ?? '',
+                'lastLoginError': item.lastLoginError ?? '',
+                'lastLoginAttempt': item.lastLoginAttempt ?? '',
               };
             }).toList();
 
@@ -618,10 +800,14 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
   Widget _buildBrokerFilterChips() {
     final brokers = [
       ('ALL', 'All Brokers', null),
-      ('PROFITMART', 'Profitmart', const Color(0xFF7C3AED)),
-      ('GOODWILL', 'Goodwill (Coming Soon)', const Color(0xFF0369A1)),
       ('ANGELONE', 'Angel One', const Color(0xFFB45309)),
-      ('MOTILAL', 'Motilal', const Color(0xFF065F46)),
+      ('MOTILAL', 'Motilal Oswal', const Color(0xFF065F46)),
+      ('DHAN', 'Dhan', const Color(0xFFD97706)),
+      ('PROFITMART', 'Profit Mart', const Color(0xFF7C3AED)),
+      ('GOODWILL', 'Goodwill', const Color(0xFF0369A1)),
+      ('ZERODHA', 'Zerodha', const Color(0xFFEA580C)),
+      ('UPSTOX', 'Upstox', const Color(0xFF4F46E5)),
+      ('GROWW', 'Groww (No API)', const Color(0xFF6B7280)),
     ];
 
     return SingleChildScrollView(
@@ -957,7 +1143,8 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                     : '—';
 
                 final bool actionsDisabled = _isExpired;
-                final bool showConnect = _supportsOAuth(broker);
+                final bool isConnected = account['lastLoginStatus']?.toString().toUpperCase() == 'SUCCESS';
+                final bool showConnect = !isConnected;
 
                 return DataRow(
                   color: WidgetStateProperty.all(rowColor),
@@ -1164,7 +1351,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                           color: AppColors.primaryBlue,
                         ),
                       )
-                          : _buildStatusBadge(account['status']),
+                          : _buildStatusBadge(account['status'], account),
                     ),
                     // ── Actions ───────────────────────────────────────────────
                     DataCell(
@@ -1200,6 +1387,14 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                                 onTap: (_) {},
                               ),
                             ],
+                            const SizedBox(width: 8),
+                            _ActionButton(
+                              icon: Icons.delete_outline_rounded,
+                              color: const Color(0xFFD1D5DB),
+                              tooltip: 'Session expired',
+                              disabled: true,
+                              onTap: (_) {},
+                            ),
                           ],
                         ),
                       )
@@ -1242,12 +1437,23 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                             )
                                 : _ActionButton(
                               icon: Icons.link_rounded,
-                              color: const Color(0xFF059669),
-                              tooltip: 'Connect via OAuth',
+                              color: const Color(0xFF0284C7),
+                              tooltip: 'Connect $broker Account',
                               onTap: (_) =>
                                   _showConnectDialog(account),
                             ),
                           ],
+                          const SizedBox(width: 8),
+                          _ActionButton(
+                            icon: Icons.delete_outline_rounded,
+                            color: isPending
+                                ? const Color(0xFFD1D5DB)
+                                : const Color(0xFFEF4444),
+                            tooltip: isPending ? 'Processing...' : 'Delete Account',
+                            onTap: isPending
+                                ? (_) {}
+                                : (_) => _showDeleteAccountDialog(account),
+                          ),
                         ],
                       ),
                     ),
@@ -1261,43 +1467,110 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color bgColor, textColor;
-    switch (status.toUpperCase()) {
-      case 'ACTIVE':
-        bgColor = const Color(0xFFD1FAE5);
-        textColor = const Color(0xFF059669);
-        break;
-      case 'INACTIVE':
-        bgColor = const Color(0xFFFEE2E2);
-        textColor = const Color(0xFFDC2626);
-        break;
-      default:
-        bgColor = const Color(0xFFE5E7EB);
-        textColor = const Color(0xFF6B7280);
+  Widget _buildStatusBadge(String status, [Map<String, dynamic>? account]) {
+    final lastStatus = account?['lastLoginStatus']?.toString().toUpperCase() ?? '';
+    final lastError = account?['lastLoginError']?.toString() ?? '';
+    final isInactive = status.toUpperCase() == 'INACTIVE';
+
+    if (isInactive) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFD1D5DB)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF9CA3AF), shape: BoxShape.circle)),
+            const SizedBox(width: 5),
+            const Text(
+              'Disconnected',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
     }
+
+    if (lastStatus == 'FAILED') {
+      return Tooltip(
+        message: lastError.isNotEmpty ? 'Auth error: $lastError' : 'Broker authentication failed',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEE2E2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF87171)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.error_outline, size: 12, color: Color(0xFFDC2626)),
+              SizedBox(width: 4),
+              Text(
+                'Auth Failed',
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (lastStatus == 'SUCCESS') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD1FAE5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF34D399)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.check_circle_outline, size: 12, color: Color(0xFF059669)),
+            SizedBox(width: 4),
+            Text(
+              'Connected',
+              style: TextStyle(
+                color: Color(0xFF059669),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration:
-            BoxDecoration(color: textColor, shape: BoxShape.circle),
-          ),
+          Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF059669), shape: BoxShape.circle)),
           const SizedBox(width: 5),
-          Text(
-            status.toUpperCase(),
+          const Text(
+            'Active',
             style: TextStyle(
+              color: Color(0xFF059669),
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: textColor,
             ),
           ),
         ],
@@ -3308,6 +3581,22 @@ class _AccountDetailsDialog extends StatelessWidget {
                         _DetailField('Created Date', account['created']),
                         _DetailField(
                             'Own Account', isOwnAccount ? 'Yes' : 'No'),
+                        _DetailField(
+                          'Connection Status',
+                          account['lastLoginStatus'] == 'SUCCESS'
+                              ? 'Connected'
+                              : (account['lastLoginStatus'] == 'FAILED'
+                                  ? 'Auth Failed'
+                                  : (isActive ? 'Active' : 'Disconnected')),
+                          bold: true,
+                        ),
+                        if (account['lastLoginError']?.toString().isNotEmpty == true)
+                          _DetailField(
+                            'Auth Error',
+                            account['lastLoginError'].toString(),
+                          ),
+                        if (account['ip']?.toString().isNotEmpty == true)
+                          _DetailField('Registered IP', account['ip'].toString()),
                         if (isProfitmart)
                           _DetailField(
                             'Token Status',

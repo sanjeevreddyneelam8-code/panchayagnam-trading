@@ -67,7 +67,8 @@ public class PySecurityConfig {
                                 "/api/v1/pyauth/send-otp",
                                 "/api/v1/pyauth/demo-status",
                                 "/api/v1/pyauth/reset-mpin",
-                                "/profitmart/oauth/callback"
+                                "/profitmart/oauth/callback",
+                                "/api/v1/oauth/**"
                         ).permitAll()
 
                         // Swagger & API documentation
@@ -112,7 +113,7 @@ public class PySecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "Idempotency-Key", "X-Idempotency-Key"));
         config.setExposedHeaders(Arrays.asList("Authorization"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

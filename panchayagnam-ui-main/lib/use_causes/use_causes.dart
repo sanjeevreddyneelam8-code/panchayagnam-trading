@@ -46,6 +46,7 @@ class PlaceOrderUseCase {
     required String productType,
     required String variety,
     required String side,
+    String? idempotencyKey,
   }) =>
       _repo.placeOrder(
         accId: accId,
@@ -58,6 +59,7 @@ class PlaceOrderUseCase {
         productType: productType,
         variety: variety,
         side: side,
+        idempotencyKey: idempotencyKey,
       );
 }
 

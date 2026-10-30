@@ -155,6 +155,8 @@ public class ControllerResponseBuilder {
             case 201 -> HttpStatus.CREATED;
             case 204 -> HttpStatus.NO_CONTENT;
             case 400 -> HttpStatus.BAD_REQUEST;
+            case 401 -> HttpStatus.UNAUTHORIZED;
+            case 403 -> HttpStatus.FORBIDDEN;
             case 404 -> HttpStatus.NOT_FOUND;
             case 409 -> HttpStatus.CONFLICT;
             case 500 -> HttpStatus.INTERNAL_SERVER_ERROR;

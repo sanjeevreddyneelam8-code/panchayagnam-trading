@@ -70,6 +70,7 @@ class TradingRepositoryImpl implements TradingRepository {
     required String productType,
     required String variety,
     required String side,
+    String? idempotencyKey,
   }) async {
     try {
       final result = await _remote.placeOrder(
@@ -83,6 +84,7 @@ class TradingRepositoryImpl implements TradingRepository {
         productType: productType,
         variety: variety,
         side: side,
+        idempotencyKey: idempotencyKey,
       );
       return Right(result);
     } on TradingServiceException catch (e) {

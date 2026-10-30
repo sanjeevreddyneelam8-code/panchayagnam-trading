@@ -46,6 +46,14 @@ public class BrokerProfileLoader {
      */
     public User buildUserProfile(BrokerType brokerType, DematAccountAddRequest request,
             JSONObject loginData, PyBrokerSecret secret) throws SmartAPIException, IOException {
+        if (loginData == null) {
+            User user = new User();
+            user.setBrokerName(brokerType.name());
+            user.setUserId(request.getClientId());
+            String nick = request.getNickName();
+            user.setUserName(nick != null && !nick.isBlank() ? nick : request.getClientId());
+            return user;
+        }
         return switch (brokerType) {
             case DHAN ->
                 buildDhanUserProfile(request, loginData);
@@ -53,9 +61,33 @@ public class BrokerProfileLoader {
                 buildUpstoxUserProfile(request, loginData);
             case PROFITMART ->
                 buildProfitMartUserProfile(request);
+            case ZERODHA ->
+                buildZerodhaUserProfile(request, loginData);
+            case GOODWILL ->
+                buildGoodwillUserProfile(request, loginData);
             default ->
                 buildDefaultUserProfile(request, loginData, secret);
         };
+    }
+
+    private User buildZerodhaUserProfile(DematAccountAddRequest request, JSONObject loginData) {
+        User user = new User();
+        user.setBrokerName("ZERODHA");
+        user.setUserId(request.getClientId());
+        String userName = loginData != null ? loginData.optString("userName", request.getNickName()) : request.getNickName();
+        user.setUserName(userName != null && !userName.isEmpty() ? userName : request.getClientId());
+        log.debug("Zerodha user profile built | userId={}", user.getUserId());
+        return user;
+    }
+
+    private User buildGoodwillUserProfile(DematAccountAddRequest request, JSONObject loginData) {
+        User user = new User();
+        user.setBrokerName("GOODWILL");
+        user.setUserId(request.getClientId());
+        String userName = request.getNickName();
+        user.setUserName(userName != null && !userName.isEmpty() ? userName : request.getClientId());
+        log.debug("Goodwill user profile built | userId={}", user.getUserId());
+        return user;
     }
 
     /**
@@ -123,12 +155,30 @@ public class BrokerProfileLoader {
 
     private User fetchAngelOneProfile(String apiKey, String jwtToken)
             throws IOException, SmartAPIException {
-        return new User().parseResponse(
-                apiRequestHandler.getRequest(apiKey, routes.get("api.user.profile"), jwtToken));
+        if (jwtToken == null || jwtToken.isBlank()) {
+            User user = new User();
+            user.setBrokerName("ANGELONE");
+            return user;
+        }
+        try {
+            return new User().parseResponse(
+                    apiRequestHandler.getRequest(apiKey, routes.get("api.user.profile"), jwtToken));
+        } catch (Exception e) {
+            log.warn("Failed to fetch AngelOne profile from API: {}. Using fallback profile.", e.getMessage());
+            User user = new User();
+            user.setBrokerName("ANGELONE");
+            return user;
+        }
     }
 
     private User fetchMotilalProfile(PyBrokerSecret secret, JSONObject loginData) {
         User user = new User();
+        user.setBrokerName("MOTILAL");
+        if (loginData == null || !loginData.has("AuthToken")) {
+            user.setUserId(secret != null && secret.getBrokerAccount() != null ? secret.getBrokerAccount().getClientId() : "");
+            user.setUserName(user.getUserId());
+            return user;
+        }
         try {
             JSONObject json = motilalAccountService.getProfile(secret, loginData);
             if (json == null || !json.optString("status", "").equalsIgnoreCase("SUCCESS")) {
@@ -138,7 +188,6 @@ public class BrokerProfileLoader {
             JSONObject data = json.getJSONObject("data");
             user.setUserId(data.optString("clientcode", ""));
             user.setUserName(data.optString("name", ""));
-            user.setBrokerName("MOTILAL");
 
             if (data.has("exchanges")) {
                 JSONArray exchangesArray = data.getJSONArray("exchanges");
@@ -160,8 +209,9 @@ public class BrokerProfileLoader {
             user.setEmail("");
             log.info("Motilal profile fetched for clientId={}", user.getUserId());
         } catch (Exception e) {
-            log.error("Failed to parse Motilal profile: {}", e.getMessage(), e);
-            throw new RuntimeException("Motilal profile parse failed: " + e.getMessage());
+            log.warn("Failed to fetch Motilal profile from API: {}. Using fallback profile.", e.getMessage());
+            user.setUserId(secret != null && secret.getBrokerAccount() != null ? secret.getBrokerAccount().getClientId() : "");
+            user.setUserName(user.getUserId());
         }
         return user;
     }

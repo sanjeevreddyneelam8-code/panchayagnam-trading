@@ -31,6 +31,7 @@ abstract class TradingRepository {
     required String productType,
     required String variety,
     required String side,
+    String? idempotencyKey,
   });
 
   Future<Either<TradingServiceException, List<OrderHistoryItem>>>

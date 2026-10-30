@@ -163,18 +163,148 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
 
   void _submit(String side) {
     if (_qty <= 0 || widget.scrip == null) return;
+    _showOrderConfirmation(context, side);
+  }
+
+  void _confirmAndDispatch(String side) {
+    final safeSymbol = widget.scrip!.tradingSymbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final idempotencyKey = 'UI-${DateTime.now().millisecondsSinceEpoch}-$safeSymbol-$_qty';
 
     context.read<IndividualExecutionBloc>().add(
       PlaceOrderRequested(
-        accId:       widget.accId,
-        scrip:       widget.scrip!,
-        quantity:    _qty,                      // ← lots × lotSize for F&O
-        orderType:   _resolvedOrderType,
-        productType: _resolvedProductType,      // ← NRML/MIS for F&O
-        variety:     _resolvedVariety,
-        price:       (_baseOrderType == 'MARKET') ? 0 : _price,
-        side:        side,
-        ctx:         context,
+        accId:          widget.accId,
+        scrip:          widget.scrip!,
+        quantity:       _qty,                      // ← lots × lotSize for F&O
+        orderType:      _resolvedOrderType,
+        productType:    _resolvedProductType,      // ← NRML/MIS for F&O
+        variety:        _resolvedVariety,
+        price:          (_baseOrderType == 'MARKET') ? 0 : _price,
+        side:           side,
+        ctx:            context,
+        idempotencyKey: idempotencyKey,
+      ),
+    );
+  }
+
+  void _showOrderConfirmation(BuildContext context, String side) {
+    final isBuy = side == 'BUY';
+    final accentClr = isBuy ? _gain : _loss;
+    final symbol = widget.scrip?.tradingSymbol ?? '';
+    final estPrice = _baseOrderType == 'MARKET' ? (widget.ltpData?.ltp ?? 0.0) : _price;
+    final totalVal = _qty * estPrice;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isBuy ? _gainBg : _lossBg,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                side,
+                style: TextStyle(
+                  color: accentClr,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Order Preview & Confirmation',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Simulation banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.shield_outlined, size: 18, color: Color(0xFFB45309)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'PAPER TRADING (SIMULATION)\nVirtual order — Zero financial risk',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Order details summary
+            _confirmRow('Instrument', symbol),
+            _confirmRow('Quantity', '$_qty ${_isFnO ? "shares (${_lotsOrShares} lots)" : "shares"}'),
+            _confirmRow('Order Type', _resolvedOrderType),
+            _confirmRow('Product', _resolvedProductType),
+            _confirmRow('Execution Price', _baseOrderType == 'MARKET' ? 'Market (LTP ₹${estPrice.toStringAsFixed(2)})' : '₹${estPrice.toStringAsFixed(2)}'),
+            const Divider(height: 20),
+            _confirmRow('Estimated Value', '₹ ${totalVal.toStringAsFixed(2)}', isBold: true),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              _confirmAndDispatch(side);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentClr,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Confirm $side Order'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _confirmRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+              color: isBold ? const Color(0xFF111827) : const Color(0xFF374151),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -215,6 +345,28 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
                   color: _divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+            ),
+
+            // ── Paper Trading simulation banner ─────────────────────────────
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.shield_outlined, size: 13, color: Color(0xFFB45309)),
+                  SizedBox(width: 5),
+                  Text(
+                    'Paper Trading Mode (Simulated Execution — Zero Risk)',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+                  ),
+                ],
               ),
             ),
 

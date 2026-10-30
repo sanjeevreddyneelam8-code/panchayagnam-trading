@@ -40,6 +40,18 @@ public class BrokerLoginService {
     private DhanMicroserviceClient dhanClient;
 
     @Autowired
+    private com.py.utils.ZerodhaMicroserviceClient zerodhaClient;
+
+    @Autowired
+    private com.py.utils.UpstoxMicroserviceClient upstoxMicroserviceClient;
+
+    @Autowired
+    private com.py.utils.GoodwillMicroserviceClient goodwillClient;
+
+    @Autowired
+    private com.py.utils.ProfitmartMicroserviceClient profitmartClient;
+
+    @Autowired
     private BrokerProfileLoader profileLoader;
 
     // ── ROUTER ────────────────────────────────────────────────────────────────
@@ -48,13 +60,57 @@ public class BrokerLoginService {
                 request.getBrokerType(), request.getClientId());
 
         return switch (request.getBrokerType()) {
-            case ANGELONE -> loginAngelOne(request);
-            case MOTILAL  -> loginMotilal(request);
-            case DHAN     -> loginDhan(request);
-            case UPSTOX   -> loginUpstox(request);
-            default -> throw new IllegalArgumentException(
-                    "Unsupported broker: " + request.getBrokerType());
+            case ANGELONE   -> loginAngelOne(request);
+            case MOTILAL    -> loginMotilal(request);
+            case DHAN       -> loginDhan(request);
+            case UPSTOX     -> loginUpstox(request);
+            case ZERODHA    -> loginZerodha(request);
+            case GOODWILL   -> loginGoodwill(request);
+            case PROFITMART -> loginProfitmart(request);
+            case GROWW      -> throw new IllegalArgumentException(
+                    "Groww does not provide an official trading API for third-party automated execution.");
         };
+    }
+
+    private JSONObject loginProfitmart(DematAccountAddRequest request) {
+        log.info("Profitmart login attempt | clientId={}", request.getClientId());
+        String password = request.getMpin() != null ? request.getMpin() : request.getPin();
+        if (password != null && !password.isBlank()) {
+            PyBrokerIpConfigEntity ipConfig = getIpConfig(request.getIp());
+            String baseUrl = PyCommonUtil.getBaseUrl(ipConfig);
+            return profitmartClient.loginWithCredentials(
+                    baseUrl,
+                    request.getClientId(),
+                    password,
+                    request.getTwoFa() != null ? request.getTwoFa() : request.getTotpReferenceKey(),
+                    request.getApiKey(),
+                    request.getApiSecretKey(),
+                    "EasyTrade");
+        }
+        JSONObject json = new JSONObject();
+        json.put("status", true);
+        json.put("accessToken", "");
+        return json;
+    }
+
+    private JSONObject loginZerodha(DematAccountAddRequest request) {
+        log.info("Zerodha login attempt | clientId={}", request.getClientId());
+        if (request.getTwoFa() != null && !request.getTwoFa().isBlank()) {
+            PyBrokerIpConfigEntity ipConfig = getIpConfig(request.getIp());
+            String baseUrl = PyCommonUtil.getBaseUrl(ipConfig);
+            return zerodhaClient.login(baseUrl, request.getClientId(), request.getApiKey(), request.getApiSecretKey(), request.getTwoFa());
+        }
+        JSONObject json = new JSONObject();
+        json.put("status", true);
+        json.put("accessToken", "");
+        return json;
+    }
+
+    private JSONObject loginGoodwill(DematAccountAddRequest request) {
+        log.info("Goodwill login attempt | clientId={}", request.getClientId());
+        PyBrokerIpConfigEntity ipConfig = getIpConfig(request.getIp());
+        String baseUrl = PyCommonUtil.getBaseUrl(ipConfig);
+        return goodwillClient.login(baseUrl, request.getClientId(), request.getApiKey(), request.getApiSecretKey(), request.getMpin());
     }
 
     // ── ANGELONE ──────────────────────────────────────────────────────────────
@@ -150,21 +206,24 @@ public class BrokerLoginService {
     private JSONObject loginUpstox(DematAccountAddRequest request) {
         log.info("Upstox login attempt | clientId={}", request.getClientId());
 
-        String accessToken = upstoxAuthService.getUpstoxtoken(
-                request.getApiKey(),
-                request.getApiSecretKey(),
-                request.getRedirectUri());
-
-        if (accessToken == null || accessToken.startsWith("FAILED")) {
-            throw new RuntimeException(
-                    "Upstox login failed for clientId=" + request.getClientId()
-                    + ": " + accessToken);
+        // If authorization code is provided, exchange it for access token via py-broker-service
+        if (request.getTwoFa() != null && !request.getTwoFa().isBlank()) {
+            PyBrokerIpConfigEntity ipConfig = getIpConfig(request.getIp());
+            String baseUrl = PyCommonUtil.getBaseUrl(ipConfig);
+            return upstoxMicroserviceClient.login(
+                    baseUrl,
+                    request.getClientId(),
+                    request.getApiKey(),
+                    request.getApiSecretKey(),
+                    request.getTwoFa(),
+                    request.getRedirectUri());
         }
 
-        log.info("Upstox login SUCCESS | clientId={}", request.getClientId());
-
+        // If initial credentials are saved without an authorization code yet,
+        // create account in Disconnected status so user can authenticate via OAuth
         JSONObject json = new JSONObject();
-        json.put("accessToken", accessToken);
+        json.put("status", true);
+        json.put("accessToken", "");
         return json;
     }
 

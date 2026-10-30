@@ -108,6 +108,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
   bool get _isDhan => _selectedBroker == 'Dhan';
   bool get _isProfitMart => _selectedBroker == 'Profit Mart';
   bool get _isGoodWell => _selectedBroker == 'Good Well';
+  bool get _isUpstox => _selectedBroker == 'Upstox';
+  bool get _isGroww => _selectedBroker == 'Groww';
+  bool get _isZerodha => _selectedBroker == 'Zerodha';
+  bool get _isUnsupportedBroker => _isGroww;
 
   // ── IP validation ──────────────────────────────────────────────────────────
   String _brokerApiKey(String? broker) {
@@ -115,7 +119,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     if (broker == 'Motilal Oswal') return 'MOTILAL';
     if (broker == 'Dhan') return 'DHAN';
     if (broker == 'Profit Mart') return 'PROFITMART';
-    if (broker == 'Good Well') return 'GOODWELL';
+    if (broker == 'Upstox') return 'UPSTOX';
+    if (broker == 'Good Well' || broker == 'Goodwill') return 'GOODWILL';
+    if (broker == 'Zerodha') return 'ZERODHA';
+    if (broker == 'Groww') return 'GROWW';
     return '';
   }
 
@@ -228,8 +235,14 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _selectedBroker = 'Dhan';
     } else if (brokerRaw == 'PROFITMART') {
       _selectedBroker = 'Profit Mart';
-    } else if (brokerRaw == 'GOODWELL') {
+    } else if (brokerRaw == 'GOODWILL' || brokerRaw == 'GOODWELL' || brokerRaw == 'GOOD WELL') {
       _selectedBroker = 'Good Well';
+    } else if (brokerRaw == 'ZERODHA') {
+      _selectedBroker = 'Zerodha';
+    } else if (brokerRaw == 'UPSTOX') {
+      _selectedBroker = 'Upstox';
+    } else if (brokerRaw == 'GROWW') {
+      _selectedBroker = 'Groww';
     }
 
     _loginIdController.text = data['clientId'] ?? '';
@@ -561,11 +574,11 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       AddDematAccountEvent(
         id: _isUpdate ? _recordId : null,
         clientId: _loginIdController.text.trim(),
-        broker: 'GOODWELL',
+        broker: 'GOODWILL',
         mobileNumber: _phoneNumberController.text.trim(),
         apiKey: _apiKeyController.text.trim(),
-        mpin: '',
-        password: '',
+        mpin: _mpinController.text.trim(),
+        password: _mpinController.text.trim(),
         totpReferenceKey: _totpKeyGoodWellController.text.trim(),
         dob: null,
         isAdmin: false,
@@ -573,7 +586,55 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
         nickName: _pseudoNameController.text.trim(),
         actionType: _isUpdate ? 'UPDATE' : 'ADD',
         isOwn: _ownAccount == true,
-        apiSecretKey: null,
+        apiSecretKey: _apiSecretKeyController.text.trim(),
+        vendorInfo: null,
+        ip: _ipController.text.trim(),
+      ),
+    );
+  }
+
+  void _submitZerodha(BuildContext context) {
+    context.read<AddDematBloc>().add(
+      AddDematAccountEvent(
+        id: _isUpdate ? _recordId : null,
+        clientId: _loginIdController.text.trim(),
+        broker: 'ZERODHA',
+        mobileNumber: _phoneNumberController.text.trim(),
+        apiKey: _apiKeyController.text.trim(),
+        mpin: '',
+        password: '',
+        totpReferenceKey: '',
+        dob: null,
+        isAdmin: false,
+        childIds: [],
+        nickName: _pseudoNameController.text.trim(),
+        actionType: _isUpdate ? 'UPDATE' : 'ADD',
+        isOwn: _ownAccount == true,
+        apiSecretKey: _apiSecretKeyController.text.trim(),
+        vendorInfo: null,
+        ip: _ipController.text.trim(),
+      ),
+    );
+  }
+
+  void _submitUpstox(BuildContext context) {
+    context.read<AddDematBloc>().add(
+      AddDematAccountEvent(
+        id: _isUpdate ? _recordId : null,
+        clientId: _loginIdController.text.trim(),
+        broker: 'UPSTOX',
+        mobileNumber: _phoneNumberController.text.trim(),
+        apiKey: _apiKeyController.text.trim(),
+        mpin: '',
+        password: '',
+        totpReferenceKey: '',
+        dob: null,
+        isAdmin: false,
+        childIds: [],
+        nickName: _pseudoNameController.text.trim(),
+        actionType: _isUpdate ? 'UPDATE' : 'ADD',
+        isOwn: _ownAccount == true,
+        apiSecretKey: _apiSecretKeyController.text.trim(),
         vendorInfo: null,
         ip: _ipController.text.trim(),
       ),
@@ -772,12 +833,16 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
               value: 'Motilal Oswal',
               child: Text('Motilal Oswal'),
             ),
+            DropdownMenuItem(value: 'Dhan', child: Text('Dhan')),
             DropdownMenuItem(value: 'Profit Mart', child: Text('Profit Mart')),
-            DropdownMenuItem(value: 'Good Well', child: Text('Goodwill (Coming Soon)')),
+            DropdownMenuItem(value: 'Good Well', child: Text('Goodwill')),
+            DropdownMenuItem(value: 'Zerodha', child: Text('Zerodha')),
+            DropdownMenuItem(value: 'Upstox', child: Text('Upstox')),
+            DropdownMenuItem(value: 'Groww', child: Text('Groww (No Trading API)')),
           ],
         ),
 
-        if (_selectedBroker != null) ...[
+        if (_selectedBroker != null && !_isUnsupportedBroker) ...[
           const SizedBox(height: 16),
           _sectionLabel('Trading Platform'),
           const SizedBox(height: 8),
@@ -790,16 +855,26 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                 ? 'DHAN_API'
                 : _selectedBroker == 'Profit Mart'
                 ? 'PROFITMART_API'
-                : 'GOODWELL_API',
+                : _selectedBroker == 'Good Well'
+                ? 'GOODWILL_API'
+                : _selectedBroker == 'Zerodha'
+                ? 'KITE_CONNECT_API'
+                : _selectedBroker == 'Upstox'
+                ? 'UPSTOX_V2_API'
+                : 'GROWW_PLATFORM',
           ),
           const SizedBox(height: 16),
         ],
+
+        if (_isUnsupportedBroker) ..._buildUnsupportedBrokerBanner(),
 
         if (_selectedBroker == 'Angel One') ..._buildAngelOneFields(),
         if (_selectedBroker == 'Motilal Oswal') ..._buildMotilalFields(),
         if (_selectedBroker == 'Dhan') ..._buildDhanFields(),
         if (_selectedBroker == 'Profit Mart') ..._buildProfitMartFields(),
         if (_selectedBroker == 'Good Well') ..._buildGoodWellFields(),
+        if (_selectedBroker == 'Zerodha') ..._buildZerodhaFields(),
+        if (_selectedBroker == 'Upstox') ..._buildUpstoxFields(),
 
         const SizedBox(height: 28),
         Row(
@@ -821,14 +896,15 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: _showReviewDetails,
+                onPressed: _isUnsupportedBroker ? null : _showReviewDetails,
                 icon: const Icon(Icons.arrow_forward, size: 16),
                 label: Text(
                   _isUpdate ? 'Review Changes' : 'Review Details',
                   style: const TextStyle(fontSize: 14),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
+                  backgroundColor: _isUnsupportedBroker ? const Color(0xFF9CA3AF) : AppColors.primaryBlue,
+                  disabledBackgroundColor: const Color(0xFF9CA3AF),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
@@ -842,6 +918,46 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
         ),
       ],
     );
+  }
+
+  // ── Unsupported / Coming Soon Broker Banner ───────────────────────────────
+  List<Widget> _buildUnsupportedBrokerBanner() {
+    return [
+      Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(top: 8, bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFF59E0B)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'Groww — No Official Trading API',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF92400E)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Groww does not provide a public trading API for retail algorithmic trading. Web scraping or unofficial login attempts violate SEBI regulations and broker terms of service.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF78350F)),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'To connect an account and place trades, please select one of the 7 supported brokers: Angel One, Motilal Oswal, Dhan, Profit Mart, Goodwill, Zerodha, or Upstox.',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   // ── Phone Number Field ─────────────────────────────────────────────────────
@@ -1553,32 +1669,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     ];
   }
 
-  // ── Good Well fields ───────────────────────────────────────────────────────
-  // Same as Angel One but WITHOUT MPIN field
+  // ── Goodwill fields ────────────────────────────────────────────────────────
   List<Widget> _buildGoodWellFields() {
     return [
-      Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEF3C7),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFF59E0B)),
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.info_outline, color: Color(0xFFB45309), size: 20),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Goodwill: API Integration Pending — Coming Soon.\nYou may save configuration details, but live trading and broker connection remain disabled until the official integration is active.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
-              ),
-            ),
-          ],
-        ),
-      ),
-      _sectionLabel('Trading Platform Login ID'),
+      _sectionLabel('Trading Platform Login ID (Client Code)'),
       const SizedBox(height: 8),
       TextFormField(
         controller: _loginIdController,
@@ -1586,7 +1680,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
         validator: (v) =>
         v == null || v.isEmpty ? 'Please enter Login ID' : null,
         decoration: _inputDecorationWithSuffix(
-          'Trading Platform Login ID',
+          'Goodwill Client Code',
           const Icon(Icons.badge_outlined, color: Color(0xFF9CA3AF), size: 18),
         ),
         onChanged: (v) {
@@ -1597,6 +1691,50 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       ),
       const SizedBox(height: 16),
       ..._buildPhoneNumberField(),
+      const SizedBox(height: 16),
+      _sectionLabel('Password / MPIN'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _mpinController,
+        obscureText: !_showMpin,
+        validator: (v) => v == null || v.isEmpty ? 'Please enter Password / MPIN' : null,
+        decoration: _inputDecorationWithSuffix(
+          'Password / MPIN',
+          _eyeToggle(_showMpin, () => setState(() => _showMpin = !_showMpin)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('API Key (App Key)'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiKeyController,
+        obscureText: !_showApiKeyGoodWell,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter API Key' : null,
+        decoration: _inputDecorationWithSuffix(
+          'Goodwill App Key',
+          _eyeToggle(
+            _showApiKeyGoodWell,
+                () => setState(() => _showApiKeyGoodWell = !_showApiKeyGoodWell),
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('API Secret Key'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiSecretKeyController,
+        obscureText: !_showApiSecretKey,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter API Secret Key' : null,
+        decoration: _inputDecorationWithSuffix(
+          'Goodwill Secret Key',
+          _eyeToggle(
+            _showApiSecretKey,
+                () => setState(() => _showApiSecretKey = !_showApiSecretKey),
+          ),
+        ),
+      ),
       const SizedBox(height: 16),
       _sectionLabel('TOTP Key'),
       const SizedBox(height: 8),
@@ -1609,26 +1747,122 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
           'TOTP Key',
           _eyeToggle(
             _showTotpGoodWell,
-                () =>
-                setState(() => _showTotpGoodWell = !_showTotpGoodWell),
+                () => setState(() => _showTotpGoodWell = !_showTotpGoodWell),
           ),
         ),
       ),
       const SizedBox(height: 16),
-      _sectionLabel('API Key'),
+      if (!_isUpdate) ..._buildIpAddressField(),
+      if (!_isUpdate) const SizedBox(height: 16),
+      ..._buildOwnAccountField(),
+      const SizedBox(height: 16),
+      ..._buildPseudoNameFields(),
+    ];
+  }
+
+  // ── Zerodha fields ─────────────────────────────────────────────────────────
+  List<Widget> _buildZerodhaFields() {
+    return [
+      _sectionLabel('Kite User ID (Client ID)'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _loginIdController,
+        readOnly: _isUpdate,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter Kite User ID' : null,
+        decoration: _inputDecorationWithSuffix(
+          'e.g. AB1234',
+          const Icon(Icons.badge_outlined, color: Color(0xFF9CA3AF), size: 18),
+        ),
+        onChanged: (v) {
+          if (_useLoginAsNickname) {
+            setState(() => _pseudoNameController.text = v);
+          }
+        },
+      ),
+      const SizedBox(height: 16),
+      ..._buildPhoneNumberField(),
+      const SizedBox(height: 16),
+      _sectionLabel('Kite API Key'),
       const SizedBox(height: 8),
       TextFormField(
         controller: _apiKeyController,
-        obscureText: !_showApiKeyGoodWell,
+        obscureText: !_showApiKey,
         validator: (v) =>
-        v == null || v.isEmpty ? 'Please enter API Key' : null,
+        v == null || v.isEmpty ? 'Please enter Kite API Key' : null,
         decoration: _inputDecorationWithSuffix(
-          'Trading Platform API Key',
-          _eyeToggle(
-            _showApiKeyGoodWell,
-                () => setState(
-                    () => _showApiKeyGoodWell = !_showApiKeyGoodWell),
-          ),
+          'API Key from Kite Developer console',
+          _eyeToggle(_showApiKey, () => setState(() => _showApiKey = !_showApiKey)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('Kite API Secret'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiSecretKeyController,
+        obscureText: !_showApiSecretKey,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter Kite API Secret' : null,
+        decoration: _inputDecorationWithSuffix(
+          'API Secret from Kite Developer console',
+          _eyeToggle(_showApiSecretKey, () => setState(() => _showApiSecretKey = !_showApiSecretKey)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      if (!_isUpdate) ..._buildIpAddressField(),
+      if (!_isUpdate) const SizedBox(height: 16),
+      ..._buildOwnAccountField(),
+      const SizedBox(height: 16),
+      ..._buildPseudoNameFields(),
+    ];
+  }
+
+  // ── Upstox fields ──────────────────────────────────────────────────────────
+  List<Widget> _buildUpstoxFields() {
+    return [
+      _sectionLabel('Upstox UCC / Client ID'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _loginIdController,
+        readOnly: _isUpdate,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter Client ID / UCC' : null,
+        decoration: _inputDecorationWithSuffix(
+          'e.g. 6WAABC',
+          const Icon(Icons.badge_outlined, color: Color(0xFF9CA3AF), size: 18),
+        ),
+        onChanged: (v) {
+          if (_useLoginAsNickname) {
+            setState(() => _pseudoNameController.text = v);
+          }
+        },
+      ),
+      const SizedBox(height: 16),
+      ..._buildPhoneNumberField(),
+      const SizedBox(height: 16),
+      _sectionLabel('Upstox API Key'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiKeyController,
+        obscureText: !_showApiKey,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter Upstox API Key' : null,
+        decoration: _inputDecorationWithSuffix(
+          'API Key from Upstox Developer portal',
+          _eyeToggle(_showApiKey, () => setState(() => _showApiKey = !_showApiKey)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('Upstox API Secret Key'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiSecretKeyController,
+        obscureText: !_showApiSecretKey,
+        validator: (v) =>
+        v == null || v.isEmpty ? 'Please enter Upstox API Secret' : null,
+        decoration: _inputDecorationWithSuffix(
+          'API Secret from Upstox Developer portal',
+          _eyeToggle(_showApiSecretKey, () => setState(() => _showApiSecretKey = !_showApiSecretKey)),
         ),
       ),
       const SizedBox(height: 16),
@@ -1820,7 +2054,13 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                       ? 'DHAN_API'
                       : _selectedBroker == 'Profit Mart'
                       ? 'PROFITMART_API'
-                      : 'GOODWELL_API',
+                      : _selectedBroker == 'Good Well'
+                      ? 'GOODWILL_API'
+                      : _selectedBroker == 'Zerodha'
+                      ? 'KITE_CONNECT_API'
+                      : _selectedBroker == 'Upstox'
+                      ? 'UPSTOX_V2_API'
+                      : 'GROWW_PLATFORM',
                 ),
                 _reviewRow('Login ID', _loginIdController.text),
                 _reviewRow('Phone Number', _phoneNumberController.text.trim()),
@@ -1863,11 +2103,18 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                   _reviewRow('API Key', '•' * _apiKeyController.text.length),
                 ],
                 if (_selectedBroker == 'Good Well') ...[
-                  _reviewRow(
-                    'TOTP Key',
-                    '•' * _totpKeyGoodWellController.text.length,
-                  ),
-                  _reviewRow('API Key', '•' * _apiKeyController.text.length),
+                  _reviewRow('Password / MPIN', '•' * _mpinController.text.length),
+                  _reviewRow('API Key (App Key)', '•' * _apiKeyController.text.length),
+                  _reviewRow('API Secret Key', '•' * _apiSecretKeyController.text.length),
+                  _reviewRow('TOTP Key', '•' * _totpKeyGoodWellController.text.length),
+                ],
+                if (_selectedBroker == 'Zerodha') ...[
+                  _reviewRow('Kite API Key', '•' * _apiKeyController.text.length),
+                  _reviewRow('Kite API Secret', '•' * _apiSecretKeyController.text.length),
+                ],
+                if (_selectedBroker == 'Upstox') ...[
+                  _reviewRow('Upstox API Key', '•' * _apiKeyController.text.length),
+                  _reviewRow('Upstox API Secret', '•' * _apiSecretKeyController.text.length),
                 ],
                 _reviewRow('Pseudo Name', _pseudoNameController.text),
               ],
@@ -1933,8 +2180,12 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                         _submitDhan(context);
                       } else if (_selectedBroker == 'Profit Mart') {
                         _submitProfitMart(context);
-                      } else {
+                      } else if (_selectedBroker == 'Good Well') {
                         _submitGoodWell(context);
+                      } else if (_selectedBroker == 'Zerodha') {
+                        _submitZerodha(context);
+                      } else if (_selectedBroker == 'Upstox') {
+                        _submitUpstox(context);
                       }
                     },
                     style: ElevatedButton.styleFrom(

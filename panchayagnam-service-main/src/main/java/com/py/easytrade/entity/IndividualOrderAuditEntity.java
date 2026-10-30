@@ -31,6 +31,8 @@ public class IndividualOrderAuditEntity {
     private String uniqueOrderId;
     private String remarks;
     private BrokerType brokerType;
+    private String idempotencyKey;
+    private Boolean isSimulated = false;
 
     private LocalDateTime executedAt;
 
@@ -298,5 +300,21 @@ public class IndividualOrderAuditEntity {
      */
     public void setBrokerType(BrokerType brokerType) {
         this.brokerType = brokerType;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public Boolean getIsSimulated() {
+        return isSimulated;
+    }
+
+    public void setIsSimulated(Boolean isSimulated) {
+        this.isSimulated = isSimulated;
     }
 }

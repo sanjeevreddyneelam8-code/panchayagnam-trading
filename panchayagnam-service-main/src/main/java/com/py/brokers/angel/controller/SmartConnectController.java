@@ -40,6 +40,9 @@ public class SmartConnectController {
     @Autowired
     private PyBrokerAccountService pyBrokerAccountService;
 
+    @Autowired
+    private com.py.trading.service.PaperTradingService paperTradingService;
+
     @PostMapping("/session/renew")
     public ResponseEntity<?> renewAccessToken(@RequestBody Map<String, String> body) {
         TokenSet tokenSet = smartConnect.renewAccessToken(
@@ -65,6 +68,10 @@ public class SmartConnectController {
     @PostMapping("/order/place")
     public ResponseEntity<?> placeOrder(@RequestBody OrderParams orderParams,
             @RequestParam(defaultValue = "regular") String variety) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect order placement is disabled during paper trading. Use /pyBrokerApi/order/buy or /order/sell.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Order order = smartConnect.placeOrder(orderParams, variety);
         return order != null ? ResponseEntity.ok(order) : ResponseEntity.badRequest().body("Order placement failed");
     }
@@ -73,18 +80,26 @@ public class SmartConnectController {
     public ResponseEntity<?> modifyOrder(@PathVariable String orderId,
             @RequestBody OrderParams orderParams,
             @RequestParam(defaultValue = "regular") String variety) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect order modification is disabled during paper trading. Use /pyBrokerApi/modifyOrder.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Order order = smartConnect.modifyOrder(orderId, orderParams, variety);
         return order != null ? ResponseEntity.ok(order) : ResponseEntity.badRequest().body("Order modification failed");
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     // 7. Cancel Order
     // DELETE /api/smart/order/cancel/{orderId}?variety=regular
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     @Operation(summary = "Cancel Order", description = "Cancel an existing order by order ID")
     @DeleteMapping("/order/cancel/{orderId}")
     public ResponseEntity<?> cancelOrder(@Parameter(description = "Order ID", example = "210426000000011") @PathVariable String orderId,
             @Parameter(description = "Order variety", example = "NORMAL") @RequestParam(defaultValue = "regular") String variety) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect order cancellation is disabled during paper trading. Use /pyBrokerApi/cancelOrder.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Order order = smartConnect.cancelOrder(orderId, variety);
         return order != null ? ResponseEntity.ok(order) : ResponseEntity.badRequest().body("Order cancellation failed");
     }
@@ -176,6 +191,10 @@ public class SmartConnectController {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(examples = @ExampleObject(value = "{\"exchange\": \"NSE\", \"symboltoken\": \"3045\", \"tradingsymbol\": \"SBIN-EQ\", \"transactiontype\": \"BUY\", \"quantity\": 1, \"oldproducttype\": \"MIS\", \"newproducttype\": \"CNC\"}")))
     @PostMapping("/order/position/convert")
     public ResponseEntity<?> convertPosition(@RequestBody Map<String, Object> body) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect position conversion is disabled during paper trading.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         JSONObject params = new JSONObject(body);
         JSONObject response = smartConnect.convertPosition(params);
         return response != null ? ResponseEntity.ok(response.toMap()) : ResponseEntity.badRequest().body("Position conversion failed");
@@ -378,34 +397,46 @@ public class SmartConnectController {
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 21. GTT Create Rule
     // POST /api/smart/gtt/create
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     @Operation(summary = "Create GTT Rule", description = "Create a Good Till Triggered order rule")
     @PostMapping("/gtt/create")
     public ResponseEntity<?> gttCreateRule(@RequestBody GttParams gttParams) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect GTT operations are disabled during paper trading.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Gtt gtt = smartConnect.gttCreateRule(gttParams);
         return gtt != null ? ResponseEntity.ok(gtt) : ResponseEntity.badRequest().body("GTT create failed");
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     // 22. GTT Modify Rule
     // PUT /api/smart/gtt/modify/{id}
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     @Operation(summary = "Modify GTT Rule", description = "Modify an existing GTT rule")
     @PutMapping("/gtt/modify/{id}")
     public ResponseEntity<?> gttModifyRule(@Parameter(description = "GTT rule ID", example = "1001") @PathVariable Integer id, @RequestBody GttParams gttParams) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect GTT operations are disabled during paper trading.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Gtt gtt = smartConnect.gttModifyRule(id, gttParams);
         return gtt != null ? ResponseEntity.ok(gtt) : ResponseEntity.badRequest().body("GTT modify failed");
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     // 23. GTT Cancel Rule
     // DELETE /api/smart/gtt/cancel/{id}?symboltoken=XYZ&exchange=NSE
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────
     @Operation(summary = "Cancel GTT Rule", description = "Cancel an existing GTT rule")
     @DeleteMapping("/gtt/cancel/{id}")
     public ResponseEntity<?> gttCancelRule(@Parameter(description = "GTT rule ID", example = "1001") @PathVariable Integer id,
             @Parameter(description = "Symbol token", example = "3045") @RequestParam String symboltoken,
             @Parameter(description = "Exchange", example = "NSE") @RequestParam String exchange) {
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return ResponseEntity.badRequest().body("Direct SmartConnect GTT operations are disabled during paper trading.");
+        }
+        paperTradingService.validateLiveOrderAllowed();
         Gtt gtt = smartConnect.gttCancelRule(id, symboltoken, exchange);
         return gtt != null ? ResponseEntity.ok(gtt) : ResponseEntity.badRequest().body("GTT cancel failed");
     }

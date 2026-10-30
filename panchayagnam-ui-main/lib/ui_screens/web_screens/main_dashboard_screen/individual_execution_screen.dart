@@ -35,6 +35,9 @@ String resolveVariety(String rawVariety, String brokerKey) {
       if (v == 'AMO') return 'AMO';
       if (v == 'REGULAR' || v == 'NORMAL') return 'REGULAR';
       return 'REGULAR';
+    case 'DHAN':
+      const dhanValid = {'NORMAL', 'STOPLOSS'};
+      return dhanValid.contains(v) ? v : 'NORMAL';
     case 'PROFITMART':
       const pmValid = {'NORMAL', 'STOPLOSS', 'AMO', 'ROBO'};
       return pmValid.contains(v) ? v : 'NORMAL';
@@ -186,7 +189,7 @@ class PositionsSummary {
 //  BROKER ENUM  — GOODWILL added
 // ══════════════════════════════════════════════════════════════════════════════
 
-enum _Broker { angelOne, motilal, profitMart, goodWill }
+enum _Broker { angelOne, motilal, dhan, profitMart, goodWill }
 
 extension _BrokerExt on _Broker {
   String get label {
@@ -195,6 +198,8 @@ extension _BrokerExt on _Broker {
         return 'Angel One';
       case _Broker.motilal:
         return 'Motilal Oswal';
+      case _Broker.dhan:
+        return 'Dhan';
       case _Broker.profitMart:
         return 'Profit Mart';
       case _Broker.goodWill:
@@ -208,6 +213,8 @@ extension _BrokerExt on _Broker {
         return 'AO';
       case _Broker.motilal:
         return 'MO';
+      case _Broker.dhan:
+        return 'DH';
       case _Broker.profitMart:
         return 'PM';
       case _Broker.goodWill:
@@ -221,6 +228,8 @@ extension _BrokerExt on _Broker {
         return const Color(0xFFE53E3E);
       case _Broker.motilal:
         return const Color(0xFF2563EB);
+      case _Broker.dhan:
+        return const Color(0xFF7C3AED);
       case _Broker.profitMart:
         return const Color(0xFF059669);
       case _Broker.goodWill:
@@ -234,6 +243,8 @@ extension _BrokerExt on _Broker {
         return 'ANGELONE';
       case _Broker.motilal:
         return 'MOTILAL';
+      case _Broker.dhan:
+        return 'DHAN';
       case _Broker.profitMart:
         return 'PROFITMART';
       case _Broker.goodWill:
@@ -247,6 +258,8 @@ extension _BrokerExt on _Broker {
         return ['NORMAL', 'STOPLOSS', 'AMO', 'ROBO'];
       case _Broker.motilal:
         return ['REGULAR', 'AMO'];
+      case _Broker.dhan:
+        return ['NORMAL', 'STOPLOSS'];
       case _Broker.profitMart:
         return ['NORMAL', 'STOPLOSS', 'AMO', 'ROBO'];
       case _Broker.goodWill:
@@ -260,6 +273,8 @@ extension _BrokerExt on _Broker {
         return 'NORMAL';
       case _Broker.motilal:
         return 'REGULAR';
+      case _Broker.dhan:
+        return 'NORMAL';
       case _Broker.profitMart:
         return 'NORMAL';
       case _Broker.goodWill:
@@ -1302,9 +1317,11 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                   const SizedBox(width: 4),
                   _brokerTab(_Broker.motilal),
                   const SizedBox(width: 4),
+                  _brokerTab(_Broker.dhan),
+                  const SizedBox(width: 4),
                   _brokerTab(_Broker.profitMart),
                   const SizedBox(width: 4),
-                  _brokerTab(_Broker.goodWill), // ← GOODWILL added here
+                  _brokerTab(_Broker.goodWill),
                   _vSep(),
                   Expanded(
                     flex: 5,
@@ -1321,6 +1338,34 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                     child: BlocBuilder<BrokerBloc, BrokerState>(
                       bloc: _brokerBloc,
                       builder: (ctx, state) => _accountDropdown(ctx, state),
+                    ),
+                  ),
+                  _vSep(),
+                  Tooltip(
+                    message: 'Paper Trading Mode: orders are executed virtually with simulation funds. Real money live trading is currently locked by safety gate.',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFF59E0B)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.shield_outlined, size: 14, color: Color(0xFFB45309)),
+                          SizedBox(width: 5),
+                          Text(
+                            'PAPER TRADING',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF92400E),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -2996,6 +3041,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
         ? '${o.orderTime!.hour.toString().padLeft(2, '0')}:${o.orderTime!.minute.toString().padLeft(2, '0')}'
         : '';
     final isAmo = (o.variety ?? '').toUpperCase() == 'AMO';
+    final isSimulated = o.orderId.startsWith('PAPER-SIM-') || (o.variety ?? '').toUpperCase().contains('PAPER');
 
     return Material(
       color: Colors.transparent,
@@ -3086,6 +3132,30 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                                       fontSize: 8,
                                       fontWeight: FontWeight.w800,
                                       color: Color(0xFFB45309),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (isSimulated) ...[
+                                const SizedBox(width: 5),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(3),
+                                    border: Border.all(
+                                      color: const Color(0xFFC7D2FE),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'SIMULATED',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF4338CA),
                                     ),
                                   ),
                                 ),

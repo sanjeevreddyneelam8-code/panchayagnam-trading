@@ -40,13 +40,13 @@ class AddDematBloc extends Bloc<AddDematEvent, AddDematAccountState> {
         isActive: event.active ?? true,
         pyUserId: pyId,
         dob: event.dob,
-        // Motilal-specific — only populated when broker is MOTILAL
-        apiSecretKey: isMotilal ? (event.apiSecretKey ?? '') : null,
+        // Broker API secret key
+        apiSecretKey: event.apiSecretKey,
         vendorInfo: isMotilal
             ? (event.vendorInfo?.isNotEmpty == true
                   ? event.vendorInfo
                   : event.clientId)
-            : null,
+            : event.vendorInfo,
         isOwn: event.isOwn,
         ip: event.ip ?? "",
         mobileNumber: event.mobileNumber ?? "",

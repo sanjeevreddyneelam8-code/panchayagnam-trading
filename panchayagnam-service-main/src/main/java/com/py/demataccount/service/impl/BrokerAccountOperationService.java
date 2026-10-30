@@ -10,6 +10,11 @@ import com.py.ipconfig.entity.PyBrokerIpConfigEntity;
 import com.py.demataccount.entity.PyBrokerSecret;
 import com.py.demataccount.entity.PyBrokerToken;
 import com.py.demataccount.repository.PyBrokerAccountRepository;
+import com.py.demataccount.repository.PyTradeGroupMemberRepository;
+import com.py.entity.PyTradeGroupMemberEntity;
+import com.py.trading.entity.PaperPositionEntity;
+import com.py.trading.repository.PaperAccountBalanceRepository;
+import com.py.trading.repository.PaperPositionRepository;
 import com.py.ipconfig.repository.PyBrokerIpConfigRepository;
 import com.py.ipconfig.service.PyBrokerIpConfigService;
 import com.py.demataccount.utils.BrokerProfileLoader;
@@ -25,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -50,6 +56,15 @@ public class BrokerAccountOperationService {
     @Autowired
     private PyBrokerIpConfigService accountValidator;
 
+    @Autowired(required = false)
+    private PyTradeGroupMemberRepository pyTradeGroupMemberRepository;
+
+    @Autowired(required = false)
+    private PaperAccountBalanceRepository paperAccountBalanceRepository;
+
+    @Autowired(required = false)
+    private PaperPositionRepository paperPositionRepository;
+
     // ── ADD ───────────────────────────────────────────────────────────────────
     public ApiResponse<?> addAccount(DematAccountAddRequest request, PyUser pyUser)
             throws SmartAPIException, IOException {
@@ -74,20 +89,19 @@ public class BrokerAccountOperationService {
 
         // ── Login BEFORE any DB write — invalid credentials are caught here ───
         JSONObject loginData = null;
+        String initialLoginError = null;
         try {
             if (!request.getBrokerType().equals(BrokerType.PROFITMART)) {
                 loginData = brokerLoginService.login(request);
             }
         } catch (RuntimeException e) {
-            log.error("Broker login failed for clientId={}: {}",
+            log.warn("Initial broker login could not establish session for clientId={}: {}. Saving account as DISCONNECTED.",
                     request.getClientId(), e.getMessage());
-            return ApiResponse.error(401,
-                    "Login failed for " + request.getBrokerType()
-                    + " [" + request.getClientId() + "]: " + e.getMessage());
+            initialLoginError = e.getMessage();
         }
 
-        // ── Persist only after login is confirmed valid ────────────────────────
-        return persistNewAccount(request, pyUser, loginData, ipValidation.getData());
+        // ── Persist new account ───────────────────────────────────────────────
+        return persistNewAccount(request, pyUser, loginData, ipValidation.getData(), initialLoginError);
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -126,6 +140,10 @@ public class BrokerAccountOperationService {
         } catch (RuntimeException e) {
             log.error("Broker login failed on update for clientId={}: {}",
                     request.getClientId(), e.getMessage());
+            account.setLastLoginStatus("FAILED");
+            account.setLastLoginError(e.getMessage());
+            account.setLastLoginAttempt(LocalDateTime.now());
+            pyBrokerAccountRepository.save(account);
             return ApiResponse.error(401,
                     "Login failed for " + request.getBrokerType()
                     + " [" + request.getClientId() + "]: " + e.getMessage());
@@ -156,10 +174,63 @@ public class BrokerAccountOperationService {
         return ApiResponse.success("Account deactivated successfully", null);
     }
 
-    // ── PERSIST NEW (called only after login succeeds) ─────────────────────────
+    // ── DELETE / REMOVE ACCOUNT ──────────────────────────────────────────────
+    @Transactional
+    public ApiResponse<?> deleteAccount(String clientId, Long pyUserId) {
+        log.info("Deleting broker account | clientId={}, pyUserId={}", clientId, pyUserId);
+
+        Optional<PyBrokerAccountEntity> accountOpt
+                = pyBrokerAccountRepository.findByClientId(clientId);
+        if (accountOpt.isEmpty()) {
+            return ApiResponse.error(404,
+                    "Broker account not found for clientId: " + clientId);
+        }
+
+        PyBrokerAccountEntity account = accountOpt.get();
+        if (pyUserId != null && account.getPyUser() != null && !account.getPyUser().getId().equals(pyUserId)) {
+            log.warn("Security rejection: pyUserId={} attempted to delete account {} owned by pyUserId={}",
+                    pyUserId, clientId, account.getPyUser().getId());
+            return ApiResponse.error(403, "Unauthorized: You do not own this broker account");
+        }
+
+        // 1. Clean up trade group memberships if any
+        if (pyTradeGroupMemberRepository != null) {
+            List<PyTradeGroupMemberEntity> groupMembers = pyTradeGroupMemberRepository.findByBrokerAccount(account);
+            if (groupMembers != null && !groupMembers.isEmpty()) {
+                pyTradeGroupMemberRepository.deleteAll(groupMembers);
+                log.info("Removed {} trade group membership(s) for clientId={}", groupMembers.size(), clientId);
+            }
+        }
+
+        // 2. Clean up paper positions if any
+        if (paperPositionRepository != null) {
+            List<PaperPositionEntity> positions = paperPositionRepository.findByDematAccountId(account.getId());
+            if (positions != null && !positions.isEmpty()) {
+                paperPositionRepository.deleteAll(positions);
+                log.info("Removed {} paper position(s) for clientId={}", positions.size(), clientId);
+            }
+        }
+
+        // 3. Clean up paper balance if any
+        if (paperAccountBalanceRepository != null && account.getPyUser() != null) {
+            paperAccountBalanceRepository.findByPyUserIdAndDematAccountId(account.getPyUser().getId(), account.getId())
+                    .ifPresent(b -> {
+                        paperAccountBalanceRepository.delete(b);
+                        log.info("Removed paper balance for clientId={}", clientId);
+                    });
+        }
+
+        // 4. Delete the account entity — cascades and removes PyBrokerSecret and PyBrokerToken
+        pyBrokerAccountRepository.delete(account);
+        log.info("Broker account successfully deleted | clientId={}", clientId);
+
+        return ApiResponse.success("Broker account deleted successfully", null);
+    }
+
+    // ── PERSIST NEW ────────────────────────────────────────────────────────────
     @Transactional
     private ApiResponse<?> persistNewAccount(DematAccountAddRequest request,
-            PyUser pyUser, JSONObject loginData, PyBrokerIpConfigEntity ipConfig)
+            PyUser pyUser, JSONObject loginData, PyBrokerIpConfigEntity ipConfig, String initialLoginError)
             throws SmartAPIException, IOException {
         try {
             PyBrokerAccountEntity account = new PyBrokerAccountEntity();
@@ -169,7 +240,16 @@ public class BrokerAccountOperationService {
             account.setClientId(request.getClientId());
             account.setBrokerType(request.getBrokerType());
             account.setActive(true);
-            account.setLastLoginStatus("SUCCESS");
+
+            // Require an official non-empty access token to mark status as SUCCESS / Connected
+            boolean hasToken = hasValidAccessToken(loginData, request.getBrokerType());
+            if (hasToken) {
+                account.setLastLoginStatus("SUCCESS");
+                account.setLastLoginError(null);
+            } else {
+                account.setLastLoginStatus(initialLoginError != null ? "FAILED" : "DISCONNECTED");
+                account.setLastLoginError(initialLoginError != null ? initialLoginError : "Credentials saved. Connect account to establish active " + request.getBrokerType() + " session.");
+            }
             account.setLastLoginAttempt(LocalDateTime.now());
 
             PyBrokerSecret secret = tokenSecretManager.createSecret(request);
@@ -189,10 +269,10 @@ public class BrokerAccountOperationService {
 
             log.info("New broker account saved | clientId={}, broker={}",
                     request.getClientId(), request.getBrokerType());
-            if (request.getBrokerType().equals(BrokerType.PROFITMART)) {
-                return ApiResponse.success("Broker account details saved successfully,Please Connect Account", user);
+            if (hasToken) {
+                return ApiResponse.success("Broker account added and authenticated successfully", user);
             } else {
-                return ApiResponse.success("Broker account added successfully", user);
+                return ApiResponse.success("Broker account credentials saved. Please click 'Connect' on the dashboard to authenticate with " + request.getBrokerType() + ".", user);
             }
 
         } catch (Exception e) {
@@ -219,7 +299,17 @@ public class BrokerAccountOperationService {
             account.setBrokerType(request.getBrokerType());
             account.setClientId(request.getClientId());
             account.setActive(request.isActive());
-            account.setLastLoginStatus("SUCCESS");
+
+            // Check if updated credentials or existing session has a valid official token
+            boolean hasToken = hasValidAccessToken(loginData, request.getBrokerType())
+                    || (account.getToken() != null && StringUtils.isNotEmpty(account.getToken().getAccessToken()));
+            if (hasToken) {
+                account.setLastLoginStatus("SUCCESS");
+                account.setLastLoginError(null);
+            } else {
+                account.setLastLoginStatus("DISCONNECTED");
+                account.setLastLoginError("Credentials updated. Connect account to establish active " + request.getBrokerType() + " session.");
+            }
             account.setLastLoginAttempt(LocalDateTime.now());
             account.setIsOwn(request.isOwn());
             // Build user profile for response
@@ -244,5 +334,18 @@ public class BrokerAccountOperationService {
                     request.getClientId(), e.getMessage(), e);
             throw e;
         }
+    }
+
+    private boolean hasValidAccessToken(JSONObject loginData, BrokerType brokerType) {
+        if (loginData == null) {
+            return false;
+        }
+        return switch (brokerType) {
+            case ANGELONE -> loginData.optString("jwtToken", "").trim().length() > 0;
+            case MOTILAL -> loginData.optString("AccessToken", "").trim().length() > 0;
+            case DHAN, ZERODHA, UPSTOX, GOODWILL -> loginData.optString("accessToken", "").trim().length() > 0;
+            case PROFITMART -> loginData.optString("susertoken", loginData.optString("access_token", "")).trim().length() > 0;
+            case GROWW -> false;
+        };
     }
 }

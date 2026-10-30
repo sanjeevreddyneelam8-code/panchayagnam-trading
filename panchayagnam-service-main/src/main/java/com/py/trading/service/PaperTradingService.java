@@ -21,11 +21,21 @@ public class PaperTradingService {
     @Value("${trading.paper-trading.enabled:true}")
     private boolean paperTradingEnabled;
 
+    @Value("${trading.live-trading.enabled:false}")
+    private boolean liveTradingEnabled;
+
     /**
      * Returns true if paper trading is active.
      */
     public boolean isPaperTradingEnabled() {
         return paperTradingEnabled;
+    }
+
+    /**
+     * Returns true if live trading is explicitly permitted.
+     */
+    public boolean isLiveTradingEnabled() {
+        return liveTradingEnabled;
     }
 
     /**
@@ -42,12 +52,16 @@ public class PaperTradingService {
     }
 
     /**
-     * Asserts that live orders cannot execute if paper trading is enabled.
+     * Asserts that live orders cannot execute if paper trading is enabled or live trading is not explicitly authorized.
      */
     public void validateLiveOrderAllowed() {
         if (paperTradingEnabled) {
             log.error("CRITICAL: Live order blocked because paper-trading mode is ENABLED!");
             throw new IllegalStateException("Accidental live trade blocked: paper-trading mode is enabled");
+        }
+        if (!liveTradingEnabled) {
+            log.error("CRITICAL: Live order blocked because live trading is not enabled in configuration (trading.live-trading.enabled=false)!");
+            throw new IllegalStateException("Live trade blocked: live trading is not enabled in configuration (trading.live-trading.enabled=false)");
         }
     }
 }

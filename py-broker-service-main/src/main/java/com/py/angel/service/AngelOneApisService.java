@@ -27,6 +27,9 @@ public class AngelOneApisService {
     private final Routes routes;
     private static final Logger log = LoggerFactory.getLogger(AngelOneApisService.class);
 
+    @org.springframework.beans.factory.annotation.Value("${trading.paper-trading.enabled:true}")
+    private boolean paperTradingEnabled;
+
     public AngelOneApisService(ApiRequestHandler apiRequestHandler, Routes routes) {
         this.apiRequestHandler = apiRequestHandler;
         this.routes = routes;
@@ -103,6 +106,17 @@ public class AngelOneApisService {
 
     // ─── LOGIN ───────────────────────────────────────────────────────────────
     public JSONObject login(AngelOneLoginRequest request) {
+        if (paperTradingEnabled && (
+                (request.getClientCode() != null && (request.getClientCode().startsWith("SIM-") || request.getClientCode().startsWith("AG"))) ||
+                (request.getApiKey() != null && request.getApiKey().startsWith("SIM-")) ||
+                (request.getPassword() != null && request.getPassword().startsWith("SIM-")))) {
+            log.info("🛡️ [PAPER TRADING] Simulated AngelOne login for clientCode={}", request.getClientCode());
+            JSONObject simData = new JSONObject();
+            simData.put("jwtToken", "PAPER-SIM-JWT-ANGEL-" + System.currentTimeMillis());
+            simData.put("refreshToken", "PAPER-SIM-REFRESH-ANGEL-" + System.currentTimeMillis());
+            simData.put("feedToken", "PAPER-SIM-FEED-ANGEL-" + System.currentTimeMillis());
+            return simData;
+        }
         try {
             JSONObject params = new JSONObject();
             params.put("clientcode", request.getClientCode());

@@ -49,6 +49,7 @@ class PlaceOrderRequested extends IndividualExecutionEvent {
   final String variety;
   final String side;
   final BuildContext ctx;
+  final String? idempotencyKey;
 
   const PlaceOrderRequested({
     required this.accId,
@@ -60,6 +61,7 @@ class PlaceOrderRequested extends IndividualExecutionEvent {
     required this.variety,
     required this.side,
     required this.ctx,
+    this.idempotencyKey,
   });
 
   @override
@@ -72,6 +74,7 @@ class PlaceOrderRequested extends IndividualExecutionEvent {
     productType,
     variety,
     side,
+    idempotencyKey,
   ];
 }
 
@@ -415,6 +418,11 @@ class IndividualExecutionBloc
     Emitter<IndividualExecutionState> emit,
   ) async {
     emit(OrderPlacing(event.side));
+    final safeSymbol = event.scrip.tradingSymbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final keyToUse = (event.idempotencyKey != null && event.idempotencyKey!.isNotEmpty)
+        ? event.idempotencyKey!
+        : 'UI-${DateTime.now().millisecondsSinceEpoch}-$safeSymbol-${event.quantity}';
+
     final result = await _placeOrder(
       accId: event.accId,
       tradingSymbol: event.scrip.tradingSymbol,
@@ -426,6 +434,7 @@ class IndividualExecutionBloc
       productType: event.productType,
       variety: event.variety,
       side: event.side,
+      idempotencyKey: keyToUse,
     );
     result.fold(
       (f) {

@@ -47,6 +47,9 @@ public class MotilalAccountService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @org.springframework.beans.factory.annotation.Value("${trading.paper-trading.enabled:true}")
+    private boolean paperTradingEnabled;
+
     // ── HELPER ────────────────────────────────────────────────────────────────
     private HttpHeaders headers(String apiKey, String apiSecret,
             String vendorInfo, String authToken, String accessToken) {
@@ -79,6 +82,20 @@ public class MotilalAccountService {
             String twoFa, String totp,
             String apiKey, String apiSecret, String vendorInfo) {
 
+        if (paperTradingEnabled && (
+                (userId != null && (userId.startsWith("SIM-") || userId.startsWith("MO"))) ||
+                (apiKey != null && apiKey.startsWith("SIM-")) ||
+                (hashedPassword != null && hashedPassword.startsWith("SIM-")))) {
+            log.info("🛡️ [PAPER TRADING] Simulated Motilal login for userId={}", userId);
+            JSONObject sim = new JSONObject();
+            sim.put("status", "SUCCESS");
+            sim.put("message", "SUCCESS");
+            sim.put("errorcode", "");
+            sim.put("AuthToken", "PAPER-SIM-AUTH-MO-" + System.currentTimeMillis());
+            sim.put("AccessToken", "PAPER-SIM-TOKEN-MO-" + System.currentTimeMillis());
+            return sim;
+        }
+
         JSONObject body = new JSONObject();
         body.put("userid", userId);
         body.put("password", hashedPassword);
@@ -97,6 +114,15 @@ public class MotilalAccountService {
     // ── GET ACCESS TOKEN ──────────────────────────────────────────────────────
     public JSONObject getAccessToken(String authToken,
             String apiKey, String apiSecret, String vendorInfo) {
+
+        if (paperTradingEnabled && authToken != null && (authToken.startsWith("PAPER-") || authToken.startsWith("SIM-"))) {
+            JSONObject sim = new JSONObject();
+            sim.put("status", "SUCCESS");
+            sim.put("message", "SUCCESS");
+            sim.put("errorcode", "");
+            sim.put("AccessToken", "PAPER-SIM-TOKEN-MO-" + System.currentTimeMillis());
+            return sim;
+        }
 
         HttpEntity<String> entity = new HttpEntity<>("{}",
                 headers(apiKey, apiSecret, vendorInfo, authToken, null));

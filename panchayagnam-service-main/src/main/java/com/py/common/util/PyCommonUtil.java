@@ -45,12 +45,42 @@ public class PyCommonUtil {
             return ApiResponse.error(400, "Valid PyUser ID is required");
         }
 
-        if (request.getApiKey() == null || request.getApiKey().isEmpty()) {
-            return ApiResponse.error(400, "API Key is required");
+        // Groww does not provide a public trading API
+        if (request.getBrokerType() == BrokerType.GROWW) {
+            return ApiResponse.error(400, "Groww does not provide an official trading API for third-party automated execution.");
         }
 
-        // Validate IP for brokers that require it
-        if (request.getBrokerType() != BrokerType.UPSTOX) {
+        // Validate API Key for brokers that require it
+        if (request.getBrokerType() == BrokerType.ANGELONE
+                || request.getBrokerType() == BrokerType.MOTILAL
+                || request.getBrokerType() == BrokerType.ZERODHA
+                || request.getBrokerType() == BrokerType.UPSTOX
+                || request.getBrokerType() == BrokerType.GOODWILL) {
+            if (request.getApiKey() == null || request.getApiKey().isEmpty()) {
+                return ApiResponse.error(400, "API Key is required for " + request.getBrokerType());
+            }
+        }
+
+        // Validate PIN / MPIN for brokers that authenticate with PIN
+        if (request.getBrokerType() == BrokerType.ANGELONE
+                || request.getBrokerType() == BrokerType.MOTILAL
+                || request.getBrokerType() == BrokerType.DHAN) {
+            if (request.getMpin() == null || request.getMpin().isEmpty()) {
+                return ApiResponse.error(400, "PIN / MPIN is required for " + request.getBrokerType());
+            }
+        }
+
+        // Validate TOTP secret for brokers that use automated TOTP generation
+        if (request.getBrokerType() == BrokerType.ANGELONE
+                || request.getBrokerType() == BrokerType.MOTILAL
+                || request.getBrokerType() == BrokerType.DHAN) {
+            if (request.getTotpReferenceKey() == null || request.getTotpReferenceKey().isEmpty()) {
+                return ApiResponse.error(400, "TOTP Key is required for " + request.getBrokerType());
+            }
+        }
+
+        // Validate IP for brokers that require registered gateway IP
+        if (request.getBrokerType() != BrokerType.UPSTOX && request.getBrokerType() != BrokerType.ZERODHA) {
             if (request.getIp() == null || request.getIp().isEmpty()) {
                 return ApiResponse.error(400, "IP address is required for " + request.getBrokerType());
             }

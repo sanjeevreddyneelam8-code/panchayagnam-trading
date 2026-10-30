@@ -59,10 +59,11 @@ public class CryptoServiceTest {
         String secret = "confidential_totp_seed";
         String encrypted = cryptoService.encrypt(secret);
 
-        // Tamper with the ciphertext (flip a character in the Base64 portion)
-        char originalChar = encrypted.charAt(encrypted.length() - 2);
-        char tamperedChar = originalChar == 'A' ? 'B' : 'A';
-        String tamperedCiphertext = encrypted.substring(0, encrypted.length() - 2) + tamperedChar + encrypted.substring(encrypted.length() - 1);
+        // Tamper with the ciphertext (flip a character in the Base64 payload, away from trailing padding)
+        int tamperIdx = encrypted.indexOf(':') + 5;
+        char originalChar = encrypted.charAt(tamperIdx);
+        char tamperedChar = (originalChar == 'A') ? 'B' : 'A';
+        String tamperedCiphertext = encrypted.substring(0, tamperIdx) + tamperedChar + encrypted.substring(tamperIdx + 1);
 
         assertThrows(RuntimeException.class, () -> cryptoService.decrypt(tamperedCiphertext),
                 "Decryption must throw an exception when the GCM authentication tag fails due to tampering");

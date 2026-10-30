@@ -70,10 +70,13 @@ class AddDematAccountRequest {
       if (dob != null && dob!.isNotEmpty)
         (_isMotilal ? "twoFa" : "dob"): dob,
 
-      // Motilal-only fields — excluded entirely for other brokers
-      if (_isMotilal) "apiSecretKey": apiSecretKey ?? '',
+      // Sensitive broker credentials passed when provided
+      if (apiSecretKey != null && apiSecretKey!.isNotEmpty)
+        "apiSecretKey": apiSecretKey,
       if (_isMotilal)
-        "vendorInfo": (vendorInfo?.isNotEmpty == true) ? vendorInfo : clientId,
+        "vendorInfo": (vendorInfo?.isNotEmpty == true) ? vendorInfo : clientId
+      else if (vendorInfo != null && vendorInfo!.isNotEmpty)
+        "vendorInfo": vendorInfo,
     };
   }
 

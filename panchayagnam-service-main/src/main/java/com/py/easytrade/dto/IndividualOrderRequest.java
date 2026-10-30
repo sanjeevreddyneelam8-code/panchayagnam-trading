@@ -16,6 +16,7 @@ public class IndividualOrderRequest {
     private String variety; // NORMAL / STOPLOSS / AMO
     private String amo;
     private Double triggerPrice = 0.0;
+    private String idempotencyKey;
 //    AMO Time Options
 //| amoTime Value | When Order is Sent |
 //|---|---|
@@ -176,5 +177,13 @@ public class IndividualOrderRequest {
      */
     public void setTriggerPrice(Double triggerPrice) {
         this.triggerPrice = triggerPrice;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

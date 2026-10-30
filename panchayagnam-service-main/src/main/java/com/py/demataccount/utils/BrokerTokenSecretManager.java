@@ -73,6 +73,9 @@ public class BrokerTokenSecretManager {
      * @param brokerType the broker type
      */
     public void updateToken(PyBrokerToken token, JSONObject loginData, BrokerType brokerType) {
+        if (token == null) {
+            return;
+        }
         populateTokenFromLoginData(token, loginData, brokerType);
         token.setExpiresAt(getTokenExpiry(brokerType));
     }
@@ -85,34 +88,58 @@ public class BrokerTokenSecretManager {
      * @param brokerType the broker type
      */
     private void populateTokenFromLoginData(PyBrokerToken token, JSONObject loginData, BrokerType brokerType) {
+        if (token == null) {
+            return;
+        }
         switch (brokerType) {
             case ANGELONE:
-                token.setAccessToken(loginData.getString("jwtToken"));
-                token.setRefreshToken(loginData.optString("refreshToken", ""));
-                token.setFeedToken(loginData.optString("feedToken", ""));
+                token.setAccessToken(loginData != null ? loginData.optString("jwtToken", loginData.optString("accessToken", "")) : "");
+                token.setRefreshToken(loginData != null ? loginData.optString("refreshToken", "") : "");
+                token.setFeedToken(loginData != null ? loginData.optString("feedToken", "") : "");
                 break;
 
             case MOTILAL:
-                token.setAccessToken(loginData.getString("AccessToken"));
-                token.setRefreshToken(loginData.getString("AuthToken"));
+                token.setAccessToken(loginData != null ? loginData.optString("AccessToken", loginData.optString("accessToken", "")) : "");
+                token.setRefreshToken(loginData != null ? loginData.optString("AuthToken", loginData.optString("refreshToken", "")) : "");
+                token.setFeedToken("");
                 break;
 
             case DHAN:
-                token.setAccessToken(loginData.getString("accessToken"));
+                token.setAccessToken(loginData != null ? loginData.optString("accessToken", "") : "");
                 token.setRefreshToken("");
                 token.setFeedToken("");
                 break;
 
             case UPSTOX:
-                token.setAccessToken(loginData.getString("accessToken"));
+                token.setAccessToken(loginData != null ? loginData.optString("accessToken", "") : "");
                 token.setRefreshToken("");
                 token.setFeedToken("");
                 break;
+
             case PROFITMART:
-                token.setAccessToken("");
-                token.setRefreshToken((""));
+                token.setAccessToken(loginData != null ? loginData.optString("susertoken", loginData.optString("accessToken", loginData.optString("access_token", ""))) : "");
+                token.setRefreshToken(loginData != null ? loginData.optString("refreshToken", loginData.optString("refresh_token", "")) : "");
                 token.setFeedToken("");
                 break;
+
+            case ZERODHA:
+                token.setAccessToken(loginData != null ? loginData.optString("accessToken", "") : "");
+                token.setRefreshToken(loginData != null ? loginData.optString("refreshToken", "") : "");
+                token.setFeedToken("");
+                break;
+
+            case GOODWILL:
+                token.setAccessToken(loginData != null ? loginData.optString("accessToken", "") : "");
+                token.setRefreshToken("");
+                token.setFeedToken("");
+                break;
+
+            case GROWW:
+                token.setAccessToken("");
+                token.setRefreshToken("");
+                token.setFeedToken("");
+                break;
+
             default:
                 throw new IllegalArgumentException("Unsupported broker type: " + brokerType);
         }

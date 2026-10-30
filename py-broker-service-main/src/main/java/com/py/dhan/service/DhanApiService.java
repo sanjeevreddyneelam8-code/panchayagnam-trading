@@ -45,10 +45,12 @@ public class DhanApiService {
                 url, new HttpEntity<>(headers), String.class);
 
         JSONObject json = new JSONObject(response.getBody());
-        log.info("Dhan login response | clientId={}: {}", request.getClientId(), json);
+        boolean hasToken = json.has("accessToken") && !json.optString("accessToken", "").isEmpty();
+        log.info("Dhan login response received | clientId={} success={}", request.getClientId(), hasToken);
 
-        if (!json.has("accessToken") || json.optString("accessToken", "").isEmpty()) {
-            throw new RuntimeException("Dhan login failed — no accessToken: " + json);
+        if (!hasToken) {
+            String errorMsg = json.optString("remarks", json.optString("message", "no accessToken in response"));
+            throw new RuntimeException("Dhan login failed: " + errorMsg);
         }
 
         log.info("Dhan login SUCCESS | clientId={}", request.getClientId());

@@ -151,6 +151,9 @@ public class PyGroupOrderService {
                                         return result;
                                     }
 
+                                    // Enforce live trading authorization gate
+                                    paperTradingService.validateLiveOrderAllowed();
+
                                     // 9. Place order based on broker type
                                     String orderId = switch (account.getBrokerType()) {
                                         case ANGELONE ->
@@ -413,6 +416,9 @@ public class PyGroupOrderService {
                                     return result;
                                 }
 
+                                // Enforce live trading authorization gate
+                                paperTradingService.validateLiveOrderAllowed();
+
                                 // 6. Place SELL order based on broker type
                                 String orderId = switch (account.getBrokerType()) {
                                     case ANGELONE ->
@@ -573,6 +579,23 @@ public class PyGroupOrderService {
                                 stock.setSymbolToken(position.getSymbolToken());
                                 stock.setExchange(position.getExchange());
                                 stock.setPrice(position.getBuyPrice());
+
+                                // ── PAPER TRADING GUARD ──────────────────────────
+                                if (paperTradingService.isPaperTradingEnabled()) {
+                                    log.warn("🛡️ [PAPER TRADING - SIMULATED ORDER] Intercepted retry group order for clientId={} symbol={} broker={}",
+                                            account.getClientId(), position.getTradingSymbol(), account.getBrokerType());
+                                    String simOrderId = paperTradingService.generateSimulatedOrderId(account.getBrokerType());
+                                    result.setStatus("SUCCESS");
+                                    result.setOrderId(simOrderId);
+                                    result.setRemarks("[PAPER TRADING - SIMULATED ORDER]");
+                                    position.setStatus(PyGroupPositionEntity.Status.OPEN);
+                                    position.setBuyOrderId(simOrderId);
+                                    pyGroupPositionRepository.save(position);
+                                    return result;
+                                }
+
+                                // Enforce live trading authorization gate
+                                paperTradingService.validateLiveOrderAllowed();
 
                                 // Retry order
                                 String orderId = switch (account.getBrokerType()) {

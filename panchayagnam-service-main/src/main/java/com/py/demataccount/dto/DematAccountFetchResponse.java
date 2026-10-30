@@ -32,6 +32,9 @@ public class DematAccountFetchResponse {
     private boolean hasApiKey;
     private boolean hasApiSecretKey;
     private boolean hasMpin;
+    private String lastLoginStatus;
+    private String lastLoginError;
+    private LocalDateTime lastLoginAttempt;
 
     // ── existing getters & setters unchanged ─────────────────────────────
 
@@ -121,4 +124,13 @@ public class DematAccountFetchResponse {
 
     public boolean isHasMpin() { return hasMpin; }
     public void setHasMpin(boolean hasMpin) { this.hasMpin = hasMpin; }
+
+    public String getLastLoginStatus() { return lastLoginStatus; }
+    public void setLastLoginStatus(String lastLoginStatus) { this.lastLoginStatus = lastLoginStatus; }
+
+    public String getLastLoginError() { return lastLoginError; }
+    public void setLastLoginError(String lastLoginError) { this.lastLoginError = lastLoginError; }
+
+    public LocalDateTime getLastLoginAttempt() { return lastLoginAttempt; }
+    public void setLastLoginAttempt(LocalDateTime lastLoginAttempt) { this.lastLoginAttempt = lastLoginAttempt; }
 }

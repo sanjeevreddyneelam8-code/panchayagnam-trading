@@ -99,6 +99,23 @@ public class ProfitmartMicroserviceClient {
         return login(baseUrl, null, code, checksum);
     }
 
+    public JSONObject loginWithCredentials(String baseUrl, String userId, String password,
+                                           String twoFa, String vendorCode, String apiSecret, String imei) {
+        log.info("Profitmart credentials login | baseUrl={} userId={}", baseUrl, userId);
+
+        JSONObject body = new JSONObject();
+        body.put("userId", userId != null ? userId : "");
+        body.put("password", password != null ? password : "");
+        body.put("twoFa", twoFa != null ? twoFa : "");
+        body.put("vendorCode", vendorCode != null ? vendorCode : "");
+        body.put("apiSecret", apiSecret != null ? apiSecret : "");
+        body.put("imei", imei != null ? imei : "EasyTrade");
+
+        JSONObject response = blockObject(baseUrl, "/api/profitmart/login", body);
+        log.info("Profitmart credentials login response | userId={} | stat={}", userId, response.optString("stat"));
+        return response;
+    }
+
     // ─── LOGOUT ──────────────────────────────────────────────────────────────
     public JSONObject logout(String baseUrl, String userId, String susertoken) {
         log.info("Profitmart logout | baseUrl={} userId={}", baseUrl, userId);

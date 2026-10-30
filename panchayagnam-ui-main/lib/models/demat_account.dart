@@ -21,6 +21,10 @@ class DematAccount {
   final String? apiSecretKey;
   final String? vendorInfo;
   final bool? tokenUpdated;
+  // ── Connection Status ─────────────────────────────────────────────────────
+  final String? lastLoginStatus;
+  final String? lastLoginError;
+  final String? lastLoginAttempt;
 
   DematAccount({
     required this.id,
@@ -40,6 +44,9 @@ class DematAccount {
     required this.assignedTo,
     required this.ip,
     required this.tokenUpdated,
+    this.lastLoginStatus,
+    this.lastLoginError,
+    this.lastLoginAttempt,
     this.dob,
     this.childIds,
     this.apiSecretKey,
@@ -63,6 +70,9 @@ class DematAccount {
     password: json['password'] ?? '',
     assignedTo: json['assignedTo'] ?? '',
     ip: json['ip'] ?? '',
+    lastLoginStatus: json['lastLoginStatus'],
+    lastLoginError: json['lastLoginError'],
+    lastLoginAttempt: json['lastLoginAttempt']?.toString(),
     // dob comes back as "dob" for AngelOne, "twoFa" for Motilal
     dob: json['dob'] ?? json['twoFa'],
     childIds: json['childIds'] != null
@@ -73,6 +83,10 @@ class DematAccount {
     vendorInfo: json['vendorInfo'],
     tokenUpdated: json['tokenUpdated'],
   );
+
+  /// Real connection verification: Active and authenticated by broker API
+  bool get isConnected => active && (lastLoginStatus == 'SUCCESS' || lastLoginStatus == null && active);
+  bool get isAuthFailed => active && lastLoginStatus == 'FAILED';
 
   /// Convenience getter so callers don't need to know the broker
   bool get isMotilal => brokerType.toUpperCase().contains('MOTILAL');

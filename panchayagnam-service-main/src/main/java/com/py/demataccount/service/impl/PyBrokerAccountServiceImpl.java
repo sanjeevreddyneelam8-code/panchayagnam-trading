@@ -55,6 +55,9 @@ import com.py.utils.AngelOneMicroserviceClient;
 import com.py.utils.DhanMicroserviceClient;
 import com.py.utils.MotilalMicroserviceClient;
 import com.py.utils.ProfitmartMicroserviceClient;
+import com.py.utils.ZerodhaMicroserviceClient;
+import com.py.utils.UpstoxMicroserviceClient;
+import com.py.utils.GoodwillMicroserviceClient;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -134,6 +137,15 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
     private ProfitmartMicroserviceClient profitmartClient;
 
     @Autowired
+    private ZerodhaMicroserviceClient zerodhaClient;
+
+    @Autowired
+    private UpstoxMicroserviceClient upstoxClient;
+
+    @Autowired
+    private GoodwillMicroserviceClient goodwillClient;
+
+    @Autowired
     private PyBrokerIpConfigRepository pyBrokerIpConfigRepository;
 
     @Autowired
@@ -151,13 +163,22 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
     @Autowired
     private com.py.trading.service.PaperTradingService paperTradingService;
 
+    @Autowired
+    private com.py.trading.service.PaperTradingEngine paperTradingEngine;
+
     // ── ADD / UPDATE / DELETE ────────────────────────────────────────────────
     @Override
     public ApiResponse<?> dematAccountOperations(DematAccountAddRequest request, AccountActionType actionType) throws SmartAPIException, IOException {
         try {
-            ApiResponse<?> validationResult = pyCommonUtil.validateAccountRequest(request);
-            if (!"SUCCESS".equals(validationResult.getStatus())) {
-                return validationResult;
+            if (actionType == AccountActionType.DELETE) {
+                if (request == null || StringUtils.isBlank(request.getClientId())) {
+                    return ApiResponse.error(400, "Client ID is required for deleting an account");
+                }
+            } else {
+                ApiResponse<?> validationResult = pyCommonUtil.validateAccountRequest(request);
+                if (!"SUCCESS".equals(validationResult.getStatus())) {
+                    return validationResult;
+                }
             }
             PyUser pyUser = pyUserRepository.findById(request.getPyUserId())
                     .orElseThrow(() -> new RuntimeException("User not found with pyId: " + request.getPyUserId()));
@@ -165,6 +186,7 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
             return switch (actionType) {
                 case ADD    -> brokerAccountOperationService.addAccount(request, pyUser);
                 case UPDATE -> brokerAccountOperationService.updateAccount(request);
+                case DELETE -> brokerAccountOperationService.deleteAccount(request.getClientId(), pyUser.getId());
                 default     -> ApiResponse.error(400, "Invalid action type: " + actionType);
             };
 
@@ -257,6 +279,9 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         dto.setCreatedDate(account.getCreatedAt());
         dto.setAssignedTo(account.getPyUser().getFullName());
         dto.setIsOwnAccount(account.getIsOwn());
+        dto.setLastLoginStatus(account.getLastLoginStatus());
+        dto.setLastLoginError(account.getLastLoginError());
+        dto.setLastLoginAttempt(account.getLastLoginAttempt());
         dto.setIp((account.getBrokerRegisteredIp() != null
                 && !account.getBrokerRegisteredIp().isEmpty())
                 ? account.getBrokerRegisteredIp().split(":")[0] : "");
@@ -316,12 +341,70 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 case MOTILAL    -> getMotilalRMS(account);
                 case DHAN       -> getDhanRMS(account);
                 case PROFITMART -> getProfitmartRMS(account);
-                case UPSTOX     -> new JSONObject();
+                case UPSTOX     -> getUpstoxRMS(account);
+                case ZERODHA    -> getZerodhaRMS(account);
+                case GOODWILL   -> getGoodwillRMS(account);
                 default         -> new JSONObject();
             };
         } catch (Exception e) {
             log.error("RMS fetch failed for clientId={}: {}",
                     account.getClientId(), e.getMessage(), e);
+            return new JSONObject();
+        }
+    }
+
+    private JSONObject getUpstoxRMS(PyBrokerAccountEntity account) {
+        try {
+            String accessToken = pyTokenValidationService.getValidAccessToken(account.getId());
+            if (accessToken == null) {
+                log.error("Upstox RMS skipped — token unavailable for clientId={}", account.getClientId());
+                return new JSONObject();
+            }
+            JSONObject result = upstoxClient.getFunds(
+                    getBaseUrl(account),
+                    account.getClientId(),
+                    accessToken).get();
+            return result != null ? result : new JSONObject();
+        } catch (Exception e) {
+            log.error("Upstox RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
+            return new JSONObject();
+        }
+    }
+
+    private JSONObject getZerodhaRMS(PyBrokerAccountEntity account) {
+        try {
+            String accessToken = pyTokenValidationService.getValidAccessToken(account.getId());
+            if (accessToken == null) {
+                log.error("Zerodha RMS skipped — token unavailable for clientId={}", account.getClientId());
+                return new JSONObject();
+            }
+            String apiKey = account.getSecret() != null ? account.getSecret().getApiKey() : "";
+            JSONObject result = zerodhaClient.getRms(
+                    getBaseUrl(account),
+                    account.getClientId(),
+                    apiKey,
+                    accessToken).get();
+            return result != null ? result : new JSONObject();
+        } catch (Exception e) {
+            log.error("Zerodha RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
+            return new JSONObject();
+        }
+    }
+
+    private JSONObject getGoodwillRMS(PyBrokerAccountEntity account) {
+        try {
+            String accessToken = pyTokenValidationService.getValidAccessToken(account.getId());
+            if (accessToken == null) {
+                log.error("Goodwill RMS skipped — token unavailable for clientId={}", account.getClientId());
+                return new JSONObject();
+            }
+            JSONObject result = goodwillClient.getLimits(
+                    getBaseUrl(account),
+                    account.getClientId(),
+                    accessToken).get();
+            return result != null ? result : new JSONObject();
+        } catch (Exception e) {
+            log.error("Goodwill RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
             return new JSONObject();
         }
     }
@@ -407,13 +490,34 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
     private JSONObject loginAndGetTokens(DematAccountAddRequest request)
             throws IOException, SmartAPIException {
         return switch (request.getBrokerType()) {
-            case ANGELONE -> loginAngelOne(request);
-            case MOTILAL  -> loginMotilal(request);
-            case DHAN     -> loginDhan(request);
-            case UPSTOX   -> loginUpstox(request);
-            default       -> throw new IllegalArgumentException(
+            case ANGELONE   -> loginAngelOne(request);
+            case MOTILAL    -> loginMotilal(request);
+            case DHAN       -> loginDhan(request);
+            case UPSTOX     -> loginUpstox(request);
+            case ZERODHA    -> loginZerodha(request);
+            case GOODWILL   -> loginGoodwill(request);
+            case PROFITMART -> new JSONObject();
+            default         -> throw new IllegalArgumentException(
                     "Unsupported broker: " + request.getBrokerType());
         };
+    }
+
+    private JSONObject loginZerodha(DematAccountAddRequest request) {
+        PyBrokerIpConfigEntity ipConfig = pyBrokerIpConfigRepository
+                .findByIpAddress(request.getIp().split(":")[0])
+                .orElseThrow(() -> new RuntimeException("IP not found in DB: " + request.getIp()));
+        String baseUrl = "http://" + ipConfig.getIpAddress() + ":" + ipConfig.getPortNo();
+        log.info("Zerodha login via microservice | baseUrl={} clientId={}", baseUrl, request.getClientId());
+        return zerodhaClient.login(baseUrl, request.getClientId(), request.getApiKey(), request.getApiSecretKey(), request.getTwoFa());
+    }
+
+    private JSONObject loginGoodwill(DematAccountAddRequest request) {
+        PyBrokerIpConfigEntity ipConfig = pyBrokerIpConfigRepository
+                .findByIpAddress(request.getIp().split(":")[0])
+                .orElseThrow(() -> new RuntimeException("IP not found in DB: " + request.getIp()));
+        String baseUrl = "http://" + ipConfig.getIpAddress() + ":" + ipConfig.getPortNo();
+        log.info("Goodwill login via microservice | baseUrl={} clientId={}", baseUrl, request.getClientId());
+        return goodwillClient.login(baseUrl, request.getClientId(), request.getApiKey(), request.getApiSecretKey(), request.getMpin());
     }
 
     private JSONObject loginUpstox(DematAccountAddRequest request) {
@@ -601,21 +705,15 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         audit.setBrokerType(dematAccount.getBrokerType());
         audit.setSymbolToken(request.getSymbolToken());
 
-        // ── PAPER TRADING GUARD ──────────────────────────────────────────
+        // ── PAPER TRADING ENGINE ─────────────────────────────────────────
         if (paperTradingService.isPaperTradingEnabled()) {
-            log.warn("🛡️ [PAPER TRADING - SIMULATED ORDER] Intercepted individual order for clientId={} symbol={} side={}",
+            log.info("🛡️ Routing order to PaperTradingEngine | clientId={} symbol={} side={}",
                     dematAccount.getClientId(), request.getTradingSymbol(), transactionType);
-            String simOrderId = paperTradingService.generateSimulatedOrderId(dematAccount.getBrokerType());
-            Order order = new Order();
-            order.orderId = simOrderId;
-            order.uniqueOrderId = simOrderId;
-            audit.setStatus("SUCCESS");
-            audit.setOrderId(simOrderId);
-            audit.setUniqueOrderId(simOrderId);
-            audit.setRemarks("[PAPER TRADING - SIMULATED ORDER]");
-            individualOrderAuditRepository.save(audit);
-            return order;
+            return paperTradingEngine.executePaperOrder(dematAccount, request, transactionType);
         }
+
+        // ── LIVE TRADING SAFEGUARD ───────────────────────────────────────
+        paperTradingService.validateLiveOrderAllowed();
 
         try {
             PyBrokerSecret secret = dematAccount.getSecret();
@@ -785,8 +883,69 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
 
             // ── UPSTOX ────────────────────────────────────────────────────────
             if (dematAccount.getBrokerType().equals(BrokerType.UPSTOX)) {
-                throw new RuntimeException("Upstox order placement is not yet implemented for clientId: "
-                        + dematAccount.getClientId());
+                Map<String, Object> orderPayload = new HashMap<>();
+                orderPayload.put("clientId", dematAccount.getClientId());
+                orderPayload.put("accessToken", accessToken);
+                orderPayload.put("quantity", request.getQuantity());
+                orderPayload.put("product", request.getProductType() != null ? request.getProductType() : "D");
+                orderPayload.put("validity", "DAY");
+                orderPayload.put("price", request.getPrice() != null ? request.getPrice() : 0.0);
+                orderPayload.put("tag", "panchayagnam");
+                orderPayload.put("instrumentToken", request.getSymbolToken() != null ? request.getSymbolToken() : request.getTradingSymbol());
+                orderPayload.put("orderType", request.getOrderType() != null ? request.getOrderType() : "MARKET");
+                orderPayload.put("transactionType", transactionType);
+                orderPayload.put("disclosedQuantity", 0);
+                orderPayload.put("triggerPrice", 0.0);
+                orderPayload.put("isAmo", "Y".equals(request.getAmo()));
+
+                JSONObject response = upstoxClient.placeOrder(getBaseUrl(dematAccount), orderPayload).get();
+                order.orderId = response.optString("orderId", "");
+                order.uniqueOrderId = response.optString("orderId", "");
+            }
+
+            // ── ZERODHA ───────────────────────────────────────────────────────
+            if (dematAccount.getBrokerType().equals(BrokerType.ZERODHA)) {
+                Map<String, Object> orderPayload = new HashMap<>();
+                orderPayload.put("clientId", dematAccount.getClientId());
+                orderPayload.put("apiKey", secret.getApiKey());
+                orderPayload.put("accessToken", accessToken);
+                orderPayload.put("tradingsymbol", request.getTradingSymbol());
+                orderPayload.put("exchange", request.getExchange());
+                orderPayload.put("transactionType", transactionType);
+                orderPayload.put("orderType", request.getOrderType() != null ? request.getOrderType() : "MARKET");
+                orderPayload.put("quantity", request.getQuantity());
+                orderPayload.put("product", request.getProductType() != null ? request.getProductType() : "CNC");
+                orderPayload.put("price", request.getPrice() != null ? request.getPrice() : 0.0);
+                orderPayload.put("triggerPrice", 0.0);
+                orderPayload.put("validity", "DAY");
+                orderPayload.put("disclosedQuantity", 0);
+                orderPayload.put("tag", "panchayagnam");
+
+                JSONObject response = zerodhaClient.placeOrder(getBaseUrl(dematAccount), orderPayload).get();
+                order.orderId = response.optString("orderId", "");
+                order.uniqueOrderId = response.optString("orderId", "");
+            }
+
+            // ── GOODWILL ──────────────────────────────────────────────────────
+            if (dematAccount.getBrokerType().equals(BrokerType.GOODWILL)) {
+                Map<String, Object> orderPayload = new HashMap<>();
+                orderPayload.put("clientId", dematAccount.getClientId());
+                orderPayload.put("accessToken", accessToken);
+                orderPayload.put("exchangeSegment", request.getExchange() != null ? request.getExchange() : "NSE");
+                orderPayload.put("exchangeInstrumentId", request.getSymbolToken() != null ? request.getSymbolToken() : "");
+                orderPayload.put("productType", request.getProductType() != null ? request.getProductType() : "CNC");
+                orderPayload.put("orderType", request.getOrderType() != null ? request.getOrderType() : "MARKET");
+                orderPayload.put("orderSide", transactionType);
+                orderPayload.put("timeInForce", "DAY");
+                orderPayload.put("disclosedQuantity", 0);
+                orderPayload.put("orderQuantity", request.getQuantity());
+                orderPayload.put("limitPrice", request.getPrice() != null ? request.getPrice() : 0.0);
+                orderPayload.put("stopPrice", 0.0);
+                orderPayload.put("orderUniqueIdentifier", "PANCHAYAGNAM_" + System.currentTimeMillis());
+
+                JSONObject response = goodwillClient.placeOrder(getBaseUrl(dematAccount), orderPayload).get();
+                order.orderId = response.optString("orderId", "");
+                order.uniqueOrderId = response.optString("orderId", "");
             }
 
             audit.setStatus("SUCCESS");
@@ -841,6 +1000,11 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         if (!dematAccount.getActive()) {
             throw new DeActivatedAccountException(
                     "Live Feed can't be run for deactivated accounts: " + accId);
+        }
+
+        // ── PAPER TRADING ORDER HISTORY ──────────────────────────────
+        if (paperTradingService.isPaperTradingEnabled()) {
+            return getPaperOrderHistory(accId, dematAccount);
         }
 
         return switch (dematAccount.getBrokerType()) {
@@ -910,11 +1074,98 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 }
             }
 
-            case UPSTOX -> throw new RuntimeException(
-                    "Upstox order history not yet implemented for clientId: " + dematAccount.getClientId());
+            case UPSTOX -> {
+                try {
+                    String accessToken = pyTokenValidationService.getValidAccessToken(accId);
+                    if (accessToken == null) throw new RuntimeException(
+                            "Token unavailable for clientId: " + dematAccount.getClientId());
+                    JSONObject result = upstoxClient.getOrderHistory(
+                            getBaseUrl(dematAccount),
+                            dematAccount.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : buildOrderResponse(new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Upstox order history: " + e.getMessage(), e);
+                }
+            }
+
+            case ZERODHA -> {
+                try {
+                    String accessToken = pyTokenValidationService.getValidAccessToken(accId);
+                    if (accessToken == null) throw new RuntimeException(
+                            "Token unavailable for clientId: " + dematAccount.getClientId());
+                    String apiKey = dematAccount.getSecret() != null ? dematAccount.getSecret().getApiKey() : "";
+                    JSONObject result = zerodhaClient.getOrderHistory(
+                            getBaseUrl(dematAccount),
+                            dematAccount.getClientId(),
+                            apiKey,
+                            accessToken).get();
+                    yield result != null ? result : buildOrderResponse(new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Zerodha order history: " + e.getMessage(), e);
+                }
+            }
+
+            case GOODWILL -> {
+                try {
+                    String accessToken = pyTokenValidationService.getValidAccessToken(accId);
+                    if (accessToken == null) throw new RuntimeException(
+                            "Token unavailable for clientId: " + dematAccount.getClientId());
+                    JSONObject result = goodwillClient.getOrderHistory(
+                            getBaseUrl(dematAccount),
+                            dematAccount.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : buildOrderResponse(new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Goodwill order history: " + e.getMessage(), e);
+                }
+            }
 
             default -> new JSONObject();
         };
+    }
+
+    private JSONObject getPaperOrderHistory(Long accId, PyBrokerAccountEntity dematAccount) {
+        List<IndividualOrderAuditEntity> audits =
+                individualOrderAuditRepository.findByDematAccountIdOrderByExecutedAtDesc(accId);
+
+        JSONArray normalized = new JSONArray();
+        for (IndividualOrderAuditEntity a : audits) {
+            String status = "SUCCESS".equalsIgnoreCase(a.getStatus()) ? "complete" : "rejected";
+            int qty = a.getQuantity() != null ? a.getQuantity() : 0;
+            int filled = "complete".equals(status) ? qty : 0;
+            double p = a.getPrice() != null ? a.getPrice() : 0.0;
+            String time = a.getExecutedAt() != null ? a.getExecutedAt().toString() : "";
+
+            JSONObject obj = buildUnifiedOrder(
+                    a.getVariety() != null ? a.getVariety() : "NORMAL",
+                    a.getOrderType() != null ? a.getOrderType() : "LIMIT",
+                    a.getProductType() != null ? a.getProductType() : "DELIVERY",
+                    "DAY",
+                    p,
+                    0.0,
+                    qty,
+                    0,
+                    a.getTradingSymbol() != null ? a.getTradingSymbol() : "",
+                    a.getTransactionType() != null ? a.getTransactionType() : "BUY",
+                    a.getExchange() != null ? a.getExchange() : "NSE",
+                    a.getSymbolToken() != null ? a.getSymbolToken() : "",
+                    p,
+                    filled,
+                    qty - filled,
+                    a.getOrderId() != null ? a.getOrderId() : "",
+                    a.getUniqueOrderId() != null ? a.getUniqueOrderId() : "",
+                    a.getOrderId() != null ? a.getOrderId() : "",
+                    status,
+                    time,
+                    time,
+                    a.getRemarks() != null ? a.getRemarks() : "[PAPER TRADING - SIMULATED ORDER]",
+                    dematAccount.getBrokerType() != null ? dematAccount.getBrokerType().name() : "SIMULATED"
+            );
+            obj.put("isSimulated", true);
+            normalized.put(obj);
+        }
+        return buildOrderResponse(normalized);
     }
 
     // ── NORMALIZE ORDERS ──────────────────────────────────────────────────────
@@ -1291,6 +1542,32 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 .findById(accId)
                 .orElseThrow(() -> new RuntimeException("Account not found: " + accId));
 
+        if (paperTradingService.isPaperTradingEnabled()) {
+            List<com.py.trading.entity.PaperPositionEntity> paperPositions = paperTradingEngine.getPositions(accId);
+            JSONObject response = new JSONObject();
+            response.put("status", true);
+            response.put("message", "SUCCESS");
+            JSONArray data = new JSONArray();
+            for (com.py.trading.entity.PaperPositionEntity pos : paperPositions) {
+                JSONObject p = new JSONObject();
+                p.put("tradingsymbol", pos.getTradingSymbol());
+                p.put("symboltoken", pos.getSymbolToken());
+                p.put("exchange", pos.getExchange());
+                p.put("producttype", pos.getProductType());
+                p.put("netqty", pos.getQuantity());
+                p.put("buyavgprice", pos.getAverageBuyPrice());
+                p.put("sellavgprice", 0.0);
+                p.put("realised", pos.getRealizedPnl());
+                double ltp = pos.getLastSimulatedPrice() != null ? pos.getLastSimulatedPrice() : pos.getAverageBuyPrice();
+                double unrealised = (ltp - pos.getAverageBuyPrice()) * (pos.getQuantity() != null ? pos.getQuantity() : 0);
+                p.put("unrealised", unrealised);
+                p.put("ltp", ltp);
+                data.put(p);
+            }
+            response.put("data", data);
+            return response;
+        }
+
         String accessToken = pyTokenValidationService.getValidAccessToken(accId);
         if (accessToken == null) throw new RuntimeException(
                 "Token unavailable for clientId: " + account.getClientId());
@@ -1316,6 +1593,56 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                     yield response;
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to fetch Profitmart positions: " + e.getMessage(), e);
+                }
+            }
+
+            case DHAN -> {
+                try {
+                    JSONObject result = dhanClient.getPositions(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Dhan positions: " + e.getMessage(), e);
+                }
+            }
+
+            case ZERODHA -> {
+                try {
+                    String apiKey = account.getSecret() != null ? account.getSecret().getApiKey() : "";
+                    JSONObject result = zerodhaClient.getPositions(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            apiKey,
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Zerodha positions: " + e.getMessage(), e);
+                }
+            }
+
+            case UPSTOX -> {
+                try {
+                    JSONObject result = upstoxClient.getPositions(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Upstox positions: " + e.getMessage(), e);
+                }
+            }
+
+            case GOODWILL -> {
+                try {
+                    JSONObject result = goodwillClient.getPositions(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Goodwill positions: " + e.getMessage(), e);
                 }
             }
 
@@ -1348,6 +1675,83 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         audit.setSymbolToken(request.getSymbolToken());
         audit.setExecutedAt(LocalDateTime.now());
         audit.setBrokerType(dematAccount.getBrokerType());
+        audit.setOrderId(request.getOrderId());
+
+        // ── PAPER TRADING ENGINE / SIMULATED ORDER CHECK ──────────────────
+        boolean isSimulatedOrder = (request.getOrderId() != null && request.getOrderId().startsWith("PAPER-SIM-"));
+        if (paperTradingService.isPaperTradingEnabled() || isSimulatedOrder) {
+            String targetOrderId = request.getOrderId();
+            if (targetOrderId == null || targetOrderId.trim().isEmpty()) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Order ID is required to modify an order");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalArgumentException("Order ID is required to modify an order");
+            }
+
+            Optional<IndividualOrderAuditEntity> origOpt = individualOrderAuditRepository
+                    .findFirstByOrderIdOrderByExecutedAtDesc(targetOrderId);
+            if (origOpt.isEmpty()) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Simulated order not found: " + targetOrderId);
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalArgumentException("Simulated order not found: " + targetOrderId);
+            }
+
+            IndividualOrderAuditEntity origOrder = origOpt.get();
+            if (!dematAccount.getId().equals(origOrder.getDematAccountId())) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Order does not belong to demat account: " + dematAccount.getId());
+                individualOrderAuditRepository.save(audit);
+                throw new SecurityException("Order " + targetOrderId + " does not belong to demat account " + dematAccount.getId());
+            }
+
+            String status = origOrder.getStatus() != null ? origOrder.getStatus().toUpperCase() : "";
+            if ("SUCCESS".equals(status) || "COMPLETE".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot modify simulated order: order is already executed / filled");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot modify order " + targetOrderId + ": simulated order is already executed / filled");
+            }
+            if ("CANCELLED".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot modify simulated order: order is already cancelled");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot modify order " + targetOrderId + ": simulated order is already cancelled");
+            }
+            if ("FAILED".equals(status) || "REJECTED".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot modify simulated order: order is in terminal state (" + status + ")");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot modify order " + targetOrderId + ": simulated order is in terminal state (" + status + ")");
+            }
+
+            if ("OPEN".equals(status) || "PENDING".equals(status)) {
+                if (request.getPrice() != null && request.getPrice() > 0) {
+                    origOrder.setPrice(request.getPrice());
+                }
+                if (request.getQuantity() != null && request.getQuantity() > 0) {
+                    origOrder.setQuantity(request.getQuantity());
+                }
+                origOrder.setRemarks("SIMULATED MODIFY - Updated at " + LocalDateTime.now());
+                individualOrderAuditRepository.save(origOrder);
+
+                audit.setStatus("SUCCESS");
+                audit.setRemarks("SIMULATED ORDER MODIFIED");
+                individualOrderAuditRepository.save(audit);
+
+                Order o = new Order();
+                o.orderId = targetOrderId;
+                return o;
+            }
+
+            audit.setStatus("FAILED");
+            audit.setRemarks("Cannot modify simulated order with status: " + status);
+            individualOrderAuditRepository.save(audit);
+            throw new IllegalStateException("Cannot modify order " + targetOrderId + " with status: " + status);
+        }
+
+        // ── LIVE TRADING SAFEGUARD ───────────────────────────────────────
+        paperTradingService.validateLiveOrderAllowed();
 
         try {
             PyBrokerSecret secret = dematAccount.getSecret();
@@ -1544,6 +1948,69 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                     yield o4;
                 }
 
+                case UPSTOX -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("accessToken", accessToken);
+                    payload.put("orderId", request.getOrderId());
+                    payload.put("quantity", request.getQuantity());
+                    payload.put("price", request.getPrice());
+                    payload.put("orderType", request.getOrderType());
+                    payload.put("triggerPrice", request.getTriggerPrice());
+                    payload.put("validity", request.getDuration() != null ? request.getDuration() : "DAY");
+                    JSONObject response = upstoxClient.modifyOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("MODIFIED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
+                }
+
+                case ZERODHA -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("apiKey", secret.getApiKey());
+                    payload.put("accessToken", accessToken);
+                    payload.put("orderId", request.getOrderId());
+                    payload.put("quantity", request.getQuantity());
+                    payload.put("price", request.getPrice());
+                    payload.put("orderType", request.getOrderType());
+                    payload.put("triggerPrice", request.getTriggerPrice());
+                    payload.put("validity", request.getDuration() != null ? request.getDuration() : "DAY");
+                    JSONObject response = zerodhaClient.modifyOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("MODIFIED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
+                }
+
+                case GOODWILL -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("accessToken", accessToken);
+                    payload.put("appOrderId", request.getOrderId());
+                    payload.put("orderQuantity", request.getQuantity());
+                    payload.put("limitPrice", request.getPrice());
+                    payload.put("orderType", request.getOrderType());
+                    payload.put("stopPrice", request.getTriggerPrice());
+                    JSONObject response = goodwillClient.modifyOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("MODIFIED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
+                }
+
                 default -> {
                     audit.setStatus("FAILED");
                     audit.setRemarks("Broker not supported: " + dematAccount.getBrokerType());
@@ -1582,6 +2049,78 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         audit.setVariety(request.getVariety() != null ? request.getVariety() : "NORMAL");
         audit.setExecutedAt(LocalDateTime.now());
         audit.setBrokerType(dematAccount.getBrokerType());
+        audit.setOrderId(request.getOrderId());
+
+        // ── PAPER TRADING ENGINE / SIMULATED ORDER CHECK ──────────────────
+        boolean isSimulatedOrder = (request.getOrderId() != null && request.getOrderId().startsWith("PAPER-SIM-"));
+        if (paperTradingService.isPaperTradingEnabled() || isSimulatedOrder) {
+            String targetOrderId = request.getOrderId();
+            if (targetOrderId == null || targetOrderId.trim().isEmpty()) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Order ID is required to cancel an order");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalArgumentException("Order ID is required to cancel an order");
+            }
+
+            Optional<IndividualOrderAuditEntity> origOpt = individualOrderAuditRepository
+                    .findFirstByOrderIdOrderByExecutedAtDesc(targetOrderId);
+            if (origOpt.isEmpty()) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Simulated order not found: " + targetOrderId);
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalArgumentException("Simulated order not found: " + targetOrderId);
+            }
+
+            IndividualOrderAuditEntity origOrder = origOpt.get();
+            if (!dematAccount.getId().equals(origOrder.getDematAccountId())) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Order does not belong to demat account: " + dematAccount.getId());
+                individualOrderAuditRepository.save(audit);
+                throw new SecurityException("Order " + targetOrderId + " does not belong to demat account " + dematAccount.getId());
+            }
+
+            String status = origOrder.getStatus() != null ? origOrder.getStatus().toUpperCase() : "";
+            if ("SUCCESS".equals(status) || "COMPLETE".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot cancel simulated order: order is already executed / filled");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot cancel order " + targetOrderId + ": simulated order is already executed / filled");
+            }
+            if ("CANCELLED".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot cancel simulated order: order is already cancelled");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot cancel order " + targetOrderId + ": simulated order is already cancelled");
+            }
+            if ("FAILED".equals(status) || "REJECTED".equals(status)) {
+                audit.setStatus("FAILED");
+                audit.setRemarks("Cannot cancel simulated order: order is in terminal state (" + status + ")");
+                individualOrderAuditRepository.save(audit);
+                throw new IllegalStateException("Cannot cancel order " + targetOrderId + ": simulated order is in terminal state (" + status + ")");
+            }
+
+            if ("OPEN".equals(status) || "PENDING".equals(status)) {
+                origOrder.setStatus("CANCELLED");
+                origOrder.setRemarks("SIMULATED CANCEL - Cancelled by user at " + LocalDateTime.now());
+                individualOrderAuditRepository.save(origOrder);
+
+                audit.setStatus("SUCCESS");
+                audit.setRemarks("SIMULATED ORDER CANCELLED");
+                individualOrderAuditRepository.save(audit);
+
+                Order o = new Order();
+                o.orderId = targetOrderId;
+                return o;
+            }
+
+            audit.setStatus("FAILED");
+            audit.setRemarks("Cannot cancel simulated order with status: " + status);
+            individualOrderAuditRepository.save(audit);
+            throw new IllegalStateException("Cannot cancel order " + targetOrderId + " with status: " + status);
+        }
+
+        // ── LIVE TRADING SAFEGUARD ───────────────────────────────────────
+        paperTradingService.validateLiveOrderAllowed();
 
         try {
             PyBrokerSecret secret = dematAccount.getSecret();
@@ -1697,6 +2236,55 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                     Order o4 = new Order();
                     o4.orderId = orderNo;
                     yield o4;
+                }
+
+                case UPSTOX -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("accessToken", accessToken);
+                    payload.put("orderId", request.getOrderId());
+                    JSONObject response = upstoxClient.cancelOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("CANCELLED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
+                }
+
+                case ZERODHA -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("apiKey", secret.getApiKey());
+                    payload.put("accessToken", accessToken);
+                    payload.put("orderId", request.getOrderId());
+                    JSONObject response = zerodhaClient.cancelOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("CANCELLED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
+                }
+
+                case GOODWILL -> {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("clientId", dematAccount.getClientId());
+                    payload.put("accessToken", accessToken);
+                    payload.put("appOrderId", request.getOrderId());
+                    JSONObject response = goodwillClient.cancelOrder(getBaseUrl(dematAccount), payload).get();
+                    String orderId = response.optString("orderId", request.getOrderId());
+                    audit.setStatus("SUCCESS");
+                    audit.setOrderId(orderId);
+                    audit.setRemarks("CANCELLED");
+                    individualOrderAuditRepository.save(audit);
+                    Order o = new Order();
+                    o.orderId = orderId;
+                    yield o;
                 }
 
                 default -> throw new RuntimeException(
@@ -1896,6 +2484,35 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 rms.setAvailableFno(       parseDouble(rmsData.optString("turnoverlmt", "0")));
             }
 
+            case ZERODHA -> {
+                rms.setAvailableCash(Double.valueOf(rmsData.optString("availablecash", "0")));
+                JSONObject data = rmsData.optJSONObject("data");
+                if (data != null) {
+                    JSONObject equity = data.optJSONObject("equity");
+                    if (equity != null) {
+                        rms.setCollateral(equity.optDouble("collateral", 0.0));
+                        rms.setUtilizedAmount(equity.optDouble("utilised", 0.0));
+                        rms.setWithdrawableBalance(equity.optDouble("net", 0.0));
+                    }
+                }
+            }
+
+            case UPSTOX -> {
+                rms.setAvailableCash(Double.valueOf(rmsData.optString("availablecash", "0")));
+                JSONObject data = rmsData.optJSONObject("data");
+                if (data != null) {
+                    JSONObject equity = data.optJSONObject("equity");
+                    if (equity != null) {
+                        rms.setUtilizedAmount(equity.optDouble("used_margin", 0.0));
+                        rms.setWithdrawableBalance(equity.optDouble("payin_amount", 0.0));
+                    }
+                }
+            }
+
+            case GOODWILL -> {
+                rms.setAvailableCash(Double.valueOf(rmsData.optString("availablecash", "0")));
+            }
+
             default -> log.warn("RMS mapping not implemented for broker={}", brokerType);
         }
 
@@ -1909,6 +2526,12 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         PyBrokerAccountEntity account = pyBrokerAccountRepository
                 .findById(accId)
                 .orElseThrow(() -> new RuntimeException("Account not found: " + accId));
+
+        if (paperTradingService.isPaperTradingEnabled()) {
+            throw new UnsupportedOperationException("Position conversion is not supported in paper trading mode.");
+        }
+
+        paperTradingService.validateLiveOrderAllowed();
 
         String accessToken = pyTokenValidationService.getValidAccessToken(accId);
         if (accessToken == null) throw new RuntimeException(
