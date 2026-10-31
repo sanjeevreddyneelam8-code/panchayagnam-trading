@@ -166,6 +166,9 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
     @Autowired
     private com.py.trading.service.PaperTradingEngine paperTradingEngine;
 
+    @Autowired(required = false)
+    private com.py.trading.repository.PaperAccountBalanceRepository paperBalanceRepository;
+
     // ── ADD / UPDATE / DELETE ────────────────────────────────────────────────
     @Override
     public ApiResponse<?> dematAccountOperations(DematAccountAddRequest request, AccountActionType actionType) throws SmartAPIException, IOException {
@@ -335,6 +338,26 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
 
     // ── RMS ──────────────────────────────────────────────────────────────────
     public JSONObject getRMS(PyBrokerAccountEntity account) {
+        if (paperTradingService != null && paperTradingService.isPaperTradingEnabled()) {
+            double balance = 1000000.0;
+            try {
+                if (paperBalanceRepository != null && account.getPyUser() != null) {
+                    balance = paperBalanceRepository.findByPyUserIdAndDematAccountId(account.getPyUser().getId(), account.getId())
+                            .map(b -> b.getVirtualCashBalance() != null ? b.getVirtualCashBalance() : 1000000.0)
+                            .orElse(1000000.0);
+                }
+            } catch (Exception ex) {
+                log.warn("Could not fetch paper balance from repo for account {}, defaulting to 1000000", account.getId());
+            }
+            JSONObject paperRms = new JSONObject();
+            paperRms.put("availableCash", balance);
+            paperRms.put("net", balance);
+            paperRms.put("collateral", 0.0);
+            paperRms.put("m2mUnrealized", 0.0);
+            paperRms.put("m2mRealized", 0.0);
+            return paperRms;
+        }
+
         try {
             return switch (account.getBrokerType()) {
                 case ANGELONE   -> getAngelOneRMS(account);

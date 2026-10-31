@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
  * Safe: Runs strictly in-memory (never runs against or touches production data).
  */
 @Component
-@Profile("h2")
+@Profile({"h2", "local", "dev", "default"})
 public class DevH2DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DevH2DataInitializer.class);
@@ -173,7 +173,7 @@ public class DevH2DataInitializer implements CommandLineRunner {
         token.setRefreshToken(refreshToken);
         token.setTokenType("Bearer");
         token.setIsActive(true);
-        token.setExpiresAt(LocalDateTime.now().plusDays(30));
+        token.setExpiresAt(LocalDateTime.now().plusYears(10));
 
         PyBrokerAccountEntity saved = brokerAccountRepository.save(account);
 

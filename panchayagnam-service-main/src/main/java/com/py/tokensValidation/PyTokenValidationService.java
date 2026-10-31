@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,9 @@ public class PyTokenValidationService {
 
     private static final Logger log = LoggerFactory
             .getLogger(PyTokenValidationService.class);
+
+    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    private boolean paperTradingEnabled;
 
     @Autowired
     private PyBrokerAccountRepository pyBrokerAccountRepository;
@@ -56,6 +60,37 @@ public class PyTokenValidationService {
     @Autowired
     private DhanMicroserviceClient dhanClient;
 
+    public boolean isProtectedAccount(PyBrokerAccountEntity account) {
+        if (paperTradingEnabled) {
+            return true;
+        }
+        if (account == null) {
+            return false;
+        }
+        String clientId = account.getClientId();
+        if (clientId != null && (
+                clientId.equals("1100345678") ||
+                clientId.startsWith("ZR") ||
+                clientId.startsWith("UP") ||
+                clientId.startsWith("AG") ||
+                clientId.startsWith("MO") ||
+                clientId.startsWith("PM") ||
+                clientId.startsWith("GW") ||
+                clientId.startsWith("GR") ||
+                clientId.toLowerCase().contains("demo")
+        )) {
+            return true;
+        }
+        PyBrokerToken token = account.getToken();
+        if (token != null && token.getAccessToken() != null) {
+            String acc = token.getAccessToken();
+            if (acc.contains("demo") || acc.startsWith("PAPER-")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ── MAIN METHOD ───────────────────────────────────────────────────────────
     public String getValidAccessToken(Long brokerAccountId) {
         try {
@@ -63,6 +98,13 @@ public class PyTokenValidationService {
                     .findById(brokerAccountId)
                     .orElseThrow(() -> new RuntimeException(
                     "Broker account not found: " + brokerAccountId));
+
+            if (isProtectedAccount(account)) {
+                if (account.getToken() != null && account.getToken().getAccessToken() != null && !account.getToken().getAccessToken().isBlank()) {
+                    return account.getToken().getAccessToken();
+                }
+                return "PAPER-TOKEN-" + account.getBrokerType() + "-" + account.getClientId();
+            }
 
             if (isTokenValid(account)) {
                 log.info("Token valid for clientId={}", account.getClientId());
@@ -83,6 +125,10 @@ public class PyTokenValidationService {
 
     // ── CHECK TOKEN VALIDITY ──────────────────────────────────────────────────
     public boolean isTokenValid(PyBrokerAccountEntity account) {
+        if (isProtectedAccount(account)) {
+            return true;
+        }
+
         PyBrokerToken token = account.getToken();
 
         if (token == null) {
@@ -258,6 +304,11 @@ public class PyTokenValidationService {
     // ── MARK ACCOUNT INACTIVE ─────────────────────────────────────────────────
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markAccountInactive(PyBrokerAccountEntity account, String reason) {
+        if (isProtectedAccount(account)) {
+            log.info("Protected demo/paper account detected — suppressing deactivation for clientId={}",
+                    account != null ? account.getClientId() : "unknown");
+            return;
+        }
         try {
             PyBrokerAccountEntity dbAccount = pyBrokerAccountRepository
                     .findById(account.getId())

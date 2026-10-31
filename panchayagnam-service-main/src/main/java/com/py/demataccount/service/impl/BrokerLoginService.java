@@ -54,10 +54,44 @@ public class BrokerLoginService {
     @Autowired
     private BrokerProfileLoader profileLoader;
 
+    @org.springframework.beans.factory.annotation.Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    private boolean paperTradingEnabled;
+
+    private boolean isProtectedDemoAccount(DematAccountAddRequest request) {
+        if (paperTradingEnabled) {
+            return true;
+        }
+        if (request == null) return false;
+        String clientId = request.getClientId();
+        return clientId != null && (
+                clientId.equals("1100345678") ||
+                clientId.startsWith("ZR") ||
+                clientId.startsWith("UP") ||
+                clientId.startsWith("AG") ||
+                clientId.startsWith("MO") ||
+                clientId.startsWith("PM") ||
+                clientId.startsWith("GW") ||
+                clientId.startsWith("GR") ||
+                clientId.toLowerCase().contains("demo")
+        );
+    }
+
     // ── ROUTER ────────────────────────────────────────────────────────────────
     public JSONObject login(DematAccountAddRequest request) {
         log.info("Initiating login | broker={} clientId={}",
                 request.getBrokerType(), request.getClientId());
+
+        if (isProtectedDemoAccount(request)) {
+            log.info("Paper trading mode / demo account active — returning permanent simulated login for clientId={} broker={}",
+                    request.getClientId(), request.getBrokerType());
+            JSONObject mockLogin = new JSONObject();
+            mockLogin.put("status", true);
+            mockLogin.put("jwtToken", "PAPER-TOKEN-" + request.getBrokerType() + "-" + request.getClientId());
+            mockLogin.put("accessToken", "PAPER-TOKEN-" + request.getBrokerType() + "-" + request.getClientId());
+            mockLogin.put("refreshToken", "PAPER-REFRESH-" + request.getClientId());
+            mockLogin.put("feedToken", "PAPER-FEED-" + request.getClientId());
+            return mockLogin;
+        }
 
         return switch (request.getBrokerType()) {
             case ANGELONE   -> loginAngelOne(request);

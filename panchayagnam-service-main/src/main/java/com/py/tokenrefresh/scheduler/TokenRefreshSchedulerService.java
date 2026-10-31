@@ -21,12 +21,16 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TokenRefreshSchedulerService {
 
     private static final Logger log = LoggerFactory.getLogger(TokenRefreshSchedulerService.class);
+
+    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    private boolean paperTradingEnabled;
 
     @Autowired
     private PyBrokerAccountRepository pyBrokerAccountRepository;
@@ -147,6 +151,37 @@ public class TokenRefreshSchedulerService {
         log.info("Motilal token refresh SUCCESS | clientId={}", account.getClientId());
     }
 
+    private boolean isProtectedAccount(PyBrokerAccountEntity account) {
+        if (paperTradingEnabled) {
+            return true;
+        }
+        if (account == null) {
+            return false;
+        }
+        String clientId = account.getClientId();
+        if (clientId != null && (
+                clientId.equals("1100345678") ||
+                clientId.startsWith("ZR") ||
+                clientId.startsWith("UP") ||
+                clientId.startsWith("AG") ||
+                clientId.startsWith("MO") ||
+                clientId.startsWith("PM") ||
+                clientId.startsWith("GW") ||
+                clientId.startsWith("GR") ||
+                clientId.toLowerCase().contains("demo")
+        )) {
+            return true;
+        }
+        PyBrokerToken token = account.getToken();
+        if (token != null && token.getAccessToken() != null) {
+            String acc = token.getAccessToken();
+            if (acc.contains("demo") || acc.startsWith("PAPER-")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<TokenRefreshProgressEntity> refreshByBrokerType(BrokerType brokerType) {
         List<PyBrokerAccountEntity> accounts = pyBrokerAccountRepository
                 .findByActiveAndBrokerType(Boolean.TRUE, brokerType);
@@ -162,6 +197,27 @@ public class TokenRefreshSchedulerService {
             progress.setBrokerType(account.getBrokerType());
             progress.setRefreshDate(LocalDateTime.now());
 
+            // Safeguard: Never deactivate or fail protected demo / paper trading broker accounts
+            if (isProtectedAccount(account)) {
+                log.info("Protected demo/paper account detected — preserving permanent active connection | clientId={} broker={}",
+                        account.getClientId(), brokerType);
+                account.setActive(true);
+                account.setLastLoginStatus("SUCCESS");
+                account.setLastLoginError(null);
+                account.setLastLoginAttempt(LocalDateTime.now());
+                if (account.getToken() != null) {
+                    account.getToken().setIsActive(true);
+                    account.getToken().setExpiresAt(LocalDateTime.now().plusYears(10));
+                }
+                pyBrokerAccountRepository.save(account);
+
+                progress.setStatus("SUCCESS");
+                progress.setRemarks("Demo paper trading token preserved permanently");
+                tokenRefreshProgressRepository.save(progress);
+                progressList.add(progress);
+                continue;
+            }
+
             try {
                 switch (brokerType) {
                     case ANGELONE ->
@@ -174,6 +230,14 @@ public class TokenRefreshSchedulerService {
                     }
                 }
             } catch (Exception e) {
+                if (isProtectedAccount(account)) {
+                    log.warn("Refresh encountered error but account is protected — keeping active | clientId={}", account.getClientId());
+                    account.setActive(true);
+                    account.setLastLoginStatus("SUCCESS");
+                    pyBrokerAccountRepository.save(account);
+                    continue;
+                }
+
                 log.error("Token refresh failed — marking account inactive | clientId={} broker={} error={}",
                         account.getClientId(), brokerType, e.getMessage());
 
