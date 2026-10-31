@@ -48,6 +48,12 @@ public class DevH2DataInitializer implements CommandLineRunner {
     private PaperAccountBalanceRepository paperBalanceRepository;
 
     @Autowired
+    private com.py.demataccount.repository.PyTradeGroupRepository tradeGroupRepository;
+
+    @Autowired
+    private com.py.demataccount.repository.PyTradeGroupMemberRepository tradeGroupMemberRepository;
+
+    @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
     @Override
@@ -114,6 +120,9 @@ public class DevH2DataInitializer implements CommandLineRunner {
                 "groww-token-demo-777", null, null);
 
         log.info("[H2-DEV] Seeded and verified all 8 broker accounts in Connected status for user {}", user.getId());
+
+        // 4. Seed pre-configured Copy Trading Groups
+        seedCopyTradingGroups(user);
     }
 
     private void seedBroker(
@@ -189,5 +198,62 @@ public class DevH2DataInitializer implements CommandLineRunner {
             balance.setCurrency("INR");
             paperBalanceRepository.save(balance);
         }
+    }
+
+    private void seedCopyTradingGroups(PyUser user) {
+        java.util.List<PyBrokerAccountEntity> allAccounts = brokerAccountRepository.findByPyUserId(user.getId());
+        if (allAccounts == null || allAccounts.isEmpty()) return;
+
+        // Group 1: Master Multi-Broker Copy Pool (All 8 brokers)
+        com.py.entity.PyTradeGroupEntity group1 = tradeGroupRepository.findByCreatedByAndIsActive(user, true)
+                .stream()
+                .filter(g -> "Master Multi-Broker Copy Pool".equals(g.getGroupName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    com.py.entity.PyTradeGroupEntity g = new com.py.entity.PyTradeGroupEntity();
+                    g.setGroupName("Master Multi-Broker Copy Pool");
+                    g.setDescription("Automated copy trading pool mirroring Master orders simultaneously across all 8 broker accounts (Dhan, Zerodha, Upstox, Angel One, Motilal, Profitmart, Goodwill, Groww).");
+                    g.setCreatedBy(user);
+                    g.setIsActive(true);
+                    return tradeGroupRepository.save(g);
+                });
+
+        for (PyBrokerAccountEntity acc : allAccounts) {
+            if (!tradeGroupMemberRepository.existsByTradeGroupAndBrokerAccount(group1, acc)) {
+                com.py.entity.PyTradeGroupMemberEntity member = new com.py.entity.PyTradeGroupMemberEntity();
+                member.setTradeGroup(group1);
+                member.setBrokerAccount(acc);
+                member.setIsLinked(true);
+                tradeGroupMemberRepository.save(member);
+            }
+        }
+
+        // Group 2: Options Alpha Copy Group (Top 4 brokers)
+        com.py.entity.PyTradeGroupEntity group2 = tradeGroupRepository.findByCreatedByAndIsActive(user, true)
+                .stream()
+                .filter(g -> "Options Alpha Copy Trading Group".equals(g.getGroupName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    com.py.entity.PyTradeGroupEntity g = new com.py.entity.PyTradeGroupEntity();
+                    g.setGroupName("Options Alpha Copy Trading Group");
+                    g.setDescription("High-probability options copy group with 1:1 risk-parity lot allocation across primary brokers.");
+                    g.setCreatedBy(user);
+                    g.setIsActive(true);
+                    return tradeGroupRepository.save(g);
+                });
+
+        for (PyBrokerAccountEntity acc : allAccounts) {
+            if (acc.getBrokerType() == BrokerType.DHAN || acc.getBrokerType() == BrokerType.ZERODHA ||
+                    acc.getBrokerType() == BrokerType.ANGELONE || acc.getBrokerType() == BrokerType.UPSTOX) {
+                if (!tradeGroupMemberRepository.existsByTradeGroupAndBrokerAccount(group2, acc)) {
+                    com.py.entity.PyTradeGroupMemberEntity member = new com.py.entity.PyTradeGroupMemberEntity();
+                    member.setTradeGroup(group2);
+                    member.setBrokerAccount(acc);
+                    member.setIsLinked(true);
+                    tradeGroupMemberRepository.save(member);
+                }
+            }
+        }
+        log.info("[H2-DEV] Seeded Copy Trading Groups with member broker accounts for user {}", user.getId());
     }
 }
