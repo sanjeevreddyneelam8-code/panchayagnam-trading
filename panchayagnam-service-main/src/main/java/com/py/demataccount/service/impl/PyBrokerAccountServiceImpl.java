@@ -350,11 +350,30 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 log.warn("Could not fetch paper balance from repo for account {}, defaulting to 1000000", account.getId());
             }
             JSONObject paperRms = new JSONObject();
+            paperRms.put("availablecash", String.valueOf(balance));
             paperRms.put("availableCash", balance);
-            paperRms.put("net", balance);
+            paperRms.put("availabelBalance", balance);
+            paperRms.put("cash", String.valueOf(balance));
+            paperRms.put("net", String.valueOf(balance));
+            paperRms.put("withdrawableBalance", balance);
             paperRms.put("collateral", 0.0);
-            paperRms.put("m2mUnrealized", 0.0);
-            paperRms.put("m2mRealized", 0.0);
+            paperRms.put("m2mrealized", "0.0");
+            paperRms.put("m2munrealized", "0.0");
+
+            JSONArray motilalItems = new JSONArray();
+            JSONObject mItem = new JSONObject();
+            mItem.put("srno", 102);
+            mItem.put("amount", balance);
+            motilalItems.put(mItem);
+            paperRms.put("data", motilalItems);
+
+            JSONObject eq = new JSONObject();
+            eq.put("availablecash", String.valueOf(balance));
+            eq.put("collateral", 0.0);
+            eq.put("utilised", 0.0);
+            eq.put("net", balance);
+            paperRms.put("equity", eq);
+
             return paperRms;
         }
 
