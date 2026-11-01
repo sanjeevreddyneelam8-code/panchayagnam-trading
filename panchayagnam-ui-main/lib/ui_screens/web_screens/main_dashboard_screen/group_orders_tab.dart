@@ -404,7 +404,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                             ElevatedButton.icon(
                               onPressed: _isTestingSignal ? null : () => _simulateMasterCopySignal(groups),
                               icon: _isTestingSignal
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                   : const Icon(Icons.flash_on_rounded, size: 18),
                               label: Text(_isTestingSignal ? 'Mirroring...' : '⚡ Simulate Copy Signal'),
                               style: ElevatedButton.styleFrom(
@@ -1487,7 +1487,7 @@ class _HistoryHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
@@ -3737,16 +3737,12 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
     final totalCapital = totalQty * price;
 
     try {
-      final token = await AuthHeaderHelper.getToken();
       final endpoint = _side == 'BUY' ? '/pyBrokerApi/order/buy' : '/pyBrokerApi/order/sell';
       final url = Uri.parse('${ApiUrls.baseUrl}$endpoint');
 
       await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-        },
+        headers: AuthHeaderHelper.getHeaders(),
         body: jsonEncode({
           'tradingSymbol': _selectedSymbol,
           'exchange': 'NSE',
@@ -3943,7 +3939,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                               color: isBuy ? const Color(0xFF059669) : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: isBuy
-                                  ? [BoxShadow(color: const Color(0xFF059669).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                                  ? const [BoxShadow(color: Color(0x4D059669), blurRadius: 8, offset: Offset(0, 2))]
                                   : null,
                             ),
                             child: Row(
@@ -3974,7 +3970,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                               color: !isBuy ? const Color(0xFFDC2626) : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: !isBuy
-                                  ? [BoxShadow(color: const Color(0xFFDC2626).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                                  ? const [BoxShadow(color: Color(0x4DDC2626), blurRadius: 8, offset: Offset(0, 2))]
                                   : null,
                             ),
                             child: Row(
@@ -4302,12 +4298,16 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: _isExecuting
-                    ? const Row(
+                    ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                          SizedBox(width: 10),
-                          Text('Broadcasting Signal to 8 Demats...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Broadcasting Signal to 8 Demats...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                         ],
                       )
                     : Row(
@@ -4603,8 +4603,8 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
 class _LoadingBody extends StatelessWidget {
   const _LoadingBody();
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 80),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 80),
     child: Center(
         child: CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5)),
   );
@@ -5671,7 +5671,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withOpacity(0.2),
+                                  color: const Color(0x3310B981),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: const Color(0xFF10B981)),
                                 ),
@@ -6330,7 +6330,7 @@ class _AccountListBox extends StatelessWidget {
 class _AccountsLoading extends StatelessWidget {
   const _AccountsLoading();
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
     child: Padding(
       padding: EdgeInsets.symmetric(vertical: 20),
       child:
