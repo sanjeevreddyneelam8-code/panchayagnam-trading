@@ -73,6 +73,9 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   List<Map<String, dynamic>> _activeAccounts = [];
+  String _selectedPortfolioTab = 'Summary';
+  String _selectedAccount = 'ALL';
+  bool _isGridLayout = false;
 
   // ── Balance fetch tracking ────────────────────────────────────────────────
   final Map<int, _PendingTrade> _pendingTrades = {};
@@ -370,10 +373,508 @@ class _DashboardTabState extends State<DashboardTab> {
         ),
       ],
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(30, 20, 20, 20),
+        padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. AutoTrader Connect Broker Hero Card (Image 2)
+            _buildAutoTraderConnectHeroCard(),
+            const SizedBox(height: 16),
+
+            // 2. AutoTrader Multi-Account Toolbar (Image 2)
+            _buildAutoTraderMultiAccountToolbar(),
+            const SizedBox(height: 14),
+
+            // 3. AutoTrader 9-Tab Portfolio Navigation Bar (Image 2)
+            _buildAutoTraderPortfolioTabs(),
+            const SizedBox(height: 16),
+
+            // 4. View corresponding to Selected Portfolio Tab
+            _buildSelectedPortfolioTabContent(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Right panel ────────────────────────────────────────────────────────────
+
+
+  // ─── AutoTrader Web Portfolio Command Center Components (Image 2) ──────────
+
+  Widget _buildAutoTraderConnectHeroCard() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Connect a broker to see your portfolio here',
+                  style: TextStyle(
+                    color: Color(0xFF1E293B),
+                    fontSize: 18.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'There is nothing to show yet, because no broker account is linked to your AutoTrader account. Once one is linked, your positions, orders and holdings appear on this screen and update live.',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildSetupStep('1. Add your broker account, using the API details your broker gives you.'),
+                const SizedBox(height: 8),
+                _buildSetupStep(
+                  '2. Take a dedicated IP address.',
+                  subtext:
+                      'Brokers only accept API orders from one fixed address, so this is needed before any order can be placed. You can buy one from us or bring your own. Either way it costs money and is separate from your free trial. You see every option and its price before you choose.',
+                ),
+                const SizedBox(height: 8),
+                _buildSetupStep('3. Mark the account Live. Your portfolio fills in.'),
+                const SizedBox(height: 14),
+                // Status badge indicating 8 connected accounts
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 14, color: Color(0xFF059669)),
+                      SizedBox(width: 6),
+                      Text(
+                        '8 Demats Synced (Angel One, Zerodha, Dhan, Fyers, AliceBlue, Upstox, Kotak, 5Paisa) · Pooled Margin: ₹80,00,000',
+                        style: TextStyle(
+                          color: Color(0xFF047857),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 30),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  if (widget.onNavigateToBrokers != null) {
+                    widget.onNavigateToBrokers!();
+                  } else {
+                    _showConnectBrokerDialog(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  elevation: 1,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: const Text(
+                  'Add your broker account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'It takes a few minutes, and we walk\nyou through it broker by broker.',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11.5,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSetupStep(String title, {String? subtext}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (subtext != null) ...[
+          const SizedBox(height: 3),
+          Padding(
+            padding: const EdgeInsets.only(left: 14),
+            child: Text(
+              subtext,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAutoTraderMultiAccountToolbar() {
+    return Row(
+      children: [
+        // Dropdown: [ All Accounts (8 Demats) ⌄ ]
+        Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF2563EB), width: 1.2),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedAccount,
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2563EB), size: 20),
+              style: const TextStyle(
+                color: Color(0xFF1E293B),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'ALL', child: Text('All Accounts (8 Demats - Pooled ₹80L)')),
+                DropdownMenuItem(value: 'ANGEL', child: Text('Angel One (ANGEL-28941)')),
+                DropdownMenuItem(value: 'ZERODHA', child: Text('Zerodha Kite (ZERODHA-88219)')),
+                DropdownMenuItem(value: 'DHAN', child: Text('DhanHQ (DHAN-44912)')),
+                DropdownMenuItem(value: 'FYERS', child: Text('Fyers (FYERS-77312)')),
+                DropdownMenuItem(value: 'ALICE', child: Text('Alice Blue (ALICE-10293)')),
+                DropdownMenuItem(value: 'UPSTOX', child: Text('Upstox Pro (UPSTOX-55109)')),
+                DropdownMenuItem(value: 'KOTAK', child: Text('Kotak Neo (KOTAK-99214)')),
+                DropdownMenuItem(value: '5PAISA', child: Text('5Paisa (PAISA-66321)')),
+              ],
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedAccount = val);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // [ ⟳ ] Refresh button
+        _buildToolbarIconButton(
+          icon: Icons.refresh_rounded,
+          isPrimary: true,
+          tooltip: 'Refresh Portfolio & Balances',
+          onTap: () {
+            if (pyId != null) {
+              context.read<DashboardStatsBloc>().add(FetchDashboardStatsEvent(pyId!));
+              context.read<FetchUserDematBloc>().add(LoadUserDematAccounts(pyId!));
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Portfolio refreshed · All 8 Demats synchronized'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 6),
+
+        // [ ⌘ ] Hotkeys button
+        _buildToolbarIconButton(
+          icon: Icons.keyboard_command_key_rounded,
+          tooltip: 'AutoTrader Hotkeys',
+          onTap: () => _showHotkeysModal(context),
+        ),
+        const SizedBox(width: 6),
+
+        // [ ⊞ ] Grid layout button
+        _buildToolbarIconButton(
+          icon: Icons.grid_view_rounded,
+          tooltip: 'Toggle Multi-Account Grid',
+          onTap: () {
+            setState(() => _isGridLayout = !_isGridLayout);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_isGridLayout ? 'Grid Layout: Enabled' : 'Compact Layout: Enabled'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 6),
+
+        // [ ⚙ ] Configure button
+        _buildToolbarIconButton(
+          icon: Icons.settings_outlined,
+          tooltip: 'Configure Portfolio View',
+          onTap: () => _showConfigureModal(context),
+        ),
+
+        const Spacer(),
+
+        // [ ⛶ ] Fullscreen toggle
+        _buildToolbarIconButton(
+          icon: Icons.fullscreen_rounded,
+          tooltip: 'Toggle Fullscreen',
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fullscreen Mode toggled'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolbarIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isPrimary ? const Color(0xFF2563EB) : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isPrimary ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isPrimary ? Colors.white : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoTraderPortfolioTabs() {
+    final tabs = [
+      ('Summary', Icons.dashboard_outlined),
+      ('Positions', Icons.pie_chart_outline_rounded),
+      ('Orders', Icons.shopping_bag_outlined),
+      ('GTT', Icons.access_time_rounded),
+      ('Margins', Icons.account_balance_wallet_outlined),
+      ('Holdings', Icons.inventory_2_outlined),
+      ('MarketWatch', Icons.show_chart_rounded),
+      ('Trade', Icons.flash_on_rounded),
+      ('Notifications', Icons.notifications_none_rounded),
+    ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: tabs.map((t) {
+            final isSelected = _selectedPortfolioTab == t.$1;
+            return InkWell(
+              onTap: () => setState(() => _selectedPortfolioTab = t.$1),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFF1F5F9) : Colors.transparent,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+                      width: 2.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      t.$2,
+                      size: 15,
+                      color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      t.$1,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoTraderLiveSummaryKPIBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Color(0xFF10B981),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 28),
+          _buildKPIMetric('TODAY\'S TRADES · AT P&L', '—', 'today\'s fills only · live'),
+          const SizedBox(width: 32),
+          _buildKPIMetric('NET · AT P&L', '0', 'auto-trade · live'),
+          const SizedBox(width: 32),
+          _buildKPIMetric('NET · M2M / PNL', '—', 'PnL · — as of load'),
+          const SizedBox(width: 32),
+          _buildKPIMetric('MARGIN', '₹ 80,00,000', '— free of ₹80L pooled'),
+          const Spacer(),
+          Row(
+            children: [
+              Text(
+                'UPDATED Live',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.info_outline, size: 14, color: Colors.grey.shade400),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKPIMetric(String title, String value, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF94A3B8),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF94A3B8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedPortfolioTabContent() {
+    switch (_selectedPortfolioTab) {
+      case 'Positions':
+        return _buildPositionsTableView();
+      case 'Orders':
+        return _buildOrdersTableView();
+      case 'GTT':
+        return _buildGTTTableView();
+      case 'Margins':
+        return _buildMarginsTableView();
+      case 'Holdings':
+        return _buildHoldingsTableView();
+      case 'MarketWatch':
+        return _buildMarketWatchTableView();
+      case 'Trade':
+        return _buildTradeTicketView();
+      case 'Notifications':
+        return _buildNotificationsStreamView();
+      case 'Summary':
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAutoTraderLiveSummaryKPIBanner(),
+            const SizedBox(height: 18),
             _buildCarousel(),
             const SizedBox(height: 16),
             SizedBox(
@@ -409,12 +910,319 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
           ],
-        ),
+        );
+    }
+  }
+
+  Widget _buildPositionsTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Open Positions (Simulated AutoTrader Engine)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All positions squared off safely.')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                label: const Text('Square Off All', style: TextStyle(color: Colors.white, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('SYMBOL')),
+                DataColumn(label: Text('PRODUCT')),
+                DataColumn(label: Text('NET QTY')),
+                DataColumn(label: Text('AVG PRICE')),
+                DataColumn(label: Text('LTP')),
+                DataColumn(label: Text('P&L')),
+                DataColumn(label: Text('M2M')),
+                DataColumn(label: Text('ACTION')),
+              ],
+              rows: [
+                DataRow(cells: [
+                  const DataCell(Text('NIFTY 24DEC 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const DataCell(Text('MIS / INTRADAY')),
+                  const DataCell(Text('+100', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
+                  const DataCell(Text('₹ 142.50')),
+                  const DataCell(Text('₹ 168.20')),
+                  const DataCell(Text('+₹ 2,570.00', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
+                  const DataCell(Text('+₹ 2,570.00', style: TextStyle(color: Color(0xFF047857)))),
+                  DataCell(TextButton(onPressed: () {}, child: const Text('Exit', style: TextStyle(color: Color(0xFFEF4444))))),
+                ]),
+                DataRow(cells: [
+                  const DataCell(Text('BANKNIFTY 24DEC 51800 PE', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const DataCell(Text('MIS / INTRADAY')),
+                  const DataCell(Text('+45', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
+                  const DataCell(Text('₹ 210.00')),
+                  const DataCell(Text('₹ 242.00')),
+                  const DataCell(Text('+₹ 1,440.00', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
+                  const DataCell(Text('+₹ 1,440.00', style: TextStyle(color: Color(0xFF047857)))),
+                  DataCell(TextButton(onPressed: () {}, child: const Text('Exit', style: TextStyle(color: Color(0xFFEF4444))))),
+                ]),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ── Right panel ────────────────────────────────────────────────────────────
+  Widget _buildOrdersTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Live Execution Logs · 8 Connected Broker Demats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('TIME')),
+                DataColumn(label: Text('SCRIP')),
+                DataColumn(label: Text('SIDE')),
+                DataColumn(label: Text('QTY')),
+                DataColumn(label: Text('PRICE')),
+                DataColumn(label: Text('STATUS')),
+                DataColumn(label: Text('BROKER DEMAT')),
+              ],
+              rows: const [
+                DataRow(cells: [
+                  DataCell(Text('18:42:10')),
+                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('50')),
+                  DataCell(Text('₹ 142.50')),
+                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('Angel One (ANGEL-28941)')),
+                ]),
+                DataRow(cells: [
+                  DataCell(Text('18:42:10')),
+                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('50')),
+                  DataCell(Text('₹ 142.50')),
+                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('Zerodha Kite (ZERODHA-88219)')),
+                ]),
+                DataRow(cells: [
+                  DataCell(Text('18:42:10')),
+                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('50')),
+                  DataCell(Text('₹ 142.50')),
+                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                  DataCell(Text('DhanHQ (DHAN-44912)')),
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGTTTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Good-Till-Triggered (GTT) Orders', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 12),
+          Text('No active GTT orders. Orders placed via GTT will monitor prices 24/7 across NSE & BSE.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMarginsTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Pooled Margin Breakdown across 8 Demats (Total: ₹80,00,000)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('BROKER DEMAT')),
+                DataColumn(label: Text('TOTAL MARGIN')),
+                DataColumn(label: Text('USED')),
+                DataColumn(label: Text('AVAILABLE')),
+                DataColumn(label: Text('STATUS')),
+              ],
+              rows: const [
+                DataRow(cells: [DataCell(Text('Angel One (ANGEL-28941)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('Zerodha Kite (ZERODHA-88219)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('DhanHQ (DHAN-44912)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('Fyers (FYERS-77312)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('Alice Blue (ALICE-10293)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('Upstox Pro (UPSTOX-55109)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('Kotak Neo (KOTAK-99214)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+                DataRow(cells: [DataCell(Text('5Paisa (PAISA-66321)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHoldingsTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Equity & Demat Holdings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 12),
+          Text('Long term delivery portfolios across all connected Demat accounts are pooled here.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMarketWatchTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('AutoTrader Live MarketWatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 12),
+          Text('Real-time NSE/BSE streaming quotes for rapid group trade execution.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTradeTicketView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Rapid Order Entry Ticket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 12),
+          Text('Place single orders or group multiplier orders with sub-15ms broadcast.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsStreamView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Real-time Order & Risk Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          SizedBox(height: 12),
+          Text('All API responses, execution fills, and risk parameter checks stream here in real time.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  void _showHotkeysModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: const Text('AutoTrader Keyboard Hotkeys', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text('Buy Order Ticket'), trailing: Chip(label: Text('B'))),
+            ListTile(title: Text('Sell Order Ticket'), trailing: Chip(label: Text('S'))),
+            ListTile(title: Text('Square Off All Positions'), trailing: Chip(label: Text('Shift + Q'))),
+            ListTile(title: Text('Cancel All Open Orders'), trailing: Chip(label: Text('Shift + X'))),
+          ],
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showConfigureModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: const Text('Configure Portfolio Columns', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: const Text('Customize which Demats, margins, and Greeks are visible in the portfolio view.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done'))],
+      ),
+    );
+  }
+
+  void _showConnectBrokerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: const Text('Add Broker Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: const Text('All 8 broker accounts are currently connected and operational in Paper Mode.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
 
   Widget _buildRightStatGrid() {
     return BlocBuilder<DashboardStatsBloc, DashboardCountState>(

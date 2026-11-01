@@ -288,13 +288,18 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   Widget _buildTopHeader() {
+    return _buildAutoTraderTopBar();
+  }
+
+  Widget _buildAutoTraderTopBar() {
+    final String userName = UserSession().fullName.isNotEmpty ? UserSession().fullName : 'Sanjeev@.123';
     return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F172A),
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          bottom: BorderSide(color: Color(0xFF1E293B), width: 1),
         ),
       ),
       child: Row(
@@ -302,63 +307,241 @@ class _MainDashboardState extends State<MainDashboard> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shield_outlined, size: 14, color: Color(0xFFB45309)),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'PAPER TRADING ACTIVE',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB45309),
-                        letterSpacing: 0.5,
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _currentSelection = const _NavSelection(0, 0);
+                      _bodyKey = UniqueKey();
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.trending_up, color: Colors.white, size: 18),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Simulated execution · Live broker orders disabled',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDE9FE),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  currentUserRole,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF6D28D9),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'AutoTrader',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E3A8A),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.4)),
+                        ),
+                        child: const Text(
+                          'WEB',
+                          style: TextStyle(
+                            color: Color(0xFF93C5FD),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                UserSession().fullName.isNotEmpty ? UserSession().fullName : 'User',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
+
+              const SizedBox(width: 20),
+
+              // 1. Trading dropdown
+              _buildTopNavDropdown(
+                label: 'Trading',
+                items: [
+                  _TopNavMenuItem(icon: Icons.dashboard_outlined, label: 'Portfolio / Workspace', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 0); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.remove_red_eye_outlined, label: 'MarketWatch', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 1); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.candlestick_chart_outlined, label: 'Charts', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 2); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.shopping_bag_outlined, label: 'Orders', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 3); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 4); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.inventory_2_outlined, label: 'Holdings', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(0, 5); _bodyKey = UniqueKey(); });
+                  }),
+                ],
+              ),
+
+              const SizedBox(width: 2),
+
+              // 2. Alert Auto. dropdown
+              _buildTopNavDropdown(
+                label: 'Alert Auto.',
+                items: [
+                  _TopNavMenuItem(icon: Icons.auto_awesome_rounded, label: 'Strategy Lab Beta', badge: 'BETA', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.construction_outlined, label: 'Tradetron Mega Builder', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.sensors_rounded, label: 'Signal Bridge & Webhooks', onTap: () => _showSignalBridgeDialog(context)),
+                  _TopNavMenuItem(icon: Icons.history_edu_outlined, label: 'Strategy Simulator', onTap: () => _showSimulatorDialog(context)),
+                  _TopNavMenuItem(icon: Icons.insights_rounded, label: 'Backtesting Engine', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(1, 1); _bodyKey = UniqueKey(); });
+                  }),
+                ],
+              ),
+
+              const SizedBox(width: 2),
+
+              // 3. Accounts dropdown (Image 2)
+              _buildTopNavDropdown(
+                label: 'Accounts',
+                items: [
+                  _TopNavMenuItem(icon: Icons.account_balance_wallet_outlined, label: 'Trading Accounts', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(3, 1); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.people_outline_rounded, label: 'Group Accounts', onTap: () {
+                    setState(() { _currentSelection = const _NavSelection(2, 0); _bodyKey = UniqueKey(); });
+                  }),
+                  _TopNavMenuItem(icon: Icons.star_outline_rounded, label: 'Master Accounts', onTap: () => _showMasterAccountsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.person_outline_rounded, label: 'Owners', onTap: () => _showOwnersDialog(context)),
+                ],
+              ),
+
+              const SizedBox(width: 2),
+
+              // 4. Settings dropdown (Image 3)
+              _buildTopNavDropdown(
+                label: 'Settings',
+                items: [
+                  _TopNavMenuItem(icon: Icons.tune_rounded, label: 'General', onTap: () => _showGeneralSettingsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.lock_outline_rounded, label: 'Security', onTap: () => _showSecuritySettingsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.language_rounded, label: 'My IPs', onTap: () => _showMyIpsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.wb_sunny_outlined, label: 'Look & Feel', badge: 'NEW', onTap: () => _showLookAndFeelDialog(context)),
+                ],
+              ),
+
+              const SizedBox(width: 2),
+
+              // 5. Tools dropdown (Image 4)
+              _buildTopNavDropdown(
+                label: 'Tools',
+                items: [
+                  _TopNavMenuItem(icon: Icons.show_chart_rounded, label: 'Activity', onTap: () => _showActivityLogDialog(context)),
+                  _TopNavMenuItem(icon: Icons.insert_chart_outlined_rounded, label: 'Instruments', onTap: () => _showInstrumentsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.file_download_outlined, label: 'Client Libraries', badge: 'NEW', onTap: () => _showClientLibrariesDialog(context)),
+                ],
+              ),
+
+              const SizedBox(width: 2),
+
+              // 6. Help dropdown (Image 5)
+              _buildTopNavDropdown(
+                label: 'Help',
+                items: [
+                  _TopNavMenuItem(icon: Icons.star_border_rounded, label: "What's New", badge: 'NEW', onTap: () => _showWhatsNewDialog(context)),
+                  _TopNavMenuItem(icon: Icons.menu_book_outlined, label: 'User Guide', onTap: () => _showUserGuideDialog(context)),
+                  _TopNavMenuItem(icon: Icons.play_circle_outline_rounded, label: 'Demo Videos', onTap: () => _showDemoVideosDialog(context)),
+                  _TopNavMenuItem(icon: Icons.search_rounded, label: 'Knowledge Base', onTap: () => _showKnowledgeBaseDialog(context)),
+                  _TopNavMenuItem(icon: Icons.shield_outlined, label: 'Security', onTap: () => _showSecurityDialog(context)),
+                  _TopNavMenuItem(icon: Icons.warning_amber_rounded, label: 'Precautions', badge: 'IMP', isWarning: true, onTap: () => _showPrecautionsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.description_outlined, label: 'Terms', onTap: () => _showTermsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.verified_user_outlined, label: 'Privacy Policy', onTap: () => _showPrivacyPolicyDialog(context)),
+                  _TopNavMenuItem(icon: Icons.chat_bubble_outline_rounded, label: 'Contact Us', onTap: () => _showSupportDialog(context)),
+                ],
+              ),
+            ],
+          ),
+
+          // Right: Theme Toggle & User Avatar
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.light_mode_outlined, color: Color(0xFF94A3B8), size: 19),
+                tooltip: 'Toggle Theme',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('AutoTrader Dark Theme is Active'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+
+              PopupMenuButton<String>(
+                tooltip: 'User Profile & Logout',
+                offset: const Offset(0, 44),
+                color: const Color(0xFF1E293B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: Color(0xFF334155)),
+                ),
+                onSelected: (val) {
+                  if (val == 'logout') _handleLogout();
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    enabled: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 2),
+                        const Text('8 Demats Connected · Pooled ₹80L', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, size: 16, color: Color(0xFFF87171)),
+                        SizedBox(width: 8),
+                        Text('Sign Out', style: TextStyle(color: Color(0xFFF87171), fontSize: 13, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: const Color(0xFF2563EB),
+                      child: Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down, color: Color(0xFF94A3B8), size: 18),
+                  ],
                 ),
               ),
             ],
@@ -367,6 +550,611 @@ class _MainDashboardState extends State<MainDashboard> {
       ),
     );
   }
+
+  Widget _buildTopNavDropdown({
+    required String label,
+    required List<_TopNavMenuItem> items,
+  }) {
+    return PopupMenuButton<int>(
+      tooltip: label,
+      offset: const Offset(0, 40),
+      color: Colors.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      onSelected: (idx) {
+        if (idx >= 0 && idx < items.length) {
+          items[idx].onTap();
+        }
+      },
+      itemBuilder: (ctx) {
+        return List.generate(items.length, (i) {
+          final itm = items[i];
+          return PopupMenuItem<int>(
+            value: i,
+            height: 40,
+            child: Row(
+              children: [
+                Icon(itm.icon, size: 16, color: const Color(0xFF64748B)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    itm.label,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (itm.badge != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: itm.isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: itm.isWarning ? const Color(0xFFF59E0B) : const Color(0xFF3B82F6),
+                      ),
+                    ),
+                    child: Text(
+                      itm.badge!,
+                      style: TextStyle(
+                        color: itm.isWarning ? const Color(0xFFB45309) : const Color(0xFF2563EB),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFE2E8F0),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF94A3B8), size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Interactive AutoTrader Dialogs ──────────────────────────────────────────
+
+  void _showMyIpsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.language_rounded, color: Color(0xFF2563EB), size: 22),
+            SizedBox(width: 10),
+            Text('Dedicated Static IP Whitelist', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified, color: Color(0xFF2563EB), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Dedicated Gateway IP: 164.52.203.189', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          SizedBox(height: 2),
+                          Text('Status: ACTIVE & WHITELISTED · Latency: 12 ms', style: TextStyle(color: Color(0xFF1E40AF), fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Connected Broker Mappings:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+              const SizedBox(height: 8),
+              _buildBrokerIpStatusRow('Angel One SmartAPI', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('Zerodha Kite Connect', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('DhanHQ Open API', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('Fyers API v3', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('Alice Blue ANT API', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('Upstox Pro API', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('Kotak Neo API', 'Active & Bound', true),
+              _buildBrokerIpStatusRow('5Paisa Trade API', 'Active & Bound', true),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrokerIpStatusRow(String name, String status, bool ok) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(name, style: const TextStyle(fontSize: 12, color: Color(0xFF334155))),
+          Row(
+            children: [
+              Icon(Icons.check_circle, size: 13, color: ok ? const Color(0xFF10B981) : Colors.grey),
+              const SizedBox(width: 4),
+              Text(status, style: TextStyle(fontSize: 11, color: ok ? const Color(0xFF047857) : Colors.grey, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClientLibrariesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.file_download_outlined, color: Color(0xFF2563EB), size: 22),
+            SizedBox(width: 10),
+            Text('AutoTrader Developer Hub & SDKs', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 580,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Integrate Python scripts, TradingView alerts, or REST API hooks into your 8 Demats with sub-15ms replication.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('# Python SDK Installation', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontFamily: 'monospace')),
+                    SizedBox(height: 4),
+                    Text('pip install autotrader-sdk', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    Text('from autotrader import AutoTrader\nclient = AutoTrader(token="py_live_9999999999")\n# Broadcast order across 8 Demats\nclient.place_group_order(symbol="NIFTY", qty=50)', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, fontFamily: 'monospace')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showActivityLogDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.show_chart_rounded, color: Color(0xFF2563EB), size: 22),
+            SizedBox(width: 10),
+            Text('Replication Latency & Activity Logs', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 540,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildActivityLogRow('18:44:02.102', 'Group Sync: 8 Accounts', '11 ms', 'SUCCESS'),
+              _buildActivityLogRow('18:43:55.840', 'Dedicated IP Whitelist Ping', '9 ms', 'SUCCESS'),
+              _buildActivityLogRow('18:42:19.420', 'NSE Scrip Token Fetch (NIFTY)', '14 ms', 'SUCCESS'),
+              _buildActivityLogRow('18:40:11.205', 'Tradetron Engine Handshake', '12 ms', 'SUCCESS'),
+              _buildActivityLogRow('18:38:00.000', 'Paper Execution Core Startup', '8 ms', 'SUCCESS'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityLogRow(String time, String action, String latency, String status) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Text(time, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: 'monospace')),
+          const SizedBox(width: 12),
+          Expanded(child: Text(action, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(4)),
+            child: Text(latency, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF047857))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInstrumentsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('NSE / BSE Instrument Finder', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search scrip e.g. NIFTY, BANKNIFTY, RELIANCE...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildInstrumentRow('NIFTY 24DEC 24000 CE', 'NSE_FO', 'Lot: 25 · Tick: 0.05'),
+              _buildInstrumentRow('BANKNIFTY 24DEC 51800 PE', 'NSE_FO', 'Lot: 15 · Tick: 0.05'),
+              _buildInstrumentRow('RELIANCE EQ', 'NSE_EQ', 'Lot: 1 · Freeze: 50000'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstrumentRow(String scrip, String seg, String info) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(scrip, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+              Text(info, style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(4)),
+            child: Text(seg, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWhatsNewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.star, color: Color(0xFFEAB308), size: 22),
+            SizedBox(width: 10),
+            Text("What's New in AutoTrader Web & Panchayagnam", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('• Tradetron Mega Strategy Hub with 9 BUILD & 3 READY-MADE tools', style: TextStyle(fontSize: 13, height: 1.5)),
+              Text('• AutoTrader Group Accounts Multiplier & Accounts Hierarchy', style: TextStyle(fontSize: 13, height: 1.5)),
+              Text('• Split-screen Login with High-Performance Dark Slate Hero', style: TextStyle(fontSize: 13, height: 1.5)),
+              Text('• Dedicated Static IP Whitelist gateway for 8 connected demats', style: TextStyle(fontSize: 13, height: 1.5)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got It')),
+        ],
+      ),
+    );
+  }
+
+  void _showPrecautionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFF59E0B), size: 22),
+            SizedBox(width: 10),
+            Text('Regulatory & Trading Precautions', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('1. Paper Trading Mode is currently ACTIVE to protect your actual capital.', style: TextStyle(fontSize: 13, height: 1.4)),
+              SizedBox(height: 8),
+              Text('2. All simulated trades reflect live NSE/BSE tick feeds with realistic slippage.', style: TextStyle(fontSize: 13, height: 1.4)),
+              SizedBox(height: 8),
+              Text('3. Use the Master Kill Switch to halt all strategy executions in one click.', style: TextStyle(fontSize: 13, height: 1.4)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Understood')),
+        ],
+      ),
+    );
+  }
+
+  void _showUserGuideDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('AutoTrader User Guide', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text('Comprehensive manual for AutoTrader Web & Panchayagnam covering API connection, group replication, and Tradetron builders.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showDemoVideosDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Demo & Tutorial Videos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text('Video tutorials covering: 1. Connect Broker Accounts, 2. Group Copy Multipliers, 3. Tradetron Option Wizard.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showKnowledgeBaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Knowledge Base & FAQs', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text('Find answers to common questions about copy trading latency, IP whitelisting, and multi-broker margin utilization.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showSecurityDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Security & Encryption', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+        content: const Text('Bank-grade AES-256 encryption, TLS 1.3 in-transit security, and Dedicated Static IP whitelisting.', style: TextStyle(fontSize: 13)),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showTermsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const Text('Terms and conditions for algorithmic execution and multi-account portfolio monitoring.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const Text('Your credential keys and Demat session tokens are encrypted and never stored in plain text.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showGeneralSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('General Settings'),
+        content: const Text('Configure default order types, notification sound, and screen auto-refresh intervals.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showSecuritySettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Security & 2FA'),
+        content: const Text('Manage MPIN, biometric authorization, and session timeout limits.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showLookAndFeelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Look & Feel (NEW)'),
+        content: const Text('Customize color palette, table row density, and high-contrast trading charts.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showSignalBridgeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Signal Bridge & Webhooks'),
+        content: const Text('Connect TradingView webhooks, Excel RTD, or Amibroker signals directly into AutoTrader.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showSimulatorDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Strategy Simulator'),
+        content: const Text('Replay historic NSE trading days tick-by-tick and verify option execution results.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showMasterAccountsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Master Accounts'),
+        content: const Text('Designate which account acts as the primary master for group order replication.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showOwnersDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Account Owners & Multi-Tenancy'),
+        content: const Text('List of Demat account owners configured under this AutoTrader tenant.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFF2563EB),
+              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 10),
+            Text('AutoTrader Support Desk', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Need assistance with your broker API, IP whitelist, or copy trading setup? Our engineers are live online.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.phone_outlined, size: 18, color: Color(0xFF2563EB)),
+                        SizedBox(width: 10),
+                        Text('Phone: 9284455924', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.email_outlined, size: 18, color: Color(0xFF2563EB)),
+                        SizedBox(width: 10),
+                        Text('Email: help@stocksdeveloper.in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+            child: const Text('Start Chat', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildMarketTickerStrip() {
     return Container(
@@ -525,6 +1313,13 @@ class _MainDashboardState extends State<MainDashboard> {
                 onTap: () =>
                     setState(() => _sidebarCollapsed = !_sidebarCollapsed),
               ),
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: _AutoTraderSupportFloatingButton(
+              onTap: () => _showSupportDialog(context),
             ),
           ),
         ],
@@ -1751,6 +2546,74 @@ class _ToggleButtonState extends State<_ToggleButton> {
                 size: 14,
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── AutoTrader Top Nav Helper Classes ────────────────────────────────────────
+
+class _TopNavMenuItem {
+  final IconData icon;
+  final String label;
+  final String? badge;
+  final bool isWarning;
+  final VoidCallback onTap;
+
+  _TopNavMenuItem({
+    required this.icon,
+    required this.label,
+    this.badge,
+    this.isWarning = false,
+    required this.onTap,
+  });
+}
+
+class _AutoTraderSupportFloatingButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AutoTraderSupportFloatingButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563EB),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2563EB).withOpacity(0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.support_agent_rounded, size: 16, color: Color(0xFF2563EB)),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Support',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
           ),
         ),
       ),

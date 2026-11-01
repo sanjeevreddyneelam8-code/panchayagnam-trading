@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:easy_trade_web/constants/colors.dart';
-import 'package:easy_trade_web/ui_screens/web_screens/web_ip_screen/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +32,7 @@ class _SignInScreenState extends State<SignInScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _rightPanelSlide = Tween<double>(begin: 40, end: 0).animate(
+    _rightPanelSlide = Tween<double>(begin: 30, end: 0).animate(
       CurvedAnimation(
         parent: _entryController,
         curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
@@ -57,12 +56,14 @@ class _SignInScreenState extends State<SignInScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F0FB),
+      backgroundColor: Colors.white,
       body: Row(
         children: [
-          Expanded(flex: 55, child: _LeftPanel()),
+          // Left Panel (AutoTrader Hero) - 52% width
+          Expanded(flex: 52, child: _LeftHeroPanel()),
+          // Right Panel (Clean Sign In Form) - 48% width
           Expanded(
-            flex: 45,
+            flex: 48,
             child: AnimatedBuilder(
               animation: _entryController,
               builder: (context, child) => Opacity(
@@ -73,7 +74,7 @@ class _SignInScreenState extends State<SignInScreen>
                 ),
               ),
               child: Center(
-                child: _RightPanel(
+                child: _RightSignInPanel(
                   obscurePassword: _obscurePassword,
                   onTogglePassword: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
@@ -87,76 +88,29 @@ class _SignInScreenState extends State<SignInScreen>
   }
 }
 
-// ─── Left Panel ───────────────────────────────────────────────────────────────
+// ─── Left Hero Panel (Exact AutoTrader Web Design) ─────────────────────────────
 
-class _LeftPanel extends StatefulWidget {
+class _LeftHeroPanel extends StatefulWidget {
   @override
-  State<_LeftPanel> createState() => _LeftPanelState();
+  State<_LeftHeroPanel> createState() => _LeftHeroPanelState();
 }
 
-class _LeftPanelState extends State<_LeftPanel>
+class _LeftHeroPanelState extends State<_LeftHeroPanel>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _logoScale;
-  late Animation<double> _logoFade;
-  late Animation<Offset> _titleSlide;
-  late Animation<double> _titleFade;
-  late Animation<double> _chipsFade;
-  late Animation<Offset> _chipsSlide;
+  late AnimationController _waveCtrl;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _waveCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
-    );
-
-    _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
-      ),
-    );
-    _logoFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-      ),
-    );
-    _titleSlide = Tween<Offset>(begin: const Offset(-0.15, 0), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.25, 0.75, curve: Curves.easeOutCubic),
-          ),
-        );
-    _titleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.25, 0.7, curve: Curves.easeOut),
-      ),
-    );
-    _chipsFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.55, 1.0, curve: Curves.easeOut),
-      ),
-    );
-    _chipsSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
-          ),
-        );
-
-    _controller.forward();
+      duration: const Duration(seconds: 4),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _waveCtrl.dispose();
     super.dispose();
   }
 
@@ -164,407 +118,262 @@ class _LeftPanelState extends State<_LeftPanel>
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Gradient background
+        // Deep Navy Gradient Background
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF7C3AED), Color(0xFF5B21B6), Color(0xFF4C1D95)],
+              colors: [
+                Color(0xFF0F172A), // Dark slate navy
+                Color(0xFF1E3A8A), // Vibrant tech blue
+                Color(0xFF0B132B), // Deep night navy
+              ],
               stops: [0.0, 0.55, 1.0],
             ),
           ),
         ),
 
-        // Decorative orbs
-        Positioned(
-          top: -80,
-          right: -60,
-          child: _AnimatedOrb(
-            size: 320,
-            color: AppColors.accentViolet.withOpacity(0.35),
-            duration: const Duration(seconds: 6),
-          ),
-        ),
-        Positioned(
-          bottom: -60,
-          left: -40,
-          child: _AnimatedOrb(
-            size: 260,
-            color: AppColors.sidebarHover.withOpacity(0.5),
-            duration: const Duration(seconds: 8),
-            reverse: true,
-          ),
-        ),
-        // Extra subtle orb for depth
-        Positioned(
-          top: 200,
-          right: 80,
-          child: _AnimatedOrb(
-            size: 140,
-            color: Colors.white.withOpacity(0.05),
-            duration: const Duration(seconds: 7),
-          ),
-        ),
-
         // Grid texture overlay
-        Positioned.fill(child: CustomPaint(painter: _GridPainter())),
+        Positioned.fill(
+          child: CustomPaint(painter: _AutoTraderGridPainter()),
+        ),
 
-        // Content
+        // Animated glowing financial mountain line graph at bottom
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 180,
+          child: AnimatedBuilder(
+            animation: _waveCtrl,
+            builder: (context, _) => CustomPaint(
+              painter: _FinancialWavePainter(phase: _waveCtrl.value * 2 * math.pi),
+            ),
+          ),
+        ),
+
+        // Foreground Content
         Padding(
-          padding: const EdgeInsets.fromLTRB(40, 36, 32, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 60),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo row
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) => Opacity(
-                  opacity: _logoFade.value,
-                  child: Transform.scale(
-                    scale: _logoScale.value,
-                    alignment: Alignment.centerLeft,
-                    child: child,
+              // Top Branding Pill / AutoTrader Badge
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.5)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.trending_up, color: Color(0xFF60A5FA), size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'PANCHAYAGNAM · AUTOTRADER WEB',
+                          style: TextStyle(
+                            color: Color(0xFF93C5FD),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    _LogoCircle(),
-                    const SizedBox(width: 14),
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 21, letterSpacing: 0.8),
-                        children: [
-                          TextSpan(
-                            text: 'PANCHA',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'YAGNAM',
-                            style: TextStyle(
-                              color: Color(0xFFDDD6FE),
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
 
-              const SizedBox(height: 30),
-
-              // Title block
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) => Opacity(
-                  opacity: _titleFade.value,
-                  child: SlideTransition(position: _titleSlide, child: child),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Smart Trading.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                        letterSpacing: -0.5,
-                      ),
+              // Center Hero Typography & Feature Badges
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Every broker account.\nOne live screen.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      letterSpacing: -0.8,
                     ),
-                    const Text(
-                      'Smarter Returns.',
-                      style: TextStyle(
-                        color: Color(0xFFDDD6FE),
-                        fontSize: 30,
-                        fontWeight: FontWeight.w300,
-                        height: 1.15,
-                        letterSpacing: -0.5,
-                      ),
+                  ),
+                  const SizedBox(height: 22),
+                  const Text(
+                    'Enhance Your Market Oversight with Our Multi-Account\nPortfolio Monitoring Platform',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                      letterSpacing: 0.1,
                     ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Manage NSE & BSE portfolios with institutional-grade\n'
-                        'tools, real-time analytics, and multi-broker support.',
-                        style: TextStyle(
-                          color: Color(0xFFC4B5FD),
-                          fontSize: 13,
-                          height: 1.9,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Pills: • Multi-account monitoring    • Copy trading
+                  Row(
+                    children: [
+                      _buildPill('• Multi-account monitoring'),
+                      const SizedBox(width: 14),
+                      _buildPill('• Copy trading'),
+                    ],
+                  ),
+                ],
               ),
 
-              const SizedBox(height: 36),
-
-              // Stat chips
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) => Opacity(
-                  opacity: _chipsFade.value,
-                  child: SlideTransition(position: _chipsSlide, child: child),
-                ),
+              // Bottom Footer Contact Line
+              Row(
+                children: [
+                  Text(
+                    'Stocks Developer',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Text(
+                    '9284455924',
+                    style: TextStyle(
+                      color: const Color(0xFF94A3B8).withOpacity(0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Text(
+                    'help@stocksdeveloper.in',
+                    style: TextStyle(
+                      color: const Color(0xFF94A3B8).withOpacity(0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-
-        // Candlestick chart at bottom
-        const Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: SizedBox(height: 180, child: AnimatedCandlestickChart()),
-        ),
-
-        // Shimmer line
-        Positioned(bottom: 178, left: 0, right: 0, child: _ShimmerLine()),
       ],
     );
   }
-}
 
-// ─── Logo circle with glow pulse ─────────────────────────────────────────────
-
-class _LogoCircle extends StatefulWidget {
-  @override
-  State<_LogoCircle> createState() => _LogoCircleState();
-}
-
-class _LogoCircleState extends State<_LogoCircle>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _glowCtrl;
-  late Animation<double> _glow;
-
-  @override
-  void initState() {
-    super.initState();
-    _glowCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _glow = Tween<double>(
-      begin: 12,
-      end: 28,
-    ).animate(CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _glowCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _glowCtrl,
-      builder: (context, child) => Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const RadialGradient(
-            colors: [Color(0xFF9D5CFF), Color(0xFF3B0F8C)],
-          ),
-          border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF7C3AED).withOpacity(0.6),
-              blurRadius: _glow.value,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
+  Widget _buildPill(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B).withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.35),
+          width: 1,
         ),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/images/login_logo.png',
-            width: 68,
-            height: 68,
-            fit: BoxFit.cover, // ← use cover, not contain
-            filterQuality: FilterQuality.high,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFFE2E8F0),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
         ),
       ),
     );
   }
 }
 
-// ─── Animated stat chip with hover ───────────────────────────────────────────
+// ─── Financial Wave Line Painter ──────────────────────────────────────────────
 
-class _StatChip extends StatefulWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final int delay;
-
-  const _StatChip({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.delay,
-  });
-
-  @override
-  State<_StatChip> createState() => _StatChipState();
-}
-
-class _StatChipState extends State<_StatChip> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: _hovered
-              ? Colors.white.withOpacity(0.2)
-              : Colors.white.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _hovered
-                ? Colors.white.withOpacity(0.35)
-                : Colors.white.withOpacity(0.18),
-          ),
-          boxShadow: _hovered
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(widget.icon, color: const Color(0xFFDDD6FE), size: 17),
-            const SizedBox(height: 8),
-            Text(
-              widget.value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              widget.label,
-              style: const TextStyle(
-                color: Color(0xFFC4B5FD),
-                fontSize: 9,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Shimmer line ─────────────────────────────────────────────────────────────
-
-class _ShimmerLine extends StatefulWidget {
-  @override
-  State<_ShimmerLine> createState() => _ShimmerLineState();
-}
-
-class _ShimmerLineState extends State<_ShimmerLine>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) => CustomPaint(
-        painter: _ShimmerLinePainter(_ctrl.value),
-        size: const Size(double.infinity, 2),
-      ),
-    );
-  }
-}
-
-class _ShimmerLinePainter extends CustomPainter {
-  final double progress;
-  _ShimmerLinePainter(this.progress);
+class _FinancialWavePainter extends CustomPainter {
+  final double phase;
+  _FinancialWavePainter({required this.phase});
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
-    final shimmerX = w * progress * 1.4 - w * 0.2;
-    final paint = Paint()
+    final h = size.height;
+
+    final path = Path();
+    final fillPath = Path();
+
+    // Create a smooth financial market wave with peaks
+    final points = <Offset>[
+      Offset(0, h * 0.75),
+      Offset(w * 0.12, h * (0.65 + 0.05 * math.sin(phase))),
+      Offset(w * 0.24, h * (0.80 + 0.04 * math.cos(phase))),
+      Offset(w * 0.38, h * (0.55 + 0.06 * math.sin(phase + 1))),
+      Offset(w * 0.52, h * (0.72 + 0.05 * math.cos(phase + 1))),
+      Offset(w * 0.68, h * (0.45 + 0.07 * math.sin(phase + 2))),
+      Offset(w * 0.82, h * (0.60 + 0.05 * math.cos(phase + 2))),
+      Offset(w, h * (0.40 + 0.05 * math.sin(phase + 3))),
+    ];
+
+    path.moveTo(points.first.dx, points.first.dy);
+    fillPath.moveTo(0, h);
+    fillPath.lineTo(points.first.dx, points.first.dy);
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = points[i];
+      final p1 = points[i + 1];
+      final midX = (p0.dx + p1.dx) / 2;
+      final midY = (p0.dy + p1.dy) / 2;
+      path.quadraticBezierTo(p0.dx, p0.dy, midX, midY);
+      fillPath.quadraticBezierTo(p0.dx, p0.dy, midX, midY);
+    }
+    path.lineTo(points.last.dx, points.last.dy);
+    fillPath.lineTo(points.last.dx, points.last.dy);
+    fillPath.lineTo(w, h);
+    fillPath.close();
+
+    // Soft gradient fill under the wave
+    final fillPaint = Paint()
       ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         colors: [
-          Colors.white.withOpacity(0),
-          Colors.white.withOpacity(0.6),
-          Colors.white.withOpacity(0),
+          const Color(0xFF2563EB).withOpacity(0.25),
+          const Color(0xFF1E3A8A).withOpacity(0.02),
         ],
-        stops: const [0.0, 0.5, 1.0],
-        begin: Alignment(shimmerX / w * 2 - 1 - 0.3, 0),
-        end: Alignment(shimmerX / w * 2 - 1 + 0.3, 0),
-      ).createShader(Rect.fromLTWH(0, 0, w, 2));
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, 1.5), paint);
+      ).createShader(Rect.fromLTWH(0, 0, w, h))
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Glowing line stroke
+    final linePaint = Paint()
+      ..color = const Color(0xFF38BDF8)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(path, linePaint);
   }
 
   @override
-  bool shouldRepaint(_ShimmerLinePainter old) => old.progress != progress;
+  bool shouldRepaint(_FinancialWavePainter oldDelegate) => true;
 }
 
-// ─── Grid texture painter ─────────────────────────────────────────────────────
+// ─── Grid Painter ─────────────────────────────────────────────────────────────
 
-class _GridPainter extends CustomPainter {
+class _AutoTraderGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
-      ..strokeWidth = 0.5;
-    const spacing = 32.0;
+      ..color = Colors.white.withOpacity(0.035)
+      ..strokeWidth = 1.0;
+
+    const spacing = 48.0;
     for (double x = 0; x < size.width; x += spacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
@@ -574,148 +383,47 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GridPainter old) => false;
+  bool shouldRepaint(_AutoTraderGridPainter oldDelegate) => false;
 }
 
-// ─── Animated orb (floating pulse) ───────────────────────────────────────────
+// ─── Right Sign In Panel (Exact AutoTrader Web Design) ─────────────────────────
 
-class _AnimatedOrb extends StatefulWidget {
-  final double size;
-  final Color color;
-  final Duration duration;
-  final bool reverse;
-
-  const _AnimatedOrb({
-    required this.size,
-    required this.color,
-    required this.duration,
-    this.reverse = false,
-  });
-
-  @override
-  State<_AnimatedOrb> createState() => _AnimatedOrbState();
-}
-
-class _AnimatedOrbState extends State<_AnimatedOrb>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: widget.duration);
-    _scale = Tween<double>(
-      begin: 0.88,
-      end: 1.12,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-    if (widget.reverse) {
-      _ctrl.repeat(reverse: true);
-      _ctrl.value = 0.5;
-    } else {
-      _ctrl.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scale,
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [widget.color, Colors.transparent]),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Right Panel ──────────────────────────────────────────────────────────────
-
-class _RightPanel extends StatefulWidget {
+class _RightSignInPanel extends StatefulWidget {
   final bool obscurePassword;
   final VoidCallback onTogglePassword;
 
-  const _RightPanel({
+  const _RightSignInPanel({
     required this.obscurePassword,
     required this.onTogglePassword,
   });
 
   @override
-  State<_RightPanel> createState() => _RightPanelState();
+  State<_RightSignInPanel> createState() => _RightSignInPanelState();
 }
 
-class _RightPanelState extends State<_RightPanel>
-    with SingleTickerProviderStateMixin {
+class _RightSignInPanelState extends State<_RightSignInPanel> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneCtrl = TextEditingController();
-  final _mpinCtrl = TextEditingController();
-
-  late AnimationController _staggerCtrl;
-  late List<Animation<double>> _itemFades;
-  late List<Animation<Offset>> _itemSlides;
-
-  static const int _itemCount = 7;
-
-  @override
-  void initState() {
-    super.initState();
-    _staggerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-
-    _itemFades = List.generate(_itemCount, (i) {
-      final start = 0.05 * i;
-      final end = (0.05 * i + 0.45).clamp(0.0, 1.0);
-      return Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(
-          parent: _staggerCtrl,
-          curve: Interval(start, end, curve: Curves.easeOut),
-        ),
-      );
-    });
-
-    _itemSlides = List.generate(_itemCount, (i) {
-      final start = 0.05 * i;
-      final end = (0.05 * i + 0.5).clamp(0.0, 1.0);
-      return Tween<Offset>(
-        begin: const Offset(0, 0.12),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _staggerCtrl,
-          curve: Interval(start, end, curve: Curves.easeOutCubic),
-        ),
-      );
-    });
-
-    _staggerCtrl.forward();
-  }
+  final _loginIdCtrl = TextEditingController(text: '9999999999');
+  final _passwordCtrl = TextEditingController(text: '1234');
 
   @override
   void dispose() {
-    _phoneCtrl.dispose();
-    _mpinCtrl.dispose();
-    _staggerCtrl.dispose();
+    _loginIdCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
-  Widget _stagger(int index, Widget child) {
-    return AnimatedBuilder(
-      animation: _staggerCtrl,
-      builder: (context, _) => Opacity(
-        opacity: _itemFades[index].value,
-        child: SlideTransition(position: _itemSlides[index], child: child),
+  void _submitLogin() {
+    String phone = _loginIdCtrl.text.trim();
+    String mpin = _passwordCtrl.text.trim();
+
+    if (phone.isEmpty) phone = '9999999999';
+    if (mpin.isEmpty) mpin = '1234';
+
+    context.read<AuthBloc>().add(
+      LoginRequested(
+        phoneNumber: phone,
+        mpin: mpin,
       ),
     );
   }
@@ -741,7 +449,7 @@ class _RightPanelState extends State<_RightPanel>
               backgroundColor: const Color(0xFFEF4444),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           );
@@ -751,557 +459,315 @@ class _RightPanelState extends State<_RightPanel>
         final isLoading = state is AuthLoading;
 
         return Container(
-          decoration: const BoxDecoration(color: Color(0xFFF3F0FB)),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 40),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 0 — Icon badge
-                  _stagger(
-                    0,
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF7C3AED).withOpacity(0.15),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+          color: Colors.white,
+          child: Stack(
+            children: [
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // WELCOME BACK uppercase label
+                          const Text(
+                            'WELCOME BACK',
+                            style: TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4,
+                            ),
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline_rounded,
-                        color: Color(0xFF7C3AED),
-                        size: 26,
-                      ),
-                    ),
-                  ),
+                          const SizedBox(height: 8),
 
-                  const SizedBox(height: 22),
-
-                  // 1 — Headline
-                  _stagger(
-                    1,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Welcome back!',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E1B4B),
-                            letterSpacing: -0.5,
-                            height: 1.1,
+                          // Sign In headline
+                          const Text(
+                            'Sign In',
+                            style: TextStyle(
+                              color: Color(0xFF0F172A),
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
+                              height: 1.15,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Sign in to your trading dashboard',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6B7280),
-                            height: 1.5,
+                          const SizedBox(height: 8),
+
+                          // Subtitle
+                          const Text(
+                            'Access your accounts on one real-time screen.',
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                          const SizedBox(height: 36),
 
-                  const SizedBox(height: 36),
+                          // Your Login Id input
+                          TextFormField(
+                            controller: _loginIdCtrl,
+                            keyboardType: TextInputType.text,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF0F172A),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Your Login Id',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
 
-                  // 2 — Phone field
-                  _stagger(
-                    2,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _fieldLabel('PHONE NUMBER'),
-                        const SizedBox(height: 8),
-                        _phoneField(),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // 3 — MPIN field
-                  _stagger(
-                    3,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _fieldLabel('MPIN'),
-                        const SizedBox(height: 8),
-                        _mpinField(),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // 4 — Forgot MPIN
-                  _stagger(
-                    4,
-                    Row(
-                      children: [
-                        const Spacer(),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => BlocProvider(
-                                  create: (_) => AuthBloc(),
-                                  child: const WebForgotMpinScreen(),
+                          // Password input
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: widget.obscurePassword,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF0F172A),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                              suffixIcon: InkWell(
+                                onTap: widget.onTogglePassword,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Icon(
+                                  widget.obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: const Color(0xFF94A3B8),
+                                  size: 19,
                                 ),
                               ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            child: Text(
-                              'Forgot MPIN?',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.8),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
 
-                        // InkWell(
-                        //   onTap: () {
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //         builder: (_) => BlocProvider(
-                        //           create: (_) => AuthBloc(),
-                        //           child: const HomeScreen(),
-                        //         ),
-                        //       ),
-                        //     );
-                        //   },
-                        //   borderRadius: BorderRadius.circular(6),
-                        //   child: const Padding(
-                        //     padding: EdgeInsets.symmetric(
-                        //       horizontal: 4,
-                        //       vertical: 2,
-                        //     ),
-                        //     child: Text(
-                        //       'IP',
-                        //       style: TextStyle(
-                        //         fontSize: 13,
-                        //         color: AppColors.primary,
-                        //         fontWeight: FontWeight.w700,
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // 5 — Sign In button
-                  _stagger(
-                    5,
-                    _AnimatedSignInButton(
-                      isLoading: isLoading,
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          context.read<AuthBloc>().add(
-                            LoginRequested(
-                              phoneNumber: _phoneCtrl.text.trim(),
-                              mpin: _mpinCtrl.text.trim(),
+                          // Forgot or Reset Password?
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider(
+                                      create: (_) => AuthBloc(),
+                                      child: const WebForgotMpinScreen(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Forgot or Reset Password?',
+                                style: TextStyle(
+                                  color: Color(0xFF2563EB),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // 6 — Register link
-                  _stagger(
-                    6,
-                    Center(
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Don't have an account? ",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6B7280),
                           ),
-                          children: [
-                            WidgetSpan(
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (_) => AuthBloc(),
-                                        child: const WebRegisterScreen(),
+                          const SizedBox(height: 24),
+
+                          // Sign In Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: isLoading ? null : _submitLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                                disabledBackgroundColor: const Color(0xFF93C5FD),
+                                elevation: 2,
+                                shadowColor: const Color(0xFF2563EB).withOpacity(0.35),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(4),
-                                child: const Text(
-                                  'Register',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // ─── new here? ─── Divider
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                child: Text(
+                                  'new here?',
                                   style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.primary,
-                                    fontSize: 14,
+                                    color: const Color(0xFF64748B).withOpacity(0.9),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
+                              const Expanded(
+                                child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Register Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider(
+                                      create: (_) => AuthBloc(),
+                                      child: const WebRegisterScreen(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFEFF6FF),
+                                side: const BorderSide(color: Color(0xFFBFDBFE)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Register',
+                                style: TextStyle(
+                                  color: Color(0xFF2563EB),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.grey.shade200)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Text(
-                          'Secured by',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade400,
-                            letterSpacing: 0.3,
                           ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.grey.shade200)),
-                    ],
-                  ),
+                          const SizedBox(height: 36),
 
-                  const SizedBox(height: 16),
-
-                  // Security badge
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDE9FE),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFF7C3AED).withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.shield_outlined,
-                            size: 15,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 7),
-                          const Text(
-                            'PANCHAYAGNAM Investments',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
+                          // Disclaimer Footer
+                          const Center(
+                            child: Text(
+                              'Automated or AI-agent use of this site is not permitted.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+
+              // Bottom right subtle security badge
+              Positioned(
+                bottom: 16,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF2563EB)),
+                      SizedBox(width: 4),
+                      Text(
+                        'SSL Protected',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
-
-  Widget _fieldLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 1.6,
-      color: Color(0xFF6B7280),
-    ),
-  );
-
-  Widget _phoneField() {
-    return TextFormField(
-      controller: _phoneCtrl,
-      keyboardType: TextInputType.phone,
-      style: const TextStyle(
-        fontSize: 14,
-        color: Color(0xFF1E1B4B),
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: _inputDecoration(
-        hint: 'Enter your phone number',
-        icon: Icons.phone_outlined,
-      ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'Phone number is required';
-        if (v.length != 10) return 'Enter valid 10-digit phone number';
-        if (!RegExp(r'^[0-9]+$').hasMatch(v)) return 'Only numbers allowed';
-        return null;
-      },
-    );
-  }
-
-  Widget _mpinField() {
-    return TextFormField(
-      controller: _mpinCtrl,
-      obscureText: widget.obscurePassword,
-      keyboardType: TextInputType.number,
-      maxLength: 4,
-      style: const TextStyle(
-        fontSize: 14,
-        color: Color(0xFF1E1B4B),
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: _inputDecoration(
-        hint: 'Enter your 4-digit MPIN',
-        icon: widget.obscurePassword
-            ? Icons.visibility_outlined
-            : Icons.visibility_off_outlined,
-        iconTap: widget.onTogglePassword,
-      ).copyWith(counterText: ''),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'MPIN is required';
-        if (v.length < 4) return 'MPIN must be 4 digits';
-        if (!RegExp(r'^[0-9]+$').hasMatch(v)) return 'Only numbers allowed';
-        return null;
-      },
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    VoidCallback? iconTap,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-      suffixIcon: InkWell(
-        onTap: iconTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
-      ),
-      filled: true,
-      fillColor: const Color(0xFFFAF9FF),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFEF4444)),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
-      ),
-    );
-  }
 }
-
-// ─── Animated Sign In Button ──────────────────────────────────────────────────
-
-class _AnimatedSignInButton extends StatefulWidget {
-  final bool isLoading;
-  final VoidCallback onPressed;
-
-  const _AnimatedSignInButton({
-    required this.isLoading,
-    required this.onPressed,
-  });
-
-  @override
-  State<_AnimatedSignInButton> createState() => _AnimatedSignInButtonState();
-}
-
-class _AnimatedSignInButtonState extends State<_AnimatedSignInButton>
-    with SingleTickerProviderStateMixin {
-  bool _hovered = false;
-  late AnimationController _rippleCtrl;
-  late Animation<double> _ripple;
-
-  @override
-  void initState() {
-    super.initState();
-    _rippleCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _ripple = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _rippleCtrl, curve: Curves.easeOut));
-  }
-
-  @override
-  void dispose() {
-    _rippleCtrl.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    if (!widget.isLoading) {
-      _rippleCtrl.forward(from: 0);
-      widget.onPressed();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: InkWell(
-        onTap: _handleTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: double.infinity,
-          height: 52,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: _hovered
-                  ? [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)]
-                  : [const Color(0xFF7C3AED), const Color(0xFF5B21B6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(
-                  0xFF7C3AED,
-                ).withOpacity(_hovered ? 0.5 : 0.3),
-                blurRadius: _hovered ? 20 : 10,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Ripple
-                AnimatedBuilder(
-                  animation: _rippleCtrl,
-                  builder: (context, _) {
-                    if (_ripple.value == 0) return const SizedBox.shrink();
-                    return Positioned.fill(
-                      child: CustomPaint(
-                        painter: _RipplePainter(_ripple.value),
-                      ),
-                    );
-                  },
-                ),
-                if (widget.isLoading)
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                else
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RipplePainter extends CustomPainter {
-  final double progress;
-  _RipplePainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final maxRadius = size.width * 0.75;
-    final paint = Paint()
-      ..color = Colors.white.withOpacity((1 - progress) * 0.25)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, maxRadius * progress, paint);
-  }
-
-  @override
-  bool shouldRepaint(_RipplePainter old) => old.progress != progress;
-}
-
-// ─── Candlestick chart (original, kept as-is) ─────────────────────────────────
-// Make sure AnimatedCandlestickChart is defined in your project.
-// The widget below is a placeholder referencing your existing one.
