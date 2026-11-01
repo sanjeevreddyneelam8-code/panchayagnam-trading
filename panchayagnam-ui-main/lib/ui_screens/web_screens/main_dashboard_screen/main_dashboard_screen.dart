@@ -368,10 +368,98 @@ class _MainDashboardState extends State<MainDashboard> {
     );
   }
 
+  Widget _buildMarketTickerStrip() {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F172A),
+        border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0x3310B981),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF10B981)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.fiber_manual_record, color: Color(0xFF34D399), size: 8),
+                  SizedBox(width: 4),
+                  Text('MARKET: OPEN (PAPER ENGINE)', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            _buildTickerItem('NIFTY 50', '24,150.50', '+0.45%', true),
+            _buildTickerDivider(),
+            _buildTickerItem('BANK NIFTY', '51,820.00', '+0.62%', true),
+            _buildTickerDivider(),
+            _buildTickerItem('RELIANCE', '2,940.50', '+0.85%', true),
+            _buildTickerDivider(),
+            _buildTickerItem('HCLTECH', '1,428.10', '0.00%', null),
+            _buildTickerDivider(),
+            _buildTickerItem('HINDUNILVR', '1,864.60', '+0.30%', true),
+            _buildTickerDivider(),
+            _buildTickerItem('HDFCBANK', '1,650.00', '-0.20%', false),
+            _buildTickerDivider(),
+            _buildTickerItem('INFY', '1,785.40', '+1.10%', true),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
+                  SizedBox(width: 4),
+                  Text('Tradetron & AutoTrader Engine: 8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTickerItem(String symbol, String price, String change, bool? isPositive) {
+    final color = isPositive == true
+        ? const Color(0xFF34D399)
+        : isPositive == false
+            ? const Color(0xFFF87171)
+            : const Color(0xFF94A3B8);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(symbol, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
+        const SizedBox(width: 4),
+        Text('₹$price', style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+        const SizedBox(width: 4),
+        Text(change, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+
+  Widget _buildTickerDivider() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      child: Text('|', style: TextStyle(color: Color(0xFF334155), fontSize: 11)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_roleLoaded) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: CircularProgressIndicator(color: _kGradientTop)),
       );
     }
@@ -381,7 +469,7 @@ class _MainDashboardState extends State<MainDashboard> {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => context.go(AppRoutes.login),
       );
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: CircularProgressIndicator(color: _kGradientTop)),
       );
     }
@@ -413,6 +501,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 child: Column(
                   children: [
                     _buildTopHeader(),
+                    _buildMarketTickerStrip(),
                     Expanded(
                       child: KeyedSubtree(
                         key: _bodyKey, // ← applied here

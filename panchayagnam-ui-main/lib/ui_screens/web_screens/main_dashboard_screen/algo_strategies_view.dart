@@ -751,6 +751,677 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
+  // ── Tradetron Style Mega Strategy Creator Hub ───────────────────────────────
+
+  void _showTradetronCreateMegaMenu() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.55),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          width: 860,
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.18),
+                blurRadius: 40,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Brand Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFEF4444), Color(0xFFF97316)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.hub_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'TRADETRON STRATEGY CREATION HUB',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0x3310B981),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFF10B981)),
+                                  ),
+                                  child: const Text('MULTI-BROKER READY', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Build using AI, visual rule sets, Pine Script, or deploy battle-tested ready-made institutional templates.',
+                              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        tooltip: 'Close Menu',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Scrollable Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // BUILD Section
+                        const Text(
+                          'BUILD',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF6B7280),
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.1,
+                          children: [
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.auto_awesome_rounded,
+                              iconColor: const Color(0xFF8B5CF6),
+                              iconBg: const Color(0xFFEDE9FE),
+                              title: 'Using AI',
+                              description: 'Connect Claude, ChatGPT and other AI tools to generate strategies',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showAiStrategyPromptDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.dashboard_customize_rounded,
+                              iconColor: const Color(0xFF4F46E5),
+                              iconBg: const Color(0xFFEEF2FF),
+                              title: 'Advanced Strategy Builder',
+                              description: 'Full control — sets, legs, indicators and conditions',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showCreateCustomStrategyDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.auto_fix_high_rounded,
+                              iconColor: const Color(0xFF2563EB),
+                              iconBg: const Color(0xFFEFF6FF),
+                              title: 'Option Wizard',
+                              description: 'Guided option legs, strike offsets and delta hedging',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showOptionWizardDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.layers_rounded,
+                              iconColor: const Color(0xFF7C3AED),
+                              iconBg: const Color(0xFFF5F3FF),
+                              title: 'Advanced Wizard',
+                              description: 'Multi-leg builder with automated entry and exit rules',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showAdvancedWizardDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.shopping_bag_outlined,
+                              iconColor: const Color(0xFFEA580C),
+                              iconBg: const Color(0xFFFFF7ED),
+                              title: 'StockBag',
+                              description: 'A weighted basket of equities replicated to 8 accounts',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showStockBagDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.code_rounded,
+                              iconColor: const Color(0xFF0284C7),
+                              iconBg: const Color(0xFFE0F2FE),
+                              title: 'Pine Script Strategy',
+                              description: 'Bring a TradingView script & Webhook alert across',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showPineScriptBridgeDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.flash_on_rounded,
+                              iconColor: const Color(0xFFD97706),
+                              iconBg: const Color(0xFFFEF3C7),
+                              title: 'Scalper',
+                              description: 'Buys the dips and sells the rises on one contract',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showScalperDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.sensors_rounded,
+                              iconColor: const Color(0xFF0D9488),
+                              iconBg: const Color(0xFFCCFBF1),
+                              title: 'Signal Bridge',
+                              description: 'Trade by sending Buy / Sell — from a button, link or Excel',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _showSignalBridgeDialog();
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.history_rounded,
+                              iconColor: const Color(0xFFE11D48),
+                              iconBg: const Color(0xFFFFE4E6),
+                              title: 'Strategy Simulator',
+                              description: 'Replay a past day and trade its real option chain',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _tabController.animateTo(1);
+                              },
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // READY-MADE Section
+                        const Text(
+                          'READY-MADE',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF6B7280),
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.1,
+                          children: [
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.shield_outlined,
+                              iconColor: const Color(0xFF4F46E5),
+                              iconBg: const Color(0xFFEEF2FF),
+                              title: 'Pin the Range',
+                              description: 'Ready-made NIFTY condor, one click to deploy',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _deployReadyMadeStrategy('Pin the Range (Nifty Iron Condor)', 'NIFTY50-OPT', 'Condor Range Harvester', 'Short 20Δ OTM Strangle + 10Δ Wings');
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.trending_up_rounded,
+                              iconColor: const Color(0xFF059669),
+                              iconBg: const Color(0xFFECFDF5),
+                              title: 'Covered Calls',
+                              description: 'Screen and write calls on portfolio holdings',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _deployReadyMadeStrategy('Covered Calls Income', 'RELIANCE-EQ', 'Synthetic Yield Generation', 'Hold Equity + Sell 15Δ OTM CE Monthly');
+                              },
+                            ),
+                            _buildMegaMenuItem(
+                              ctx: ctx,
+                              icon: Icons.currency_rupee_rounded,
+                              iconColor: const Color(0xFF10B981),
+                              iconBg: const Color(0xFFECFDF5),
+                              title: 'Cash Secured Puts',
+                              description: 'Sell puts on bluechip stocks you would own at discount',
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _deployReadyMadeStrategy('Cash Secured Puts Discount Entry', 'HDFCBANK-OPT', 'Value Accumulation', 'Sell 20Δ OTM Put at Key Support Level');
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMegaMenuItem({
+    required BuildContext ctx,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: Color(0xFF6B7280),
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deployReadyMadeStrategy(String name, String instrument, String type, String rule) {
+    final id = 'ALGO-10${_strategies.length + 1}';
+    final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    setState(() {
+      _strategies.insert(
+        0,
+        AlgoStrategyModel(
+          id: id,
+          name: name,
+          instrument: instrument,
+          timeframe: '5m / Real-time',
+          strategyType: type,
+          indicatorRule: rule,
+          stopLossPct: 1.0,
+          targetPct: 2.5,
+          status: 'RUNNING',
+          deployedBrokers: ['Dhan (1x)', 'Zerodha (1x)', 'Upstox (1x)', 'AngelOne (1x)', 'Motilal (1x)', 'Profitmart (1x)', 'Goodwill (1x)', 'Groww (1x)'],
+          todayPnl: 0.0,
+          signalsTriggered: 0,
+          winRate: 75.0,
+          capitalRequired: '₹1,50,000',
+          createdAt: dateStr,
+        ),
+      );
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text('$name deployed successfully across 8 Demat accounts!')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showAiStrategyPromptDialog() {
+    final promptCtrl = TextEditingController(text: 'Buy NIFTY 50 Call when 15m RSI crosses 60 and price is above VWAP. Sell if trailing SL is 0.8% or target 2.0%.');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: Color(0xFF8B5CF6)),
+            SizedBox(width: 10),
+            Text('Create Strategy Using AI', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Describe your trading idea in plain English:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF4B5563))),
+              const SizedBox(height: 8),
+              TextField(
+                controller: promptCtrl,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  filled: true,
+                  fillColor: const Color(0xFFF9FAFB),
+                  hintText: 'e.g. When Bank Nifty opens gap up by 0.5% and 5m candle breaks high, buy ATM CE...',
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Quick Prompts:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  'RSI 60 Breakout Scalper',
+                  'Delta Neutral Short Straddle',
+                  'EMA 9/21 Dynamic Trend',
+                  'VWAP Reversion Scalp',
+                ].map((p) => InkWell(
+                  onTap: () => promptCtrl.text = p,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(p, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                  ),
+                )).toList(),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton.icon(
+            onPressed: () {
+              final text = promptCtrl.text.trim();
+              if (text.isEmpty) return;
+              Navigator.pop(ctx);
+              _deployReadyMadeStrategy('AI: ${text.length > 30 ? text.substring(0, 30) : text}...', 'NIFTY50-INDEX', 'AI Synthesized Rule', text);
+            },
+            icon: const Icon(Icons.bolt_rounded, size: 16),
+            label: const Text('Generate & Deploy to 8 Demats'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOptionWizardDialog() {
+    String strikeMode = 'ATM (At the Money)';
+    String strategyStructure = 'Short Straddle (Sell CE + Sell PE)';
+    double slPct = 25.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.auto_fix_high_rounded, color: Color(0xFF2563EB)),
+              SizedBox(width: 10),
+              Text('Tradetron Option Wizard', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('OPTION STRUCTURE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: strategyStructure,
+                  items: const [
+                    DropdownMenuItem(value: 'Short Straddle (Sell CE + Sell PE)', child: Text('Short Straddle (ATM CE + ATM PE)')),
+                    DropdownMenuItem(value: 'Short Strangle (Sell OTM CE + Sell OTM PE)', child: Text('Short Strangle (OTM 1 Strike)')),
+                    DropdownMenuItem(value: 'Iron Condor (4-Legs Hedged)', child: Text('Iron Condor (Delta 20 / 10 Wings)')),
+                  ],
+                  onChanged: (v) => setDlgState(() => strategyStructure = v!),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('STRIKE SELECTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: strikeMode,
+                  items: const [
+                    DropdownMenuItem(value: 'ATM (At the Money)', child: Text('ATM (Delta ~0.50)')),
+                    DropdownMenuItem(value: 'OTM 1 Strike', child: Text('OTM 1 (Delta ~0.35)')),
+                    DropdownMenuItem(value: 'OTM 2 Strikes', child: Text('OTM 2 (Delta ~0.20)')),
+                  ],
+                  onChanged: (v) => setDlgState(() => strikeMode = v!),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('STOP LOSS PER LEG: ${slPct.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+                Slider(
+                  value: slPct,
+                  min: 10.0,
+                  max: 60.0,
+                  divisions: 10,
+                  activeColor: const Color(0xFF2563EB),
+                  label: '${slPct.toStringAsFixed(0)}%',
+                  onChanged: (v) => setDlgState(() => slPct = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _deployReadyMadeStrategy('Option Wizard: $strategyStructure', 'BANKNIFTY-OPT', 'Guided Option Selling', 'Entry 09:20 AM, $strikeMode, SL ${slPct.toStringAsFixed(0)}%');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Deploy Option Strategy to 8 Demats'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPineScriptBridgeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.code_rounded, color: Color(0xFF0284C7)),
+            SizedBox(width: 10),
+            Text('TradingView Pine Script Bridge', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Webhook URL (Paste into TradingView Alert):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'https://panchayagnam-api.onrender.com/webhook/tradingview/bridge',
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                      ),
+                    ),
+                    Icon(Icons.copy_rounded, size: 16, color: Color(0xFF0284C7)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text('Alert Message Template (JSON):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '{\n  "ticker": "{{ticker}}",\n  "action": "{{strategy.order.action}}",\n  "quantity": {{strategy.order.contracts}},\n  "price": {{close}},\n  "replicateAll8Demats": true\n}',
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFF38BDF8)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deployReadyMadeStrategy('TradingView Pine Script Alert Replicator', 'NIFTY50-INDEX', 'TradingView Webhook Bridge', 'Replicates {{strategy.order.action}} simultaneously to 8 accounts');
+            },
+            icon: const Icon(Icons.check_rounded, size: 16),
+            label: const Text('Save & Arm Pine Webhook'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showScalperDialog() {
+    _deployReadyMadeStrategy('1-Contract Momentum Scalper', 'BANKNIFTY-OPT', 'Micro Scalper Engine', 'Fast 10pt SL / 25pt Target on Bank Nifty ATM CE/PE');
+  }
+
+  void _showSignalBridgeDialog() {
+    _deployReadyMadeStrategy('Excel / Webhook Signal Bridge', 'MULTI-ASSET', 'REST API Bridge', 'Receives external Buy/Sell triggers from Excel or HTTP and replicates to 8 brokers');
+  }
+
+  void _showStockBagDialog() {
+    _deployReadyMadeStrategy('Nifty Heavyweights StockBag', 'EQUITY-BASKET', 'Basket Execution', '25% Reliance + 25% HDFC Bank + 25% ICICI Bank + 25% Infosys');
+  }
+
+  void _showAdvancedWizardDialog() {
+    _showCreateCustomStrategyDialog();
+  }
+
   // ── Custom Strategy Creator Dialog ─────────────────────────────────────────
 
   void _showCreateCustomStrategyDialog() {
@@ -1027,7 +1698,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                               ? null
                               : () => _simulateStrategySignal(_strategies.first),
                           icon: _isExecutingSimulation
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -1043,7 +1714,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton.icon(
-                          onPressed: _showCreateCustomStrategyDialog,
+                          onPressed: _showTradetronCreateMegaMenu,
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: const Text('Create Strategy'),
                           style: ElevatedButton.styleFrom(
@@ -1094,6 +1765,46 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                       icon: Icons.security_rounded,
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── Tradetron Notice & Quick Guide Strip ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5F3FF),
+              border: Border(bottom: BorderSide(color: Color(0xFFDDD6FE))),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6D28D9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('NOTICE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                ),
+                const SizedBox(width: 10),
+                const Icon(Icons.check_box_outlined, size: 14, color: Color(0xFF6D28D9)),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'RSI & Mean Reversion, tested on real NIFTY data • Multi-Broker Algorithmic Execution Active across 8 Demat Accounts.',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF4C1D95)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _showTradetronCreateMegaMenu,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: const Color(0xFF6D28D9),
+                  ),
+                  child: const Text('+ Build New', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -1952,9 +2663,9 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 const SizedBox(height: 24),
 
                 ElevatedButton.icon(
-                  onPressed: _showCreateCustomStrategyDialog,
-                  icon: const Icon(Icons.save_rounded, size: 18),
-                  label: const Text('Save & Deploy Custom Rule to Engine'),
+                  onPressed: _showTradetronCreateMegaMenu,
+                  icon: const Icon(Icons.hub_rounded, size: 18),
+                  label: const Text('Open Tradetron Strategy Creator Hub'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,

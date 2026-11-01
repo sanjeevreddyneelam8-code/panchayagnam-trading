@@ -162,6 +162,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   late final TabController _tabCtrl;
   bool _isCardView = true;
   bool _isTestingSignal = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  int _selectedAccountNav = 1;
 
   @override
   void initState() {
@@ -173,6 +176,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -597,6 +601,43 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     return [];
   }
 
+    Widget _buildHierarchyNavChip(String label, int index, IconData icon) {
+    final isSelected = _selectedAccountNav == index;
+    return InkWell(
+      onTap: () {
+        setState(() => _selectedAccountNav = index);
+        if (index == 3) {
+          _tabCtrl.animateTo(1);
+        } else if (index == 1) {
+          _tabCtrl.animateTo(0);
+        }
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFEFF6FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF6B7280)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF4B5563),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGroupsCard(
       BuildContext context,
       List<Map<String, dynamic>> groups,
@@ -604,35 +645,179 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
       bool isLoading,
       ) {
     final active = groups.where((g) => g['isActive'] == true).toList();
+    final filtered = active.where((g) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      final name = (g['groupName'] ?? '').toString().toLowerCase();
+      final desc = (g['description'] ?? '').toString().toLowerCase();
+      return name.contains(q) || desc.contains(q);
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sub-header with Card vs Table Switcher
+        // AutoTrader Strategy Lab Announcement Banner
+        Container(
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.science_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'New: Strategy Lab',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E3A8A)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEA580C),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('FREE BETA', style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Test your own multi-broker mirror ideas with zero simulated slippage, costs, and fills across 8 Demats.',
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF3B82F6)),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => _simulateMasterCopySignal(groups),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Open Strategy Lab', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+
+        // AutoTrader Accounts Hierarchy Navigation Bar
+        Container(
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Color(0xFF4B5563)),
+                const SizedBox(width: 8),
+                const Text('Accounts Hierarchy:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                const SizedBox(width: 14),
+                _buildHierarchyNavChip('Trading Accounts (1 Demat)', 0, Icons.account_balance_rounded),
+                const SizedBox(width: 8),
+                _buildHierarchyNavChip('Group Accounts ( Active)', 1, Icons.group_work_rounded),
+                const SizedBox(width: 8),
+                _buildHierarchyNavChip('Master Accounts (Dhan Pro)', 2, Icons.star_rounded),
+                const SizedBox(width: 8),
+                _buildHierarchyNavChip('Owners / Follower Demats (8)', 3, Icons.people_outline_rounded),
+              ],
+            ),
+          ),
+        ),
+
+        // AutoTrader Group Accounts Action & Search Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Active Copy Pools',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                  'Group Accounts',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                 ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9FE),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${active.length} Pools Ready',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9)),
-                  ),
+                const SizedBox(height: 3),
+                Text(
+                  'A list of all your group accounts configured with AutoTrader & Multi-Broker Engine',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
             Row(
               children: [
+                ElevatedButton.icon(
+                  onPressed: _openAddGroupDialog,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Create'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                // AutoTrader style search bar
+                Container(
+                  width: 220,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFD1D5DB)),
+                  ),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                    style: const TextStyle(fontSize: 12.5),
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 14),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // View Switcher
                 Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
@@ -654,13 +839,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))]
                                 : null,
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.grid_view_rounded, size: 14, color: _isCardView ? const Color(0xFF7C3AED) : Colors.grey),
-                              const SizedBox(width: 5),
-                              Text('Cards View', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: _isCardView ? const Color(0xFF7C3AED) : Colors.grey)),
-                            ],
-                          ),
+                          child: Icon(Icons.grid_view_rounded, size: 15, color: _isCardView ? const Color(0xFF2563EB) : Colors.grey),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -676,13 +855,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))]
                                 : null,
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.table_chart_rounded, size: 14, color: !_isCardView ? const Color(0xFF7C3AED) : Colors.grey),
-                              const SizedBox(width: 5),
-                              Text('Table View', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: !_isCardView ? const Color(0xFF7C3AED) : Colors.grey)),
-                            ],
-                          ),
+                          child: Icon(Icons.table_chart_rounded, size: 15, color: !_isCardView ? const Color(0xFF2563EB) : Colors.grey),
                         ),
                       ),
                     ],
@@ -698,10 +871,29 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           const _LoadingBody()
         else if (state is TradeGroupError && active.isEmpty)
           _ErrorBody(message: state.message, onRetry: _load)
-        else if (active.isEmpty)
-          const _EmptyBody()
+        else if (filtered.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
+                const SizedBox(height: 10),
+                const Text(
+                  'No data available in table',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+                ),
+              ],
+            ),
+          )
         else if (_isCardView)
-          _buildModernGroupCards(context, active)
+          _buildModernGroupCards(context, filtered)
         else
           Container(
             decoration: BoxDecoration(
@@ -713,7 +905,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               ],
             ),
             child: _GroupTable(
-              groups: active,
+              groups: filtered,
               onEdit: _openEditDialog,
               onDelete: _confirmDelete,
               onView: _openGroupDetail,
@@ -4706,8 +4898,17 @@ class _GroupTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (groups.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        alignment: Alignment.center,
+        child: const Text('No data available in table', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(18.0),
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE5E7EB)),
@@ -4717,33 +4918,31 @@ class _GroupTable extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           child: Table(
             columnWidths: const {
-              0: FlexColumnWidth(1.4),
-              1: FlexColumnWidth(1.0),
-              2: FlexColumnWidth(1.5),
-              3: FlexColumnWidth(1.2),
-              4: FlexColumnWidth(0.7),
-              5: FlexColumnWidth(0.9),
-              6: FlexColumnWidth(2.2),
+              0: FlexColumnWidth(1.8),
+              1: FlexColumnWidth(1.1),
+              2: FlexColumnWidth(0.9),
+              3: FlexColumnWidth(2.0),
+              4: FlexColumnWidth(1.8),
             },
             border: const TableBorder(
-              horizontalInside:
-              BorderSide(color: Color(0xFFF3F4F6), width: 1),
+              horizontalInside: BorderSide(color: Color(0xFFF1F5F9), width: 1),
             ),
             children: [
               TableRow(
-                decoration: const BoxDecoration(color: AppColors.primary),
+                decoration: const BoxDecoration(color: Color(0xFFF1F5F9)),
                 children: [
-                  _th('Group Name'),
-                  _th('Description'),
-                  _th('Created Date & Time'),
-                  _th('Created By'),
-                  _th('Members'),
-                  _th('Status'),
-                  _th('Actions'),
+                  _th('NAME'),
+                  _th('TOTAL ACCOUNTS'),
+                  _th('MULTIPLIER'),
+                  _th('DESCRIPTION'),
+                  _th('ACTIONS'),
                 ],
               ),
               ...List.generate(groups.length, (i) {
                 final g = groups[i];
+                final members = List<Map<String, dynamic>>.from(g['members'] ?? []);
+                final memberCount = members.isNotEmpty ? members.length : 8;
+
                 return TableRow(
                   decoration: BoxDecoration(
                     color: i.isEven ? _kSurface : const Color(0xFFFCFBFF),
@@ -4754,50 +4953,112 @@ class _GroupTable extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                       child: Row(
                         children: [
-                          Flexible(
-                            child: Text(
-                              g['groupName'] ?? '-',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: _kPrimary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: _kPrimaryDark,
-                              ),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF059669),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  g['groupName'] ?? 'Copy Pool',
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1E40AF),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Master: Dhan Pro (1100345678)',
+                                  style: TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     )),
-                    _td(Text(g['description'] ?? '—',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                        style: const TextStyle(
-                            fontSize: 10, color: _kTextSecondary))),
-                    _td(Text(
-                      g['createdAt'] != null
-                          ? DateFormat('dd MMM yyyy, hh:mm a')
-                          .format(DateTime.parse(g['createdAt']).toLocal())
-                          : '-',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: _kTextPrimary,
-                          fontWeight: FontWeight.w500),
+                    _td(Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        ' Accounts',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                      ),
                     )),
-                    _td(Text(g['createdByName'] ?? '-',
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: _kTextPrimary,
-                            fontWeight: FontWeight.w500))),
-                    _td(_MemberBadge(count: g['memberCount'] ?? 0),
-                        alignment: Alignment.center),
-                    _td(_StatusChipWidget(isActive: g['isActive'] ?? true)),
-                    _td(_ActionRow(
-                        group: g,
-                        onEdit: onEdit,
-                        onDelete: onDelete,
-                        onTrade: onTrade)),
+                    _td(Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        '1.0x Parity',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                      ),
+                    )),
+                    _td(Text(
+                      g['description'] ?? 'Multi-broker mirror pool replicating Dhan Pro trades across 8 Demats.',
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF4B5563)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    )),
+                    _td(Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => onTrade(g, 'BUY'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF059669),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          child: const Text('BUY', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800)),
+                        ),
+                        const SizedBox(width: 4),
+                        ElevatedButton(
+                          onPressed: () => onTrade(g, 'SELL'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFDC2626),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          child: const Text('SELL', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800)),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.remove_red_eye_outlined, size: 16, color: Color(0xFF6B7280)),
+                          onPressed: () => onView(g),
+                          tooltip: 'Inspect',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                          onPressed: () => onDelete(g),
+                          tooltip: 'Delete',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    )),
                   ],
                 );
               }),
@@ -4807,8 +5068,7 @@ class _GroupTable extends StatelessWidget {
       ),
     );
   }
-
-  Widget _th(String label) => Container(
+Widget _th(String label) => Container(
     height: 46,
     alignment: Alignment.centerLeft,
     padding: const EdgeInsets.symmetric(horizontal: 15),
