@@ -808,6 +808,37 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
+  Widget _buildToolbarIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isPrimary ? const Color(0xFF2563EB) : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isPrimary ? const Color(0xFF1D4ED8) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: isPrimary ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAutoTraderPortfolioTabs() {
     final tabs = [
       ('Summary', Icons.dashboard_outlined),
