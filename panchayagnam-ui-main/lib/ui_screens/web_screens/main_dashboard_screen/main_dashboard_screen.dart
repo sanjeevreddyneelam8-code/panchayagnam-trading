@@ -147,6 +147,7 @@ class _MainDashboardState extends State<MainDashboard> {
         label: 'Tools & Accounts',
         type: _NavItemType.group,
         children: [
+          const _SubNavItem(icon: Icons.payment_rounded, label: 'Payment Gateway & Plans'),
           const _SubNavItem(icon: Icons.table_chart_rounded, label: 'Options Chain'),
           const _SubNavItem(icon: Icons.link_rounded, label: 'Broker Accounts'),
           const _SubNavItem(icon: Icons.assessment_outlined, label: 'Reports'),
@@ -159,12 +160,17 @@ class _MainDashboardState extends State<MainDashboard> {
           ],
         ],
       ),
+      const _NavItem(
+        icon: Icons.payment_rounded,
+        label: 'Payment & Plans',
+        type: _NavItemType.normal,
+      ),
     ];
   }
 
   void _navigateToBrokers() {
     setState(() {
-      _currentSelection = const _NavSelection(3, 1);
+      _currentSelection = const _NavSelection(3, 2);
       _bodyKey = UniqueKey();
     });
   }
@@ -226,24 +232,35 @@ class _MainDashboardState extends State<MainDashboard> {
       case 3: // Tools & Accounts
         switch (subIdx) {
           case 0:
-            return const OptionsChainView();
+            return SubscriptionPlansScreen(
+              userId: userId,
+              isGroup: role != UserRole.USER,
+            );
           case 1:
-            return const ChildAccountsTab();
+            return const OptionsChainView();
           case 2:
-            return const ReportsView();
+            return const ChildAccountsTab();
           case 3:
-            return const NotificationsView();
+            return const ReportsView();
           case 4:
+            return const NotificationsView();
+          case 5:
             return const SettingsView();
-          case 5: // Group Admins (Super Admin only)
+          case 6: // Group Admins (Super Admin only)
             return const GroupAdminsTab();
-          case 6: // Admin Requests (Super Admin only)
+          case 7: // Admin Requests (Super Admin only)
             return ApproveUsersTab("admin");
-          case 7: // Client Requests (Super Admin only)
+          case 8: // Client Requests (Super Admin only)
             return ApproveUsersTab("client");
           default:
             return const ChildAccountsTab();
         }
+
+      case 4: // Top-level Payment & Plans
+        return SubscriptionPlansScreen(
+          userId: userId,
+          isGroup: role != UserRole.USER,
+        );
 
       default:
         return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);

@@ -676,7 +676,7 @@ class _IpReportScreenState extends State<IpReportScreen>
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppTheme.divider, width: 1),
               ),
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: AppTheme.primary,

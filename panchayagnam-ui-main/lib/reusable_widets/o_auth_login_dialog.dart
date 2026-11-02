@@ -336,7 +336,7 @@ class _OAuthLoginDialogState extends State<OAuthLoginDialog>
                 onPressed:
                 isLoading ? null : () => _openLoginPage(context),
                 icon: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -530,7 +530,7 @@ class _OAuthLoginDialogState extends State<OAuthLoginDialog>
                 onPressed:
                 isLoading ? null : () => _submitCode(context),
                 icon: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(

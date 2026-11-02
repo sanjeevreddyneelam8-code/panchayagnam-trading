@@ -370,7 +370,7 @@ class _PulsingLoader extends StatelessWidget {
       animation: pulse,
       builder: (_, __) => Opacity(
         opacity: pulse.value,
-        child: const SizedBox(
+        child: SizedBox(
           width: 16,
           height: 16,
           child: CircularProgressIndicator(

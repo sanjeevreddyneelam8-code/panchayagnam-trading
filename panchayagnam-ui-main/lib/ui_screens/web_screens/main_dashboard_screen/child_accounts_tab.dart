@@ -618,7 +618,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
       child: BlocBuilder<FetchUserDematBloc, FetchUserDematState>(
         builder: (context, state) {
           if (state is FetchUserDematLoading) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(color: AppColors.primaryBlue),
             );
           }
@@ -1277,7 +1277,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: isBalanceLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
@@ -1343,7 +1343,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                     // ── Status ────────────────────────────────────────────────
                     DataCell(
                       isPending
-                          ? const SizedBox(
+                          ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -2191,9 +2191,9 @@ class _BrokerConnectDialogState extends State<_BrokerConnectDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _totpLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                 height: 52,
                 child: Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -2282,7 +2282,7 @@ class _BrokerConnectDialogState extends State<_BrokerConnectDialog> {
               child: ElevatedButton.icon(
                 onPressed: isLoading ? null : () => _openLoginPage(ctx),
                 icon: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -2477,7 +2477,7 @@ class _BrokerConnectDialogState extends State<_BrokerConnectDialog> {
               child: ElevatedButton.icon(
                 onPressed: isLoading ? null : () => _exchangeToken(ctx),
                 icon: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -3083,7 +3083,7 @@ class _IpInputDialogState extends State<_IpInputDialog> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                             child: isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(

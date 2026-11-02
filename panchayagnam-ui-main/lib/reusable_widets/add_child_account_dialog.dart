@@ -1159,7 +1159,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                 ),
               ),
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
@@ -2205,7 +2205,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                       ),
                     ),
                     child: isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(

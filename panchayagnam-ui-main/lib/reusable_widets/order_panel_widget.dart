@@ -1715,7 +1715,7 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
                 ),
               ),
               child: _isPlacing
-                  ? const SizedBox(
+                  ? SizedBox(
                 width: 18, height: 18,
                 child: CircularProgressIndicator(
                     color: Colors.white, strokeWidth: 2),

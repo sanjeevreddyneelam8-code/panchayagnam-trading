@@ -344,7 +344,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                   elevation: 2,
                 ),
                 child: _isProcessing
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -705,7 +705,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   }
 
   Widget _buildProcessingSpinner() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -714,10 +714,10 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
             height: 44,
             child: CircularProgressIndicator(color: Color(0xFF2563EB), strokeWidth: 3),
           ),
-          SizedBox(height: 20),
-          Text('Securing Connection with Bank...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 6),
-          Text('Please do not refresh or close this window.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+          const SizedBox(height: 20),
+          const Text('Securing Connection with Bank...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 6),
+          const Text('Please do not refresh or close this window.', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
         ],
       ),
     );

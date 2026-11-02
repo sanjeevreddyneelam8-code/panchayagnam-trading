@@ -1919,7 +1919,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
           if (_loadingLtp)
             Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 SizedBox(
                   width: 13,
                   height: 13,
@@ -1928,7 +1928,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                     color: _accent,
                   ),
                 ),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
                 Text(
                   'Loading price…',
                   style: TextStyle(fontSize: 11, color: _accent),
@@ -3484,7 +3484,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
           child: anyExiting
               ? Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     SizedBox(
                       width: 10,
                       height: 10,
@@ -3493,7 +3493,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                         color: _exitText,
                       ),
                     ),
-                    SizedBox(width: 5),
+                    const SizedBox(width: 5),
                     Text(
                       'Exiting…',
                       style: TextStyle(
@@ -3907,7 +3907,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: _border),
                           ),
-                          child: const SizedBox(
+                          child: SizedBox(
                             width: 12,
                             height: 12,
                             child: CircularProgressIndicator(
@@ -3930,7 +3930,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(color: _border),
                                     ),
-                                    child: const SizedBox(
+                                    child: SizedBox(
                                       width: 12,
                                       height: 12,
                                       child: CircularProgressIndicator(
@@ -5354,7 +5354,7 @@ class _ExitConfirmationSheetState extends State<_ExitConfirmationSheet> {
                               ),
                             ),
                             child: _isPlacing
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
@@ -6145,7 +6145,7 @@ class _ConvertPositionDialogState extends State<_ConvertPositionDialog> {
                           ),
                         ),
                         child: _submitting
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(

@@ -4750,7 +4750,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                                 ],
                                 required: true,
                                 suffix: _ltpLoading
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         width: 14,
                                         height: 14,
                                         child: CircularProgressIndicator(
@@ -5052,7 +5052,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                       color: Color(0xFF6B7280),
                     ),
                     prefixIcon: _searchLoading
-                        ? const Padding(
+                        ? Padding(
                             padding: EdgeInsets.all(12),
                             child: SizedBox(
                               width: 16,
@@ -5242,7 +5242,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                     ),
                   ),
                   if (_ltpLoading)
-                    const SizedBox(
+                    SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(

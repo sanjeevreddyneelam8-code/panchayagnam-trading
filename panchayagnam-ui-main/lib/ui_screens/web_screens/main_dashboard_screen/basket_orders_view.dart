@@ -318,7 +318,7 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
                         ElevatedButton.icon(
                           onPressed: _items.isEmpty || _isExecuting ? null : _executePaperBasket,
                           icon: _isExecuting
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.play_circle_filled_rounded, size: 18),
                           label: Text(_isExecuting ? 'Simulating...' : 'Execute Basket (Paper Mode)'),
                           style: ElevatedButton.styleFrom(

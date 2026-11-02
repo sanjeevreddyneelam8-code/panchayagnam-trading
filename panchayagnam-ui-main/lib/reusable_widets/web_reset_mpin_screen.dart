@@ -268,7 +268,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                                     borderRadius: BorderRadius.circular(12)),
                               ),
                               child: isLoading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(

@@ -234,7 +234,7 @@ class _IpHealthScreenState extends State<IpHealthScreen>
                     ),
                   ),
                   if (state.isFetchingAll)
-                    const SizedBox(
+                    SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
@@ -437,7 +437,7 @@ class _IpHealthScreenState extends State<IpHealthScreen>
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: state.isCheckingHealth
-              ? const SizedBox(
+              ? SizedBox(
             key: ValueKey('loading'),
             width: 20,
             height: 20,

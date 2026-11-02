@@ -512,7 +512,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFF86EFAC)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.sensors, color: Color(0xFF16A34A), size: 14),
@@ -533,7 +533,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFBFDBFE)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.cloud_done_outlined, color: Color(0xFF2563EB), size: 14),
@@ -554,7 +554,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFFDE68A)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
@@ -580,7 +580,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.cloud_off_rounded, color: Color(0xFF6B7280), size: 14),
@@ -742,7 +742,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                       border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Expanded(flex: 3, child: Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
                         Expanded(flex: 1, child: Text('EXCH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),

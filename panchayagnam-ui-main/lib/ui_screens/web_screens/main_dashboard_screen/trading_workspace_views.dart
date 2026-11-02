@@ -394,7 +394,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _fetchPaperData,
                   icon: _isLoading
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Refresh Station'),
                   style: ElevatedButton.styleFrom(
@@ -625,7 +625,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                               child: ElevatedButton.icon(
                                 onPressed: _isSubmittingOrder ? null : _executePaperTrade,
                                 icon: _isSubmittingOrder
-                                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                     : const Icon(Icons.flash_on_rounded, size: 18),
                                 label: Text(_isSubmittingOrder ? 'Placing...' : 'Execute Trade'),
                                 style: ElevatedButton.styleFrom(

@@ -452,7 +452,7 @@ class _GroupAdminsTabState extends State<GroupAdminsTab> {
 
   Widget _buildBody(FetchPyUsersState state) {
     if (state is FetchPyUsersLoading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 80),
         child: Center(
           child: SizedBox(
@@ -782,7 +782,7 @@ class _AdminRow extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: isDemoting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
@@ -845,7 +845,7 @@ class _AdminRow extends StatelessWidget {
       return Container(
         color: const Color(0xFFFAF9FF),
         padding: const EdgeInsets.symmetric(vertical: 28),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 10,
             height: 10,

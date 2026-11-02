@@ -379,7 +379,7 @@ class _SaveIpScreenState extends State<SaveIpScreen>
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: state.isSaving
-              ? const SizedBox(
+              ? SizedBox(
             key: ValueKey('loading'),
             width: 20,
             height: 20,

@@ -448,7 +448,7 @@ class _RightPanelState extends State<_RightPanel> {
                   children: [
                     if (isOtpLoading)
                       // Show spinner ONLY next to Send OTP
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 4),
                         child: SizedBox(
                           width: 14,
@@ -572,7 +572,7 @@ class _RightPanelState extends State<_RightPanel> {
                     ),
                     // Show spinner ONLY on the Register button
                     child: isRegisterLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(

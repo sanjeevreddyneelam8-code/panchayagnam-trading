@@ -258,7 +258,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                 ElevatedButton.icon(
                   onPressed: _isSimulating ? null : _runBacktest,
                   icon: _isSimulating
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(Icons.rocket_launch_rounded, size: 18),
                   label: Text(_isSimulating ? 'Simulating...' : '🚀 Run Backtest Simulation'),
                   style: ElevatedButton.styleFrom(

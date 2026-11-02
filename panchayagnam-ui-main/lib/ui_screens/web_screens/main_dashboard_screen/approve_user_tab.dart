@@ -328,10 +328,10 @@ class _ApproveUsersTabState extends State<ApproveUsersTab>
                 pendingCount: pCount,
                 activePage: widget.activePage,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               if (state is ApproveUsersLoading)
-                const Expanded(
+                Expanded(
                   child: Center(
                     child: CircularProgressIndicator(color: _T.purple),
                   ),
@@ -1261,7 +1261,7 @@ class _TableRow extends StatelessWidget {
                 Expanded(
                   flex: _fActions,
                   child: isLoading
-                      ? const Center(
+                      ? Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,

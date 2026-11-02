@@ -335,7 +335,7 @@ class _MobileSignInScreenState extends State<MobileSignInScreen> {
                             ),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(

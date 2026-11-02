@@ -45,9 +45,9 @@ class LtpPriceWidget extends StatelessWidget {
                 _ExchangeBadge(exchange: scrip!.exchange),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (isLoading)
-            const Center(
+            Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: CircularProgressIndicator(

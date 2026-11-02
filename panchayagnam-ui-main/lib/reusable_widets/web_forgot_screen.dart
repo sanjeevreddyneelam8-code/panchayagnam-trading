@@ -242,7 +242,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               if (isOtpLoading)
-                                const Padding(
+                                Padding(
                                   padding: EdgeInsets.only(top: 4),
                                   child: SizedBox(
                                     width: 14,

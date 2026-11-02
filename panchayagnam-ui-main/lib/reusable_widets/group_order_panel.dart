@@ -1853,7 +1853,7 @@ class _PlaceOrderButton extends StatelessWidget {
                 : [],
           ),
           child: isLoading
-              ? const Center(
+              ? Center(
             child: SizedBox(
               width: 18,
               height: 18,
@@ -1944,7 +1944,7 @@ class _StockSpecialFields extends StatelessWidget {
                 ),
               ),
               if (item.ltpLoading)
-                const SizedBox(
+                SizedBox(
                   width: 13,
                   height: 13,
                   child: CircularProgressIndicator(
@@ -2398,9 +2398,9 @@ class _BasketRow extends StatelessWidget {
                             letterSpacing: 0.1),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     if (item.ltpLoading)
-                      const SizedBox(
+                      SizedBox(
                         width: 12,
                         height: 12,
                         child: CircularProgressIndicator(
@@ -3096,7 +3096,7 @@ class _EmbeddedStockSearchState extends State<_EmbeddedStockSearch>
                           animation: _pulse,
                           builder: (_, __) => Opacity(
                             opacity: _pulse.value,
-                            child: const SizedBox(
+                            child: SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
