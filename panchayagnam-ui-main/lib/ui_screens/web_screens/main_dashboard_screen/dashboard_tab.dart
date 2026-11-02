@@ -18,6 +18,7 @@ import '../../../models/hot_stock_model.dart';
 import '../../../models/ScripInfo.dart';
 import 'dart:html' as html;
 import '../../../reusable_widets/order_panel_widget.dart';
+import '../../../reusable_widets/payment_gateway_dialog.dart';
 
 enum UserRole { SUPER_ADMIN, ADMIN, USER }
 
@@ -77,6 +78,68 @@ class _DashboardTabState extends State<DashboardTab> {
   String _selectedAccount = 'ALL';
   bool _isGridLayout = false;
 
+  // ─── Demo Trading Engine State ─────────────────────────────────────────────
+  double _pooledMargin = 8000000.0;
+  double _usedMargin = 14050.0;
+  double _realizedPnl = 0.0;
+  Timer? _marketPriceTickerTimer;
+
+  // Live Open Positions
+  final List<Map<String, dynamic>> _livePositions = [
+    {
+      'id': 'POS-1',
+      'symbol': 'NIFTY 24DEC 24000 CE',
+      'product': 'MIS / INTRADAY',
+      'qty': 50,
+      'avgPrice': 152.00,
+      'ltp': 168.20,
+      'pnl': 810.00,
+      'broker': 'Angel One (ANGEL-28941)',
+    },
+    {
+      'id': 'POS-2',
+      'symbol': 'BANKNIFTY 24DEC 51800 PE',
+      'product': 'MIS / INTRADAY',
+      'qty': 30,
+      'avgPrice': 215.00,
+      'ltp': 238.50,
+      'pnl': 705.00,
+      'broker': 'Zerodha Kite (ZERODHA-88219)',
+    },
+  ];
+
+  // Live Orders Execution History
+  final List<Map<String, dynamic>> _liveOrders = [
+    {
+      'time': '18:42:10',
+      'id': '#ORD-984210',
+      'scrip': 'NIFTY 24000 CE',
+      'side': 'BUY',
+      'qty': 50,
+      'price': 152.00,
+      'status': 'COMPLETE',
+      'broker': 'Angel One (ANGEL-28941)',
+    },
+    {
+      'time': '18:42:10',
+      'id': '#ORD-984209',
+      'scrip': 'BANKNIFTY 51800 PE',
+      'side': 'BUY',
+      'qty': 30,
+      'price': 215.00,
+      'status': 'COMPLETE',
+      'broker': 'Zerodha Kite (ZERODHA-88219)',
+    },
+  ];
+
+  // Trade Ticket Form Controllers
+  String _tradeSymbol = 'NIFTY 24DEC 24000 CE';
+  double _tradeLtp = 168.20;
+  String _tradeOrderType = 'MARKET';
+  String _tradeProductType = 'MIS';
+  int _tradeQty = 50;
+  String _tradeBroker = 'All Accounts (8 Demats - Group 1x)';
+
   // ── Balance fetch tracking ────────────────────────────────────────────────
   final Map<int, _PendingTrade> _pendingTrades = {};
   final Set<int> _loadingBalanceIds = {};
@@ -124,6 +187,23 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
     );
 
+    // Start live market simulated tick updates every 2 seconds
+    _marketPriceTickerTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (var pos in _livePositions) {
+          final double ltp = pos['ltp'] as double;
+          // Micro-fluctuation +/- 0.35%
+          final delta = ((DateTime.now().millisecond % 10) - 4.5) * 0.12;
+          final newLtp = (ltp + delta).clamp(1.0, 99999.0);
+          pos['ltp'] = double.parse(newLtp.toStringAsFixed(2));
+          final avg = pos['avgPrice'] as double;
+          final qty = pos['qty'] as int;
+          pos['pnl'] = double.parse(((newLtp - avg) * qty).toStringAsFixed(2));
+        }
+      });
+    });
+
     _carouselTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
       final next = (_carouselIndex + 1) % _slides.length;
@@ -137,6 +217,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   void dispose() {
+    _marketPriceTickerTimer?.cancel();
     _carouselTimer?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -483,30 +564,61 @@ class _DashboardTabState extends State<DashboardTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  if (widget.onNavigateToBrokers != null) {
-                    widget.onNavigateToBrokers!();
-                  } else {
-                    _showConnectBrokerDialog(context);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  elevation: 1,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      PaymentGatewayDialog.show(
+                        context,
+                        initialPlan: 'Dedicated Static IP',
+                        initialAmount: 1500.0,
+                        onPaymentSuccess: (amount, plan, txn) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Dedicated IP Activated! Ref: $txn'),
+                              backgroundColor: const Color(0xFF059669),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      side: const BorderSide(color: Color(0xFF2563EB)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    icon: const Icon(Icons.language_rounded, size: 16),
+                    label: const Text('Buy Dedicated IP (₹1,500)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                   ),
-                ),
-                child: const Text(
-                  'Add your broker account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (widget.onNavigateToBrokers != null) {
+                        widget.onNavigateToBrokers!();
+                      } else {
+                        _showConnectBrokerDialog(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      elevation: 1,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Text(
+                      'Add your broker account',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 8),
               const Text(
@@ -648,6 +760,37 @@ class _DashboardTabState extends State<DashboardTab> {
 
         const Spacer(),
 
+        // [ 💳 Payment Gateway / Add Funds ]
+        ElevatedButton.icon(
+          onPressed: () {
+            PaymentGatewayDialog.show(
+              context,
+              initialPlan: 'Add Trading Margin (₹50,000)',
+              initialAmount: 50000.0,
+              onPaymentSuccess: (amt, plan, txn) {
+                setState(() {
+                  _pooledMargin += amt;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Funds Added: ₹${amt.toInt()} to Pooled Margin!'),
+                    backgroundColor: const Color(0xFF059669),
+                  ),
+                );
+              },
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF10B981),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          ),
+          icon: const Icon(Icons.account_balance_wallet_rounded, size: 15, color: Colors.white),
+          label: const Text('Add Funds (Gateway)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        ),
+
+        const SizedBox(width: 8),
+
         // [ ⛶ ] Fullscreen toggle
         _buildToolbarIconButton(
           icon: Icons.fullscreen_rounded,
@@ -662,40 +805,6 @@ class _DashboardTabState extends State<DashboardTab> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildToolbarIconButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isPrimary ? const Color(0xFF2563EB) : Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: isPrimary ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: isPrimary ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -761,6 +870,13 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildAutoTraderLiveSummaryKPIBanner() {
+    double totalUnrealizedPnl = 0.0;
+    for (var pos in _livePositions) {
+      totalUnrealizedPnl += (pos['pnl'] as num).toDouble();
+    }
+    final double netTotalPnl = _realizedPnl + totalUnrealizedPnl;
+    final isNetPositive = netTotalPnl >= 0;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -793,13 +909,31 @@ class _DashboardTabState extends State<DashboardTab> {
             ],
           ),
           const SizedBox(width: 28),
-          _buildKPIMetric('TODAY\'S TRADES · AT P&L', '—', 'today\'s fills only · live'),
+          _buildKPIMetric(
+            "TODAY'S TRADES · AT P&L",
+            '${_liveOrders.length} Fills',
+            'today\'s fills only · live',
+          ),
           const SizedBox(width: 32),
-          _buildKPIMetric('NET · AT P&L', '0', 'auto-trade · live'),
+          _buildKPIMetric(
+            'NET · AT P&L',
+            (isNetPositive ? '+₹ ' : '-₹ ') + netTotalPnl.abs().toStringAsFixed(2),
+            'auto-trade · live',
+            valueColor: isNetPositive ? const Color(0xFF047857) : const Color(0xFFDC2626),
+          ),
           const SizedBox(width: 32),
-          _buildKPIMetric('NET · M2M / PNL', '—', 'PnL · — as of load'),
+          _buildKPIMetric(
+            'NET · M2M / PNL',
+            (totalUnrealizedPnl >= 0 ? '+₹ ' : '-₹ ') + totalUnrealizedPnl.abs().toStringAsFixed(2),
+            'PnL · live open positions',
+            valueColor: totalUnrealizedPnl >= 0 ? const Color(0xFF047857) : const Color(0xFFDC2626),
+          ),
           const SizedBox(width: 32),
-          _buildKPIMetric('MARGIN', '₹ 80,00,000', '— free of ₹80L pooled'),
+          _buildKPIMetric(
+            'MARGIN',
+            '₹ ${_formatINRDouble(_pooledMargin - _usedMargin)}',
+            'free of ${_formatINRDouble(_pooledMargin)} pooled',
+          ),
           const Spacer(),
           Row(
             children: [
@@ -816,7 +950,20 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildKPIMetric(String title, String value, String subtitle) {
+  String _formatINRDouble(double val) {
+    final s = val.toInt().toString();
+    if (s.length <= 3) return s;
+    final last3 = s.substring(s.length - 3);
+    final rest = s.substring(0, s.length - 3);
+    final buf = StringBuffer();
+    for (int i = 0; i < rest.length; i++) {
+      if (i != 0 && (rest.length - i) % 2 == 0) buf.write(',');
+      buf.write(rest[i]);
+    }
+    return '$buf,$last3';
+  }
+
+  Widget _buildKPIMetric(String title, String value, String subtitle, {Color? valueColor}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -832,10 +979,10 @@ class _DashboardTabState extends State<DashboardTab> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1E293B),
+            color: valueColor ?? const Color(0xFF1E293B),
           ),
         ),
         const SizedBox(height: 2),
@@ -914,6 +1061,142 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  // ─── Demo Trading Actions ──────────────────────────────────────────────────
+
+  void _executeDemoTrade({
+    required String symbol,
+    required String side,
+    required int qty,
+    required double price,
+    String product = 'MIS / INTRADAY',
+    String? broker,
+  }) {
+    final now = DateTime.now();
+    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+    final orderId = "#ORD-${now.millisecondsSinceEpoch.toString().substring(now.millisecondsSinceEpoch.toString().length - 6)}";
+    final chosenBroker = broker ?? _tradeBroker;
+
+    setState(() {
+      // 1. Add to orders log
+      _liveOrders.insert(0, {
+        'time': timeStr,
+        'id': orderId,
+        'scrip': symbol,
+        'side': side,
+        'qty': qty,
+        'price': price,
+        'status': 'COMPLETE',
+        'broker': chosenBroker,
+      });
+
+      // 2. Update positions
+      final existingIndex = _livePositions.indexWhere((p) => p['symbol'] == symbol);
+      if (existingIndex >= 0) {
+        if (side == 'BUY') {
+          final oldQty = _livePositions[existingIndex]['qty'] as int;
+          final oldAvg = _livePositions[existingIndex]['avgPrice'] as double;
+          final newQty = oldQty + qty;
+          final newAvg = ((oldAvg * oldQty) + (price * qty)) / newQty;
+          _livePositions[existingIndex]['qty'] = newQty;
+          _livePositions[existingIndex]['avgPrice'] = double.parse(newAvg.toStringAsFixed(2));
+          _livePositions[existingIndex]['ltp'] = price;
+          _livePositions[existingIndex]['pnl'] = double.parse(((price - newAvg) * newQty).toStringAsFixed(2));
+        } else {
+          // Sell reduces or closes
+          final oldQty = _livePositions[existingIndex]['qty'] as int;
+          final oldAvg = _livePositions[existingIndex]['avgPrice'] as double;
+          if (qty >= oldQty) {
+            _realizedPnl += (price - oldAvg) * oldQty;
+            _livePositions.removeAt(existingIndex);
+          } else {
+            _realizedPnl += (price - oldAvg) * qty;
+            final newQty = oldQty - qty;
+            _livePositions[existingIndex]['qty'] = newQty;
+            _livePositions[existingIndex]['pnl'] = double.parse(((price - oldAvg) * newQty).toStringAsFixed(2));
+          }
+        }
+      } else {
+        if (side == 'BUY') {
+          _livePositions.insert(0, {
+            'id': 'POS-${now.millisecondsSinceEpoch}',
+            'symbol': symbol,
+            'product': product,
+            'qty': qty,
+            'avgPrice': price,
+            'ltp': price,
+            'pnl': 0.0,
+            'broker': chosenBroker,
+          });
+        }
+      }
+
+      // 3. Update margin reservation
+      _usedMargin += (price * qty * 0.20); // 20% margin
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✓ Trade Executed: $side $qty $symbol @ ₹$price ($chosenBroker)'),
+        backgroundColor: side == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _squareOffPosition(Map<String, dynamic> pos) {
+    final symbol = pos['symbol'] as String;
+    final qty = pos['qty'] as int;
+    final avgPrice = pos['avgPrice'] as double;
+    final ltp = pos['ltp'] as double;
+    final broker = pos['broker'] as String;
+    final realized = (ltp - avgPrice) * qty;
+
+    final now = DateTime.now();
+    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+    final orderId = "#ORD-${now.millisecondsSinceEpoch.toString().substring(now.millisecondsSinceEpoch.toString().length - 6)}";
+
+    setState(() {
+      _livePositions.remove(pos);
+      _realizedPnl += realized;
+      _usedMargin = (_usedMargin - (avgPrice * qty * 0.20)).clamp(0.0, double.infinity);
+
+      _liveOrders.insert(0, {
+        'time': timeStr,
+        'id': orderId,
+        'scrip': symbol,
+        'side': 'SELL (SQ OFF)',
+        'qty': qty,
+        'price': ltp,
+        'status': 'COMPLETE',
+        'broker': broker,
+      });
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Position Closed: $symbol · Realized P&L: ₹${realized.toStringAsFixed(2)}'),
+        backgroundColor: realized >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
+      ),
+    );
+  }
+
+  void _squareOffAllPositions() {
+    if (_livePositions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No open positions to square off.')),
+      );
+      return;
+    }
+
+    final toRemove = List<Map<String, dynamic>>.from(_livePositions);
+    for (var pos in toRemove) {
+      _squareOffPosition(pos);
+    }
+  }
+
+  // ─── 1. Positions View ─────────────────────────────────────────────────────
+
   Widget _buildPositionsTableView() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -928,61 +1211,128 @@ class _DashboardTabState extends State<DashboardTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Open Positions (Simulated AutoTrader Engine)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('All positions squared off safely.')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
-                icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
-                label: const Text('Square Off All', style: TextStyle(color: Colors.white, fontSize: 12)),
+              Row(
+                children: [
+                  const Text('Open Positions (Simulated AutoTrader Engine)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('${_livePositions.length} Active', style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 11)),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() => _selectedPortfolioTab = 'Trade'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                    label: const Text('Place New Trade', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: _squareOffAllPositions,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                    label: const Text('Square Off All', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('SYMBOL')),
-                DataColumn(label: Text('PRODUCT')),
-                DataColumn(label: Text('NET QTY')),
-                DataColumn(label: Text('AVG PRICE')),
-                DataColumn(label: Text('LTP')),
-                DataColumn(label: Text('P&L')),
-                DataColumn(label: Text('M2M')),
-                DataColumn(label: Text('ACTION')),
-              ],
-              rows: [
-                DataRow(cells: [
-                  const DataCell(Text('NIFTY 24DEC 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataCell(Text('MIS / INTRADAY')),
-                  const DataCell(Text('+100', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
-                  const DataCell(Text('₹ 142.50')),
-                  const DataCell(Text('₹ 168.20')),
-                  const DataCell(Text('+₹ 2,570.00', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
-                  const DataCell(Text('+₹ 2,570.00', style: TextStyle(color: Color(0xFF047857)))),
-                  DataCell(TextButton(onPressed: () {}, child: const Text('Exit', style: TextStyle(color: Color(0xFFEF4444))))),
-                ]),
-                DataRow(cells: [
-                  const DataCell(Text('BANKNIFTY 24DEC 51800 PE', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataCell(Text('MIS / INTRADAY')),
-                  const DataCell(Text('+45', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
-                  const DataCell(Text('₹ 210.00')),
-                  const DataCell(Text('₹ 242.00')),
-                  const DataCell(Text('+₹ 1,440.00', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold))),
-                  const DataCell(Text('+₹ 1,440.00', style: TextStyle(color: Color(0xFF047857)))),
-                  DataCell(TextButton(onPressed: () {}, child: const Text('Exit', style: TextStyle(color: Color(0xFFEF4444))))),
-                ]),
-              ],
+          if (_livePositions.isEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(40),
+              alignment: Alignment.center,
+              child: Column(
+                children: [
+                  const Icon(Icons.check_circle_outline, size: 40, color: Color(0xFF10B981)),
+                  const SizedBox(height: 10),
+                  const Text('No Open Positions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  const Text('Go to the Trade tab or MarketWatch to execute demo orders across your 8 Demats.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+                  const SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedPortfolioTab = 'Trade'),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+                    child: const Text('Open Trade Terminal', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ] else ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+                columns: const [
+                  DataColumn(label: Text('SYMBOL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('PRODUCT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('NET QTY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('AVG PRICE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('LTP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('P&L', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('BROKER DEMAT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataColumn(label: Text('ACTION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                ],
+                rows: _livePositions.map((pos) {
+                  final pnl = (pos['pnl'] as num).toDouble();
+                  final isProfit = pnl >= 0;
+                  return DataRow(cells: [
+                    DataCell(Text(pos['symbol'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                    DataCell(Text(pos['product'], style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569)))),
+                    DataCell(Text('+${pos['qty']}', style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 12.5))),
+                    DataCell(Text('₹ ${(pos['avgPrice'] as num).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12))),
+                    DataCell(Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('₹ ${(pos['ltp'] as num).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                        const SizedBox(width: 4),
+                        Icon(isProfit ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: isProfit ? const Color(0xFF047857) : const Color(0xFFDC2626), size: 18),
+                      ],
+                    )),
+                    DataCell(Text(
+                      (isProfit ? '+₹ ' : '-₹ ') + pnl.abs().toStringAsFixed(2),
+                      style: TextStyle(
+                        color: isProfit ? const Color(0xFF047857) : const Color(0xFFDC2626),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    )),
+                    DataCell(Text(pos['broker'], style: const TextStyle(fontSize: 11.5, color: Color(0xFF334155)))),
+                    DataCell(OutlinedButton(
+                      onPressed: () => _squareOffPosition(pos),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFFCA5A5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
+                      child: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    )),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  // ─── 2. Orders View ────────────────────────────────────────────────────────
 
   Widget _buildOrdersTableView() {
     return Container(
@@ -995,48 +1345,507 @@ class _DashboardTabState extends State<DashboardTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Live Execution Logs · 8 Connected Broker Demats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Live Execution Logs · 8 Connected Broker Demats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text('${_liveOrders.length} Total Orders Executed', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            ],
+          ),
           const SizedBox(height: 14),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
               columns: const [
-                DataColumn(label: Text('TIME')),
-                DataColumn(label: Text('SCRIP')),
-                DataColumn(label: Text('SIDE')),
-                DataColumn(label: Text('QTY')),
-                DataColumn(label: Text('PRICE')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('BROKER DEMAT')),
+                DataColumn(label: Text('TIME', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('ORDER ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('SCRIP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('SIDE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('STATUS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('BROKER DEMAT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
               ],
-              rows: const [
-                DataRow(cells: [
-                  DataCell(Text('18:42:10')),
-                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('50')),
-                  DataCell(Text('₹ 142.50')),
-                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('Angel One (ANGEL-28941)')),
-                ]),
-                DataRow(cells: [
-                  DataCell(Text('18:42:10')),
-                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('50')),
-                  DataCell(Text('₹ 142.50')),
-                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('Zerodha Kite (ZERODHA-88219)')),
-                ]),
-                DataRow(cells: [
-                  DataCell(Text('18:42:10')),
-                  DataCell(Text('NIFTY 24000 CE', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataCell(Text('BUY', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('50')),
-                  DataCell(Text('₹ 142.50')),
-                  DataCell(Text('COMPLETE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
-                  DataCell(Text('DhanHQ (DHAN-44912)')),
-                ]),
+              rows: _liveOrders.map((ord) {
+                final isBuy = ord['side'].toString().contains('BUY');
+                return DataRow(cells: [
+                  DataCell(Text(ord['time'], style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: 'monospace'))),
+                  DataCell(Text(ord['id'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)))),
+                  DataCell(Text(ord['scrip'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                  DataCell(Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(ord['side'], style: TextStyle(color: isBuy ? const Color(0xFF047857) : const Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 11)),
+                  )),
+                  DataCell(Text('${ord['qty']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                  DataCell(Text('₹ ${(ord['price'] as num).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12))),
+                  DataCell(Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(4)),
+                    child: Text(ord['status'], style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 10.5)),
+                  )),
+                  DataCell(Text(ord['broker'], style: const TextStyle(fontSize: 12, color: Color(0xFF334155)))),
+                ]);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 3. Trade View (Rapid Order Placement Ticket) ───────────────────────────
+
+  Widget _buildTradeTicketView() {
+    final quickScrips = [
+      ('NIFTY 24DEC 24000 CE', 168.20, 'OPT'),
+      ('NIFTY 24DEC 24000 PE', 112.50, 'OPT'),
+      ('BANKNIFTY 24DEC 51800 CE', 310.00, 'OPT'),
+      ('BANKNIFTY 24DEC 51800 PE', 238.50, 'OPT'),
+      ('RELIANCE EQ', 2940.50, 'EQ'),
+      ('HDFCBANK EQ', 1650.00, 'EQ'),
+      ('INFY EQ', 1785.40, 'EQ'),
+      ('TCS EQ', 4120.00, 'EQ'),
+    ];
+
+    final double estMargin = _tradeLtp * _tradeQty * 0.20;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text('Rapid Trade Execution Terminal (Demo & Live)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.speed, size: 14, color: Color(0xFF2563EB)),
+                    const SizedBox(width: 6),
+                    Text('Sub-15ms Replication · Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin)}', style: const TextStyle(color: Color(0xFF1E40AF), fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // 1. Select Scrip / Instrument
+          const Text('1. SELECT INSTRUMENT / CONTRACT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickScrips.map((item) {
+              final isSelected = _tradeSymbol == item.$1;
+              return InkWell(
+                onTap: () => setState(() {
+                  _tradeSymbol = item.$1;
+                  _tradeLtp = item.$2;
+                }),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(item.$1, style: TextStyle(color: isSelected ? Colors.white : const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(width: 8),
+                      Text('₹ ${item.$2}', style: TextStyle(color: isSelected ? const Color(0xFF93C5FD) : const Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 11.5)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // 2. Broker Demat & Quantity
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('2. EXECUTION DEMAT ACCOUNT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _tradeBroker,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(value: 'All Accounts (8 Demats - Group 1x)', child: Text('All Accounts (8 Demats - Broadcast Multiplier 1x)')),
+                            DropdownMenuItem(value: 'Angel One (ANGEL-28941)', child: Text('Angel One (ANGEL-28941)')),
+                            DropdownMenuItem(value: 'Zerodha Kite (ZERODHA-88219)', child: Text('Zerodha Kite (ZERODHA-88219)')),
+                            DropdownMenuItem(value: 'DhanHQ (DHAN-44912)', child: Text('DhanHQ (DHAN-44912)')),
+                            DropdownMenuItem(value: 'Fyers (FYERS-77312)', child: Text('Fyers (FYERS-77312)')),
+                            DropdownMenuItem(value: 'Alice Blue (ALICE-10293)', child: Text('Alice Blue (ALICE-10293)')),
+                            DropdownMenuItem(value: 'Upstox Pro (UPSTOX-55109)', child: Text('Upstox Pro (UPSTOX-55109)')),
+                            DropdownMenuItem(value: 'Kotak Neo (KOTAK-99214)', child: Text('Kotak Neo (KOTAK-99214)')),
+                            DropdownMenuItem(value: '5Paisa (PAISA-66321)', child: Text('5Paisa (PAISA-66321)')),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) setState(() => _tradeBroker = v);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('3. QUANTITY / LOTS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (_tradeQty > 25) setState(() => _tradeQty -= 25);
+                          },
+                          icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF64748B)),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Text('$_tradeQty', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => _tradeQty += 25),
+                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFF2563EB)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('4. PRODUCT & ORDER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: const Text('MIS · MARKET ORDER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Margin Required Summary
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 16, color: Color(0xFF64748B)),
+                    const SizedBox(width: 8),
+                    Text('Approx. Margin Required: ₹ ${_formatINRDouble(estMargin)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                    const SizedBox(width: 14),
+                    Text('Available Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin - _usedMargin)}', style: const TextStyle(fontSize: 12, color: Color(0xFF047857), fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                Text('LTP: ₹ $_tradeLtp', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Buy & Sell Big Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _executeDemoTrade(
+                        symbol: _tradeSymbol,
+                        side: 'BUY',
+                        qty: _tradeQty,
+                        price: _tradeLtp,
+                        product: 'MIS / INTRADAY',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+                    label: Text(
+                      'BUY $_tradeSymbol @ ₹ $_tradeLtp',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _executeDemoTrade(
+                        symbol: _tradeSymbol,
+                        side: 'SELL',
+                        qty: _tradeQty,
+                        price: _tradeLtp,
+                        product: 'MIS / INTRADAY',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.arrow_downward_rounded, color: Colors.white, size: 20),
+                    label: Text(
+                      'SELL $_tradeSymbol @ ₹ $_tradeLtp',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 4. MarketWatch View ───────────────────────────────────────────────────
+
+  Widget _buildMarketWatchTableView() {
+    final watchScrips = [
+      ('NIFTY 50', 'NSE_INDEX', 24150.50, '+0.45%', true),
+      ('BANK NIFTY', 'NSE_INDEX', 51820.00, '+0.62%', true),
+      ('FINNIFTY', 'NSE_INDEX', 23410.00, '+0.38%', true),
+      ('RELIANCE', 'NSE_EQ', 2940.50, '+0.85%', true),
+      ('HDFCBANK', 'NSE_EQ', 1650.00, '-0.20%', false),
+      ('INFY', 'NSE_EQ', 1785.40, '+1.10%', true),
+      ('TCS', 'NSE_EQ', 4120.00, '+0.15%', true),
+      ('HCLTECH', 'NSE_EQ', 1428.10, '0.00%', null),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('AutoTrader Live MarketWatch (1-Click Trading Enabled)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Text('Click B or S to execute instantaneous group orders', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+              columns: const [
+                DataColumn(label: Text('SCRIP / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('SEGMENT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('LTP (₹)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('CHANGE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('QUICK BUY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('QUICK SELL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+              ],
+              rows: watchScrips.map((item) {
+                final isPositive = item.$5 == true;
+                return DataRow(cells: [
+                  DataCell(Text(item.$1, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                  DataCell(Text(item.$2, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))),
+                  DataCell(Text('₹ ${item.$3}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                  DataCell(Text(
+                    item.$4,
+                    style: TextStyle(
+                      color: item.$5 == true ? const Color(0xFF047857) : item.$5 == false ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  )),
+                  DataCell(ElevatedButton(
+                    onPressed: () => _executeDemoTrade(symbol: item.$1, side: 'BUY', qty: 25, price: item.$3),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
+                    child: const Text('B (Buy)', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  )),
+                  DataCell(ElevatedButton(
+                    onPressed: () => _executeDemoTrade(symbol: item.$1, side: 'SELL', qty: 25, price: item.$3),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
+                    child: const Text('S (Sell)', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  )),
+                ]);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 5. Margins View (With Payment Gateway Integration) ─────────────────────
+
+  Widget _buildMarginsTableView() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pooled Margin Breakdown across 8 Demats (Total: ₹ ${_formatINRDouble(_pooledMargin)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 2),
+                  Text('Available: ₹ ${_formatINRDouble(_pooledMargin - _usedMargin)} · Utilized: ₹ ${_formatINRDouble(_usedMargin)}', style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  PaymentGatewayDialog.show(
+                    context,
+                    initialPlan: 'Add Trading Margin (₹50,000)',
+                    initialAmount: 50000.0,
+                    onPaymentSuccess: (amt, plan, txn) {
+                      setState(() {
+                        _pooledMargin += amt;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Deposit Confirmed! ₹${amt.toInt()} added to Pooled Margin. Ref: $txn'),
+                          backgroundColor: const Color(0xFF059669),
+                        ),
+                      );
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                icon: const Icon(Icons.add_card_rounded, size: 16, color: Colors.white),
+                label: const Text('＋ Add Funds / Deposit Margin', style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+              columns: const [
+                DataColumn(label: Text('BROKER DEMAT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('ALLOCATED MARGIN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('USED', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('AVAILABLE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text('STATUS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+              ],
+              rows: [
+                DataRow(cells: [const DataCell(Text('Angel One (ANGEL-28941)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('Zerodha Kite (ZERODHA-88219)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('DhanHQ (DHAN-44912)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('Fyers (FYERS-77312)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('Alice Blue (ALICE-10293)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('Upstox Pro (UPSTOX-55109)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('Kotak Neo (KOTAK-99214)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
+                DataRow(cells: [const DataCell(Text('5Paisa (PAISA-66321)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
               ],
             ),
           ),
@@ -1058,47 +1867,7 @@ class _DashboardTabState extends State<DashboardTab> {
         children: [
           Text('Good-Till-Triggered (GTT) Orders', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           SizedBox(height: 12),
-          Text('No active GTT orders. Orders placed via GTT will monitor prices 24/7 across NSE & BSE.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMarginsTableView() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Pooled Margin Breakdown across 8 Demats (Total: ₹80,00,000)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('BROKER DEMAT')),
-                DataColumn(label: Text('TOTAL MARGIN')),
-                DataColumn(label: Text('USED')),
-                DataColumn(label: Text('AVAILABLE')),
-                DataColumn(label: Text('STATUS')),
-              ],
-              rows: const [
-                DataRow(cells: [DataCell(Text('Angel One (ANGEL-28941)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('Zerodha Kite (ZERODHA-88219)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('DhanHQ (DHAN-44912)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('Fyers (FYERS-77312)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('Alice Blue (ALICE-10293)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('Upstox Pro (UPSTOX-55109)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('Kotak Neo (KOTAK-99214)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-                DataRow(cells: [DataCell(Text('5Paisa (PAISA-66321)')), DataCell(Text('₹ 10,00,000')), DataCell(Text('₹ 0.00')), DataCell(Text('₹ 10,00,000')), DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669))))]),
-              ],
-            ),
-          ),
+          Text('No active GTT orders. Orders placed via GTT monitor price ticks 24/7 and execute without manual intervention.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ],
       ),
     );
@@ -1117,45 +1886,7 @@ class _DashboardTabState extends State<DashboardTab> {
         children: [
           Text('Equity & Demat Holdings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           SizedBox(height: 12),
-          Text('Long term delivery portfolios across all connected Demat accounts are pooled here.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMarketWatchTableView() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('AutoTrader Live MarketWatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 12),
-          Text('Real-time NSE/BSE streaming quotes for rapid group trade execution.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTradeTicketView() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Rapid Order Entry Ticket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 12),
-          Text('Place single orders or group multiplier orders with sub-15ms broadcast.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          Text('Long term delivery portfolios across all connected Demat accounts are pooled and monitored here.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ],
       ),
     );
@@ -1179,7 +1910,6 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
     );
   }
-
   void _showHotkeysModal(BuildContext context) {
     showDialog(
       context: context,

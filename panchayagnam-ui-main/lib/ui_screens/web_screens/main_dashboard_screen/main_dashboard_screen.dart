@@ -8,6 +8,7 @@ import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
 import '../../../reusable_widets/subscription_plans_screen.dart';
+import '../../../reusable_widets/payment_gateway_dialog.dart';
 import 'approve_user_tab.dart';
 import 'child_accounts_tab.dart';
 import 'dashboard_tab.dart';
@@ -433,6 +434,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   _TopNavMenuItem(icon: Icons.tune_rounded, label: 'General', onTap: () => _showGeneralSettingsDialog(context)),
                   _TopNavMenuItem(icon: Icons.lock_outline_rounded, label: 'Security', onTap: () => _showSecuritySettingsDialog(context)),
                   _TopNavMenuItem(icon: Icons.language_rounded, label: 'My IPs', onTap: () => _showMyIpsDialog(context)),
+                  _TopNavMenuItem(icon: Icons.payment_rounded, label: 'Payment Gateway & Plans', badge: 'PAY', onTap: () => PaymentGatewayDialog.show(context)),
                   _TopNavMenuItem(icon: Icons.wb_sunny_outlined, label: 'Look & Feel', badge: 'NEW', onTap: () => _showLookAndFeelDialog(context)),
                 ],
               ),
@@ -469,9 +471,21 @@ class _MainDashboardState extends State<MainDashboard> {
             ],
           ),
 
-          // Right: Theme Toggle & User Avatar
+          // Right: Payment Gateway Button, Theme Toggle & User Avatar
           Row(
             children: [
+              ElevatedButton.icon(
+                onPressed: () => PaymentGatewayDialog.show(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  elevation: 1,
+                ),
+                icon: const Icon(Icons.payment_rounded, size: 15, color: Colors.white),
+                label: const Text('Payment Gateway', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 10),
               IconButton(
                 icon: const Icon(Icons.light_mode_outlined, color: Color(0xFF94A3B8), size: 19),
                 tooltip: 'Toggle Theme',
@@ -1533,19 +1547,28 @@ class _SubscriptionExpiryCard extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          Text(
-            days <= 0
-                ? 'Please renew to restore access.'
-                : days <= 5
-                ? 'Renew soon to avoid disruption.'
-                : days <= 15
-                ? 'Consider renewing your plan.'
-                : 'Your plan is in good standing.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.38),
-              fontSize: 9,
-              fontWeight: FontWeight.w400,
-              height: 1.4,
+          InkWell(
+            onTap: () => PaymentGatewayDialog.show(
+              context,
+              initialPlan: 'Starter Plan (20 Demats)',
+              initialAmount: 1999.0,
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withOpacity(0.35),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.5)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.payment, size: 12, color: Color(0xFF93C5FD)),
+                  SizedBox(width: 4),
+                  Text('Renew / Pay Online', style: TextStyle(color: Color(0xFF93C5FD), fontSize: 9.5, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ],
