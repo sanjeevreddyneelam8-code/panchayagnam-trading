@@ -7,7 +7,6 @@ import '../../../app_route/user_session.dart';
 import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
-import '../../../reusable_widets/subscription_plans_screen.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
 import 'approve_user_tab.dart';
 import 'child_accounts_tab.dart';
@@ -142,13 +141,21 @@ class _MainDashboardState extends State<MainDashboard> {
           _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
         ],
       ),
+      const _NavItem(
+        icon: Icons.table_chart_rounded,
+        label: 'Option Chain',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.table_chart_rounded, label: 'Option Chain (F&O)'),
+          _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
+          _SubNavItem(icon: Icons.psychology_alt_rounded, label: 'Strategy Builder'),
+        ],
+      ),
       _NavItem(
         icon: Icons.construction_rounded,
         label: 'Tools & Accounts',
         type: _NavItemType.group,
         children: [
-          const _SubNavItem(icon: Icons.payment_rounded, label: 'Payment Gateway & Plans'),
-          const _SubNavItem(icon: Icons.table_chart_rounded, label: 'Options Chain'),
           const _SubNavItem(icon: Icons.link_rounded, label: 'Broker Accounts'),
           const _SubNavItem(icon: Icons.assessment_outlined, label: 'Reports'),
           const _SubNavItem(icon: Icons.notifications_none_rounded, label: 'Notifications'),
@@ -160,17 +167,12 @@ class _MainDashboardState extends State<MainDashboard> {
           ],
         ],
       ),
-      const _NavItem(
-        icon: Icons.payment_rounded,
-        label: 'Payment & Plans',
-        type: _NavItemType.normal,
-      ),
     ];
   }
 
   void _navigateToBrokers() {
     setState(() {
-      _currentSelection = const _NavSelection(3, 2);
+      _currentSelection = const _NavSelection(4, 0);
       _bodyKey = UniqueKey();
     });
   }
@@ -229,38 +231,37 @@ class _MainDashboardState extends State<MainDashboard> {
             return GroupOrdersTab();
         }
 
-      case 3: // Tools & Accounts
+      case 3: // Option Chain (Side Heading like Algo & Copy Trading)
         switch (subIdx) {
           case 0:
-            return SubscriptionPlansScreen(
-              userId: userId,
-              isGroup: role != UserRole.USER,
-            );
+            return const OptionsChainView(initialTabIndex: 0);
           case 1:
-            return const OptionsChainView();
+            return const OptionsChainView(initialTabIndex: 1);
           case 2:
+            return const OptionsChainView(initialTabIndex: 2);
+          default:
+            return const OptionsChainView(initialTabIndex: 0);
+        }
+
+      case 4: // Tools & Accounts
+        switch (subIdx) {
+          case 0:
             return const ChildAccountsTab();
-          case 3:
+          case 1:
             return const ReportsView();
-          case 4:
+          case 2:
             return const NotificationsView();
-          case 5:
+          case 3:
             return const SettingsView();
-          case 6: // Group Admins (Super Admin only)
+          case 4: // Group Admins (Super Admin only)
             return const GroupAdminsTab();
-          case 7: // Admin Requests (Super Admin only)
+          case 5: // Admin Requests (Super Admin only)
             return ApproveUsersTab("admin");
-          case 8: // Client Requests (Super Admin only)
+          case 6: // Client Requests (Super Admin only)
             return ApproveUsersTab("client");
           default:
             return const ChildAccountsTab();
         }
-
-      case 4: // Top-level Payment & Plans
-        return SubscriptionPlansScreen(
-          userId: userId,
-          isGroup: role != UserRole.USER,
-        );
 
       default:
         return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
@@ -432,7 +433,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 label: 'Accounts',
                 items: [
                   _TopNavMenuItem(icon: Icons.account_balance_wallet_outlined, label: 'Trading Accounts', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(3, 1); _bodyKey = UniqueKey(); });
+                    setState(() { _currentSelection = const _NavSelection(4, 0); _bodyKey = UniqueKey(); });
                   }),
                   _TopNavMenuItem(icon: Icons.people_outline_rounded, label: 'Group Accounts', onTap: () {
                     setState(() { _currentSelection = const _NavSelection(2, 0); _bodyKey = UniqueKey(); });
@@ -451,7 +452,6 @@ class _MainDashboardState extends State<MainDashboard> {
                   _TopNavMenuItem(icon: Icons.tune_rounded, label: 'General', onTap: () => _showGeneralSettingsDialog(context)),
                   _TopNavMenuItem(icon: Icons.lock_outline_rounded, label: 'Security', onTap: () => _showSecuritySettingsDialog(context)),
                   _TopNavMenuItem(icon: Icons.language_rounded, label: 'My IPs', onTap: () => _showMyIpsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.payment_rounded, label: 'Payment Gateway & Plans', badge: 'PAY', onTap: () => PaymentGatewayDialog.show(context)),
                   _TopNavMenuItem(icon: Icons.wb_sunny_outlined, label: 'Look & Feel', badge: 'NEW', onTap: () => _showLookAndFeelDialog(context)),
                 ],
               ),
@@ -491,18 +491,7 @@ class _MainDashboardState extends State<MainDashboard> {
           // Right: Payment Gateway Button, Theme Toggle & User Avatar
           Row(
             children: [
-              ElevatedButton.icon(
-                onPressed: () => PaymentGatewayDialog.show(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 1,
-                ),
-                icon: const Icon(Icons.payment_rounded, size: 15, color: Colors.white),
-                label: const Text('Payment Gateway', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 10),
+
               IconButton(
                 icon: const Icon(Icons.light_mode_outlined, color: Color(0xFF94A3B8), size: 19),
                 tooltip: 'Toggle Theme',
