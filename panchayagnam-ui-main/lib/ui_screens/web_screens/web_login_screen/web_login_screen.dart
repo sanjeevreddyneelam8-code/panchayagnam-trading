@@ -231,7 +231,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
               Row(
                 children: [
                   Text(
-                    'Stocks Developer',
+                    'Panchayagnam',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.85),
                       fontSize: 13,
@@ -249,7 +249,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
                   ),
                   const SizedBox(width: 20),
                   Text(
-                    'help@stocksdeveloper.in',
+                    'support@panchayagnam.com',
                     style: TextStyle(
                       color: const Color(0xFF94A3B8).withOpacity(0.9),
                       fontSize: 13,

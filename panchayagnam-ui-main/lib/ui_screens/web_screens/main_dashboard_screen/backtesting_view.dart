@@ -241,7 +241,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                         ),
                         SizedBox(width: 8),
                         Chip(
-                          label: Text('Quantman & Tradetron Verified', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                          label: Text('Quantman & Panchayagnam Verified', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
                           backgroundColor: Color(0xFFF5F3FF),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,

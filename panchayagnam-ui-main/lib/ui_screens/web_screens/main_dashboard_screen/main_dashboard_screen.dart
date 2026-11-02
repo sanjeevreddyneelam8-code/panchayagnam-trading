@@ -414,7 +414,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   _TopNavMenuItem(icon: Icons.auto_awesome_rounded, label: 'Strategy Lab Beta', badge: 'BETA', onTap: () {
                     setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
                   }),
-                  _TopNavMenuItem(icon: Icons.construction_outlined, label: 'Tradetron Mega Builder', onTap: () {
+                  _TopNavMenuItem(icon: Icons.construction_outlined, label: 'Panchayagnam Mega Builder', onTap: () {
                     setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
                   }),
                   _TopNavMenuItem(icon: Icons.sensors_rounded, label: 'Signal Bridge & Webhooks', onTap: () => _showSignalBridgeDialog(context)),
@@ -822,7 +822,7 @@ class _MainDashboardState extends State<MainDashboard> {
               _buildActivityLogRow('18:44:02.102', 'Group Sync: 8 Accounts', '11 ms', 'SUCCESS'),
               _buildActivityLogRow('18:43:55.840', 'Dedicated IP Whitelist Ping', '9 ms', 'SUCCESS'),
               _buildActivityLogRow('18:42:19.420', 'NSE Scrip Token Fetch (NIFTY)', '14 ms', 'SUCCESS'),
-              _buildActivityLogRow('18:40:11.205', 'Tradetron Engine Handshake', '12 ms', 'SUCCESS'),
+              _buildActivityLogRow('18:40:11.205', 'Panchayagnam Engine Handshake', '12 ms', 'SUCCESS'),
               _buildActivityLogRow('18:38:00.000', 'Paper Execution Core Startup', '8 ms', 'SUCCESS'),
             ],
           ),
@@ -926,7 +926,7 @@ class _MainDashboardState extends State<MainDashboard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('• Tradetron Mega Strategy Hub with 9 BUILD & 3 READY-MADE tools', style: TextStyle(fontSize: 13, height: 1.5)),
+              Text('• Panchayagnam Mega Strategy Hub with 9 BUILD & 3 READY-MADE tools', style: TextStyle(fontSize: 13, height: 1.5)),
               Text('• AutoTrader Group Accounts Multiplier & Accounts Hierarchy', style: TextStyle(fontSize: 13, height: 1.5)),
               Text('• Split-screen Login with High-Performance Dark Slate Hero', style: TextStyle(fontSize: 13, height: 1.5)),
               Text('• Dedicated Static IP Whitelist gateway for 8 connected demats', style: TextStyle(fontSize: 13, height: 1.5)),
@@ -979,7 +979,7 @@ class _MainDashboardState extends State<MainDashboard> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('AutoTrader User Guide', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-        content: const Text('Comprehensive manual for AutoTrader Web & Panchayagnam covering API connection, group replication, and Tradetron builders.', style: TextStyle(fontSize: 13)),
+        content: const Text('Comprehensive manual for AutoTrader Web & Panchayagnam covering API connection, group replication, and Panchayagnam builders.', style: TextStyle(fontSize: 13)),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
       ),
     );
@@ -991,7 +991,7 @@ class _MainDashboardState extends State<MainDashboard> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('Demo & Tutorial Videos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-        content: const Text('Video tutorials covering: 1. Connect Broker Accounts, 2. Group Copy Multipliers, 3. Tradetron Option Wizard.', style: TextStyle(fontSize: 13)),
+        content: const Text('Video tutorials covering: 1. Connect Broker Accounts, 2. Group Copy Multipliers, 3. Panchayagnam Option Wizard.', style: TextStyle(fontSize: 13)),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
       ),
     );
@@ -1165,7 +1165,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       children: [
                         Icon(Icons.email_outlined, size: 18, color: Color(0xFF2563EB)),
                         SizedBox(width: 10),
-                        Text('Email: help@stocksdeveloper.in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Email: support@panchayagnam.com', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ],
                     ),
                   ],
@@ -1239,7 +1239,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 children: [
                   Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
                   SizedBox(width: 4),
-                  Text('Tradetron & AutoTrader Engine: 8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                  Text('Panchayagnam & AutoTrader Engine: 8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),

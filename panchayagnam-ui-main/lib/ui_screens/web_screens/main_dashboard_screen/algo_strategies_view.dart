@@ -196,7 +196,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       id: 'TMP-001',
       title: '9:20 AM Bank Nifty Short Straddle',
       category: 'Delta Neutral Options Selling',
-      description: 'Tradetron\'s flagship algorithmic intraday strategy. Sells ATM CE and PE simultaneously at 09:20 AM with mechanical 25% stop loss per leg.',
+      description: 'Panchayagnam\'s flagship algorithmic intraday strategy. Sells ATM CE and PE simultaneously at 09:20 AM with mechanical 25% stop loss per leg.',
       instrument: 'BANKNIFTY-OPT',
       timeframe: '1m Intraday',
       indicators: 'Delta Neutral 0.50 ATM Straddle, Trailing SL',
@@ -443,7 +443,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
-  // ── Tradetron Style Multi-Broker Deployment Modal ──────────────────────────
+  // ── Panchayagnam Style Multi-Broker Deployment Modal ──────────────────────────
 
   void _showDeployModal(MarketplaceTemplate template) {
     String execMode = 'PAPER'; // 'PAPER' or 'BROKER'
@@ -489,7 +489,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Tradetron Multi-Broker Execution Engine',
+                      'Panchayagnam Multi-Broker Execution Engine',
                       style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
                     ),
                   ],
@@ -751,9 +751,9 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
-  // ── Tradetron Style Mega Strategy Creator Hub ───────────────────────────────
+  // ── Panchayagnam Style Mega Strategy Creator Hub ───────────────────────────────
 
-  void _showTradetronCreateMegaMenu() {
+  void _showPanchayagnamCreateMegaMenu() {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.55),
@@ -810,7 +810,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             Row(
                               children: [
                                 const Text(
-                                  'TRADETRON STRATEGY CREATION HUB',
+                                  'PANCHAYAGNAM STRATEGY CREATION HUB',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -1256,7 +1256,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             children: [
               Icon(Icons.auto_fix_high_rounded, color: Color(0xFF2563EB)),
               SizedBox(width: 10),
-              Text('Tradetron Option Wizard', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text('Panchayagnam Option Wizard', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             ],
           ),
           content: SizedBox(
@@ -1639,7 +1639,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         children: [
-          // ── Tradetron Style Institutional Header Banner ──
+          // ── Panchayagnam Style Institutional Header Banner ──
           Container(
             padding: const EdgeInsets.fromLTRB(28, 20, 28, 16),
             decoration: BoxDecoration(
@@ -1675,7 +1675,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                                 ),
                                 SizedBox(width: 8),
                                 Chip(
-                                  label: Text('Tradetron Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                                  label: Text('Panchayagnam Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
                                   backgroundColor: Color(0xFFF5F3FF),
                                   visualDensity: VisualDensity.compact,
                                   padding: EdgeInsets.zero,
@@ -1714,7 +1714,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton.icon(
-                          onPressed: _showTradetronCreateMegaMenu,
+                          onPressed: _showPanchayagnamCreateMegaMenu,
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: const Text('Create Strategy'),
                           style: ElevatedButton.styleFrom(
@@ -1770,7 +1770,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             ),
           ),
 
-          // ── Tradetron Notice & Quick Guide Strip ──
+          // ── Panchayagnam Notice & Quick Guide Strip ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
             decoration: const BoxDecoration(
@@ -1799,7 +1799,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   ),
                 ),
                 TextButton(
-                  onPressed: _showTradetronCreateMegaMenu,
+                  onPressed: _showPanchayagnamCreateMegaMenu,
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     foregroundColor: const Color(0xFF6D28D9),
@@ -1929,7 +1929,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
-  // ── Tab 1: Deployed Strategies (Tradetron / Stock Developer Style) ──────────
+  // ── Tab 1: Deployed Strategies (Panchayagnam / Panchayagnam Style) ──────────
 
   Widget _buildDeployedStrategiesTab() {
     final filtered = _activeFilter == 'ALL'
@@ -1973,7 +1973,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             separatorBuilder: (_, __) => const SizedBox(height: 16),
             itemBuilder: (ctx, idx) {
               final s = filtered[idx];
-              return _buildTradetronStrategyCard(s);
+              return _buildPanchayagnamStrategyCard(s);
             },
           ),
         ],
@@ -1981,7 +1981,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
-  Widget _buildTradetronStrategyCard(AlgoStrategyModel s) {
+  Widget _buildPanchayagnamStrategyCard(AlgoStrategyModel s) {
     final isRunning = s.status == 'RUNNING';
 
     return Container(
@@ -2203,7 +2203,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     );
   }
 
-  // ── Tab 2: Strategy Marketplace (Tradetron / Stock Developer Templates) ────
+  // ── Tab 2: Strategy Marketplace (Panchayagnam / Panchayagnam Templates) ────
 
   Widget _buildMarketplaceTab() {
     return SingleChildScrollView(
@@ -2663,9 +2663,9 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 const SizedBox(height: 24),
 
                 ElevatedButton.icon(
-                  onPressed: _showTradetronCreateMegaMenu,
+                  onPressed: _showPanchayagnamCreateMegaMenu,
                   icon: const Icon(Icons.hub_rounded, size: 18),
-                  label: const Text('Open Tradetron Strategy Creator Hub'),
+                  label: const Text('Open Panchayagnam Strategy Creator Hub'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,
