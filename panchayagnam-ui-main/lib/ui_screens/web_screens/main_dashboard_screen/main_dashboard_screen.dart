@@ -7,6 +7,7 @@ import '../../../app_route/user_session.dart';
 import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
+import '../../../service/copy_trading_engine.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
 import 'approve_user_tab.dart';
 import 'child_accounts_tab.dart';
@@ -492,6 +493,53 @@ class _MainDashboardState extends State<MainDashboard> {
           // Right: Payment Gateway Button, Theme Toggle & User Avatar
           Row(
             children: [
+              AnimatedBuilder(
+                animation: CopyTradingEngine(),
+                builder: (context, _) {
+                  final engine = CopyTradingEngine();
+                  final isActive = engine.isCopyTradingActive;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _currentSelection = const _NavSelection(2, 0); // Jump to Copy Trading
+                        _bodyKey = UniqueKey();
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isActive ? const Color(0xFF059669).withOpacity(0.18) : const Color(0xFF64748B).withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isActive ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isActive ? Icons.sync_alt_rounded : Icons.pause_circle_outline_rounded,
+                            size: 14,
+                            color: isActive ? const Color(0xFF34D399) : const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isActive ? 'Copy Trading: ACTIVE (${engine.activeFollowersCount} Childs)' : 'Copy Trading: PAUSED',
+                            style: TextStyle(
+                              color: isActive ? const Color(0xFF6EE7B7) : const Color(0xFFCBD5E1),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: () => PaymentGatewayDialog.show(context),
                 style: ElevatedButton.styleFrom(

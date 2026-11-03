@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../service/copy_trading_engine.dart';
+import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
 /// Represents strike-level data in the Option Chain
 class OptionStrikeData {
@@ -299,34 +301,25 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     required String optType,
     required double strike,
     required double premium,
-  }) {
+  }) async {
     final lotSize = _lotSizes[_underlying] ?? 25;
     final totalQty = lotSize * _tradeLots;
-    final totalVal = totalQty * premium;
+    final symbol = '$_underlying ${strike.toInt()} $optType';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              side == 'BUY' ? Icons.check_circle_rounded : Icons.offline_bolt_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Demo Order $side: $totalQty Qty (${_tradeLots}L) $_underlying ${strike.toInt()} $optType @ ₹${premium.toStringAsFixed(2)} executed across 8 Demats! (Margin: ₹${totalVal.toStringAsFixed(0)})',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: side == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final engine = CopyTradingEngine();
+    final receipt = await engine.replicateTrade(
+      symbol: symbol,
+      side: side,
+      baseQty: totalQty,
+      price: premium,
+      orderType: 'MARKET',
+      productType: 'OPTIONS (NRML)',
+      lotSize: lotSize,
     );
+
+    if (mounted) {
+      CopyTradeReceiptDialog.show(context, receipt);
+    }
   }
 
   @override
@@ -1194,13 +1187,25 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                   Text(strat.$5, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Multi-leg strategy "${strat.$1}" executed across all 8 Demats! Margin checked: PASSED.'),
-                          backgroundColor: const Color(0xFF059669),
-                        ),
+                    onPressed: () async {
+                      final lotSize = _lotSizes[_underlying] ?? 25;
+                      final totalQty = lotSize * 2;
+                      final symbol = '$_underlying ${strat.$1}';
+
+                      final engine = CopyTradingEngine();
+                      final receipt = await engine.replicateTrade(
+                        symbol: symbol,
+                        side: 'BUY',
+                        baseQty: totalQty,
+                        price: 185.0,
+                        orderType: 'MARKET',
+                        productType: 'STRATEGY SPREAD',
+                        lotSize: lotSize,
                       );
+
+                      if (mounted) {
+                        CopyTradeReceiptDialog.show(context, receipt);
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: strat.$7,

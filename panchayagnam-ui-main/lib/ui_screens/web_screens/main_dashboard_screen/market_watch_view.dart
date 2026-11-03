@@ -10,6 +10,8 @@ import '../../../models/ScripInfo.dart';
 import '../../../reusable_widets/stock_search_widget.dart';
 import '../../../service/individual_drop_down_service.dart';
 import '../../../service/individual_investment_service.dart';
+import '../../../service/copy_trading_engine.dart';
+import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
 /// Connection states for market data feeds
 enum MarketWatchConnectionStatus {
@@ -495,35 +497,25 @@ class _MarketWatchViewState extends State<MarketWatchView> {
     );
   }
 
-  void _executeQuickTrade(ScripInfo scrip, String side) {
+  void _executeQuickTrade(ScripInfo scrip, String side) async {
     final q = _quotes[scrip.symbolToken] ?? _defaultMarketQuotes[scrip.symbolToken];
     final ltp = q?.ltp ?? 1000.0;
-    final qty = scrip.lotSize;
-    final totalVal = ltp * qty;
+    final qty = scrip.lotSize > 0 ? scrip.lotSize : 25;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              side == 'BUY' ? Icons.check_circle_rounded : Icons.offline_bolt_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Demo Order $side: $qty Qty (1 Lot) of ${scrip.name} @ ₹${ltp.toStringAsFixed(2)} executed across 8 Demats! (₹${totalVal.toStringAsFixed(0)})',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: side == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final engine = CopyTradingEngine();
+    final receipt = await engine.replicateTrade(
+      symbol: scrip.name,
+      side: side,
+      baseQty: qty,
+      price: ltp,
+      orderType: 'MARKET',
+      productType: 'INTRADAY (MIS)',
+      lotSize: scrip.lotSize > 0 ? scrip.lotSize : 1,
     );
+
+    if (mounted) {
+      CopyTradeReceiptDialog.show(context, receipt);
+    }
   }
 
   void _showScripChartModal(ScripInfo scrip) {

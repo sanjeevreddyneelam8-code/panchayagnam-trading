@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 
 import '../../../constants/api_url_constants.dart';
 import '../../../constants/auth_header_helper.dart';
+import '../../../service/copy_trading_engine.dart';
+import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
 class AlgoStrategiesView extends StatefulWidget {
   const AlgoStrategiesView({super.key});
@@ -397,6 +399,21 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       // Backend simulation fallback
     }
 
+    // Trigger replication across child accounts via CopyTradingEngine
+    CopyExecutionReceipt? copyReceipt;
+    try {
+      final engine = CopyTradingEngine();
+      copyReceipt = await engine.replicateTrade(
+        symbol: '$symbol (${strategy.name})',
+        side: side,
+        baseQty: qty,
+        price: approxPrice,
+        orderType: 'MARKET',
+        productType: 'INTRADAY',
+        lotSize: symbol.contains('NIFTY') ? 25 : 1,
+      );
+    } catch (_) {}
+
     // Update state
     final timeStr = DateFormat('hh:mm:ss a').format(DateTime.now());
     final newLog = ExecutionLog(
@@ -422,6 +439,9 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     });
 
     if (!mounted) return;
+    if (copyReceipt != null) {
+      CopyTradeReceiptDialog.show(context, copyReceipt);
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

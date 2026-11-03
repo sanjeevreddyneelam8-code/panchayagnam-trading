@@ -22,6 +22,8 @@ import '../../../bloc/group_positions_bloc/group_positions_bloc.dart';
 import '../../../bloc/group_positions_bloc/group_positions_event.dart';
 import '../../../bloc/group_positions_bloc/group_positions_state.dart';
 import '../../../constants/colors.dart';
+import '../../../service/copy_trading_engine.dart';
+import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../reusable_widets/group_order_panel.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -188,6 +190,29 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   void _showGroupOrderPanel(BuildContext context, Map<String, dynamic> group, String side) {
     context.read<TradeGroupBloc>().add(
       FetchGroupById(groupId: group['groupId'] as int, side: side),
+    );
+  }
+
+  void _openQuickCopyTestDialog(BuildContext context, {String side = 'BUY'}) {
+    final mockGroup = {
+      'groupId': 1,
+      'groupName': 'Panchayagnam Pro Alpha Copy Pool',
+      'members': [],
+    };
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.55),
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<GroupOrderBloc>()),
+          BlocProvider.value(value: context.read<IndividualExecutionBloc>()),
+        ],
+        child: _ModernCopyOrderDialog(
+          group: mockGroup,
+          members: const [],
+          initialSide: side,
+        ),
+      ),
     );
   }
 
@@ -1165,143 +1190,414 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   }
 
   Widget _buildFollowerAccountsTab(List<Map<String, dynamic>> groups) {
-    final List<Map<String, dynamic>> allAccounts = [
-      {'name': 'Dhan Main Account', 'clientId': '1100345678', 'broker': 'DHAN', 'role': 'Master Account', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': true},
-      {'name': 'Zerodha Kite Account', 'clientId': 'ZR123456', 'broker': 'ZERODHA', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'Upstox Pro Account', 'clientId': 'UP654321', 'broker': 'UPSTOX', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'AngelOne Child Account', 'clientId': 'AG789012', 'broker': 'ANGELONE', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'Motilal Oswal Account', 'clientId': 'MO554433', 'broker': 'MOTILAL', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'Profitmart Account', 'clientId': 'PM998877', 'broker': 'PROFITMART', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'Goodwill Giga Account', 'clientId': 'GW112233', 'broker': 'GOODWILL', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-      {'name': 'Groww Account', 'clientId': 'GR887766', 'broker': 'GROWW', 'role': 'Child Demat', 'balance': '₹10,00,000.00', 'multiplier': '1.0x', 'isMaster': false},
-    ];
+    return AnimatedBuilder(
+      animation: CopyTradingEngine(),
+      builder: (context, _) {
+        final engine = CopyTradingEngine();
+        final master = engine.masterAccount;
+        final children = engine.childAccounts;
+        final isGlobalActive = engine.isCopyTradingActive;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
+              // 1. Header with Controls & Action Buttons
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Follower Broker Demats Matrix', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                  const SizedBox(height: 4),
-                  Text('All 8 accounts are synced and automatically mirror Master trades with 1:1 risk-parity allocation.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Parent–Child Copy Trading Matrix',
+                              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
+                            ),
+                            const SizedBox(width: 10),
+                            InkWell(
+                              onTap: () {
+                                engine.toggleGlobalCopyTrading(!isGlobalActive);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(isGlobalActive ? 'Copy Trading Engine PAUSED' : 'Copy Trading Engine ACTIVE across 8 Demats'),
+                                    backgroundColor: isGlobalActive ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isGlobalActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: isGlobalActive ? const Color(0xFFA7F3D0) : const Color(0xFFFECACA)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isGlobalActive ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
+                                      size: 14,
+                                      color: isGlobalActive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isGlobalActive ? 'ENGINE ACTIVE (${engine.activeFollowersCount} Followers)' : 'ENGINE PAUSED',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: isGlobalActive ? const Color(0xFF065F46) : const Color(0xFF991B1B)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Whenever a BUY or SELL order is placed on the Parent account (manually or via Algo), it automatically mirrors to all active Child accounts in parallel (<150ms).',
+                          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Action Buttons: Test Order & Square-Off
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _openQuickCopyTestDialog(context, side: 'BUY'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 1,
+                        ),
+                        icon: const Icon(Icons.flash_on_rounded, size: 16),
+                        label: const Text('Test Copy Trade', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 10),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final count = await engine.emergencySquareOffAll();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Emergency Square-Off triggered! All open positions squared off across $count Demat accounts.'),
+                                backgroundColor: const Color(0xFFDC2626),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFDC2626),
+                          side: const BorderSide(color: Color(0xFFF87171)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.warning_amber_rounded, size: 16),
+                        label: const Text('Square-Off All', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+              const SizedBox(height: 20),
+
+              // 2. DESIGNATED PARENT / MASTER ACCOUNT BANNER
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 16),
-                    SizedBox(width: 6),
-                    Text('8 / 8 Accounts Online & Protected', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF065F46))),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5B21B6), Color(0xFF7C3AED)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF7C3AED).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
                   ],
                 ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.stars_rounded, color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'PARENT / MASTER LEADER',
+                                  style: TextStyle(color: Color(0xFF92400E), fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${master.broker} • ${master.name}',
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Client ID: ${master.clientId} • Liquid Margin: ₹10,00,000.00 • Status: ${master.status}',
+                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Any BUY / SELL executed on this account automatically cascades to the 7 follower children below.',
+                            style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Change Master Dropdown
+                    PopupMenuButton<String>(
+                      tooltip: 'Change Master Account',
+                      color: Colors.white,
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      onSelected: (clientId) {
+                        engine.setMasterAccount(clientId);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Master account switched to Client ID: $clientId'),
+                            backgroundColor: const Color(0xFF7C3AED),
+                          ),
+                        );
+                      },
+                      itemBuilder: (ctx) {
+                        return engine.accounts.map((acc) {
+                          return PopupMenuItem<String>(
+                            value: acc.clientId,
+                            child: Row(
+                              children: [
+                                Text('${acc.broker} - ${acc.name}', style: TextStyle(fontWeight: acc.isMaster ? FontWeight.bold : FontWeight.normal, fontSize: 12.5)),
+                                if (acc.isMaster) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.check, size: 16, color: Color(0xFF7C3AED)),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                          ],
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF6D28D9)),
+                            SizedBox(width: 6),
+                            Text('Change Master', style: TextStyle(color: Color(0xFF6D28D9), fontWeight: FontWeight.w800, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 3. CHILD FOLLOWER ACCOUNTS SECTION
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Connected Child Accounts (${children.length})',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  ),
+                  Text(
+                    'Pooled Margin: ₹${(children.length * 1000000).toStringAsFixed(0)} • Latency: < 25ms',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Child Accounts Grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.85,
+                ),
+                itemCount: children.length,
+                itemBuilder: (ctx, idx) {
+                  final child = children[idx];
+                  final isChildActive = child.isActive && isGlobalActive;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isChildActive ? const Color(0xFFE2E8F0) : Colors.red.shade100,
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top row: Broker badge, Status, and Active Switch
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                child.broker,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isChildActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isChildActive ? 'MIRRORING 🟢' : 'PAUSED ⏸️',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: isChildActive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Switch(
+                              value: child.isActive,
+                              activeColor: const Color(0xFF059669),
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              onChanged: (val) {
+                                engine.toggleChildActive(child.clientId, val);
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Name & Client ID
+                        Text(
+                          child.name,
+                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                        ),
+                        Text(
+                          'ID: ${child.clientId} • Orders: ${child.totalCopiedOrders} • Latency: ${child.lastLatencyMs}ms',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        ),
+                        const Spacer(),
+
+                        // Multiplier and Mode Selectors
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Multiplier Selector
+                              Row(
+                                children: [
+                                  const Text('Multiplier: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                                  DropdownButton<double>(
+                                    value: child.multiplier,
+                                    isDense: true,
+                                    underline: const SizedBox(),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF7C3AED)),
+                                    items: [0.5, 1.0, 1.5, 2.0, 3.0].map((m) {
+                                      return DropdownMenuItem<double>(
+                                        value: m,
+                                        child: Text('${m}x'),
+                                      );
+                                    }).toList(),
+                                    onChanged: (newM) {
+                                      if (newM != null) {
+                                        engine.updateChildMultiplier(child.clientId, newM);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              // Sizing / Mode Tag
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEDE9FE),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  child.copyMode,
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
+                                ),
+                              ),
+
+                              // Make Master Quick Action
+                              InkWell(
+                                onTap: () {
+                                  engine.setMasterAccount(child.clientId);
+                                },
+                                child: const Text(
+                                  'Make Master',
+                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB), decoration: TextDecoration.underline),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 20),
-
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.1,
-            ),
-            itemCount: allAccounts.length,
-            itemBuilder: (ctx, idx) {
-              final acc = allAccounts[idx];
-              final isMaster = acc['isMaster'] == true;
-
-              return Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: isMaster ? const Color(0xFF7C3AED) : Colors.grey.shade200, width: isMaster ? 1.6 : 1),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isMaster ? const Color(0xFFEDE9FE) : const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            acc['broker'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: isMaster ? const Color(0xFF6D28D9) : const Color(0xFF1D4ED8),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (isMaster)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text('MASTER ACCOUNT', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309))),
-                          ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text('SYNCED 🟢', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      acc['name'] as String,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
-                    ),
-                    Text(
-                      'Client ID: ${acc['clientId']}',
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
-                    ),
-                    const Spacer(),
-                    const Divider(height: 1),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Liquid Margin: ${acc['balance']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
-                        Text('Lot Ratio: ${acc['multiplier']}', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -3927,6 +4223,20 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
     final qtyPerAccount = (baseQty * _multiplier).round();
     final totalQty = qtyPerAccount * _targetBrokers.length;
     final totalCapital = totalQty * price;
+
+    // Record in CopyTradingEngine
+    try {
+      final engine = CopyTradingEngine();
+      await engine.replicateTrade(
+        symbol: _selectedSymbol,
+        side: _side,
+        baseQty: baseQty,
+        price: price,
+        orderType: _orderType,
+        productType: _productType,
+        lotSize: 25,
+      );
+    } catch (_) {}
 
     try {
       final endpoint = _side == 'BUY' ? '/pyBrokerApi/order/buy' : '/pyBrokerApi/order/sell';
