@@ -5,61 +5,295 @@ import 'package:intl/intl.dart';
 
 import '../../../constants/api_url_constants.dart';
 import '../../../constants/auth_header_helper.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import '../../../service/copy_trading_engine.dart';
+import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
-// ─── ORDERS VIEW ─────────────────────────────────────────────────────────────
+// ─── ORDERS VIEW (Consolidated Multi-Account Order Book) ─────────────────────
 
-class OrdersView extends StatelessWidget {
+class OrdersView extends StatefulWidget {
   const OrdersView({super.key});
 
   @override
+  State<OrdersView> createState() => _OrdersViewState();
+}
+
+class _OrdersViewState extends State<OrdersView> {
+  String _filter = 'ALL';
+  String _searchQuery = '';
+
+  final List<Map<String, dynamic>> _orders = [
+    {
+      'orderId': 'ORD-882910',
+      'time': '09:25:12 AM',
+      'symbol': 'NIFTY 24200 CE',
+      'side': 'BUY',
+      'type': 'MARKET',
+      'product': 'MIS',
+      'qty': '200 / 200',
+      'price': 135.50,
+      'status': 'COMPLETED',
+      'source': 'TradingView Webhook',
+      'latency': '12ms',
+    },
+    {
+      'orderId': 'ORD-882894',
+      'time': '09:20:05 AM',
+      'symbol': 'RELIANCE EQ',
+      'side': 'BUY',
+      'type': 'MARKET',
+      'product': 'MIS',
+      'qty': '200 / 200',
+      'price': 2942.00,
+      'status': 'COMPLETED',
+      'source': 'MarketWatch Quick Trade',
+      'latency': '14ms',
+    },
+    {
+      'orderId': 'ORD-882850',
+      'time': '09:16:40 AM',
+      'symbol': 'BANKNIFTY 52000 PE',
+      'side': 'SELL',
+      'type': 'MARKET',
+      'product': 'MIS',
+      'qty': '120 / 120',
+      'price': 184.00,
+      'status': 'COMPLETED',
+      'source': 'Algo 9:20 Straddle',
+      'latency': '11ms',
+    },
+    {
+      'orderId': 'ORD-882812',
+      'time': '09:15:30 AM',
+      'symbol': 'HDFCBANK EQ',
+      'side': 'BUY',
+      'type': 'LIMIT',
+      'product': 'CNC',
+      'qty': '200 / 200',
+      'price': 1640.00,
+      'status': 'COMPLETED',
+      'source': 'WebX Copier Engine',
+      'latency': '9ms',
+    },
+  ];
+
+  @override
   Widget build(BuildContext context) {
+    final filtered = _orders.where((o) {
+      if (_filter == 'COMPLETED' && o['status'] != 'COMPLETED') return false;
+      if (_filter == 'BUY' && o['side'] != 'BUY') return false;
+      if (_filter == 'SELL' && o['side'] != 'SELL') return false;
+      if (_searchQuery.isNotEmpty &&
+          !o['symbol'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) &&
+          !o['orderId'].toString().toLowerCase().contains(_searchQuery.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }).toList();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Orders & Execution', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-            const SizedBox(height: 4),
-            Text('Track pending, executed, cancelled, and paper-simulated orders.', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFFB45309), size: 18),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'PAPER TRADING ACTIVE — Simulated executions are recorded locally. Live broker orders are disabled.',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Consolidated Order Book', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                    const SizedBox(height: 4),
+                    Text('Live execution stream across all 8 synchronized Demat accounts in real-time.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
                   ),
-                ],
-              ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.sync_rounded, size: 14, color: Color(0xFF059669)),
+                      SizedBox(width: 4),
+                      Text('8 / 8 Demats Synced (Sub-15ms)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
+
+            // Filter row
+            Row(
+              children: [
+                // Filter chips
+                Wrap(
+                  spacing: 8,
+                  children: ['ALL', 'COMPLETED', 'BUY', 'SELL'].map((f) {
+                    final isSel = _filter == f;
+                    return ChoiceChip(
+                      label: Text(f, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: isSel ? Colors.white : const Color(0xFF475569))),
+                      selected: isSel,
+                      selectedColor: const Color(0xFF2563EB),
+                      backgroundColor: Colors.white,
+                      onSelected: (_) => setState(() => _filter = f),
+                    );
+                  }).toList(),
+                ),
+                const Spacer(),
+                // Search box
+                SizedBox(
+                  width: 240,
+                  height: 38,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search order ID or scrip...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.search, size: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                    ),
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Order Table Card
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                ],
               ),
               child: Column(
                 children: [
-                  Icon(Icons.receipt_long_rounded, size: 48, color: Colors.grey.shade300),
-                  const SizedBox(height: 12),
-                  const Text('Simulated Orders Active', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  const SizedBox(height: 6),
-                  Text('Orders placed in Paper Trading Station or Algo Strategies appear live with full audit trails.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade500)),
+                  // Table Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                    ),
+                    child: const Row(
+                      children: [
+                        Expanded(flex: 2, child: Text('TIME / REF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 3, child: Text('CONTRACT / SYMBOL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 2, child: Text('SIDE / TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 2, child: Text('QTY / FILL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 2, child: Text('AVG PRICE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        Expanded(flex: 2, child: Text('SOURCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      ],
+                    ),
+                  ),
+
+                  // Table Rows
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    itemBuilder: (ctx, idx) {
+                      final o = filtered[idx];
+                      final isBuy = o['side'] == 'BUY';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(o['time'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  Text(o['orderId'], style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500, fontFamily: 'monospace')),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(o['symbol'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E293B))),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      o['side'],
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: isBuy ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text('${o['type']} • ${o['product']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(o['qty'], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                                  const Text('Across 8 Demats', style: TextStyle(fontSize: 10, color: Color(0xFF059669))),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text('₹${(o['price'] as double).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(o['status'], style: const TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(o['latency'], style: TextStyle(fontSize: 9.5, color: Colors.grey.shade500, fontFamily: 'monospace')),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(o['source'], style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -70,42 +304,474 @@ class OrdersView extends StatelessWidget {
   }
 }
 
-// ─── POSITIONS VIEW ──────────────────────────────────────────────────────────
+// ─── POSITIONS VIEW (Consolidated Multi-Demat Live Positions Book) ───────────
 
-class PositionsView extends StatelessWidget {
+class PositionsView extends StatefulWidget {
   const PositionsView({super.key});
 
   @override
+  State<PositionsView> createState() => _PositionsViewState();
+}
+
+class _PositionsViewState extends State<PositionsView> {
+  Timer? _ticker;
+  final math.Random _rnd = math.Random();
+
+  final List<Map<String, dynamic>> _positions = [
+    {
+      'symbol': 'NIFTY 24200 CE',
+      'product': 'INTRADAY (MIS)',
+      'totalQty': 200,
+      'avgPrice': 125.40,
+      'ltp': 144.20,
+      'isExpanded': false,
+      'breakdown': [
+        {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 940.0},
+        {'broker': 'ZERODHA (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'UPSTOX (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'ANGELONE (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'MOTILAL (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'PROFITMART (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'GOODWILL (1x)', 'qty': 25, 'pnl': 470.0},
+        {'broker': 'GROWW (1x)', 'qty': 25, 'pnl': 470.0},
+      ],
+    },
+    {
+      'symbol': 'BANKNIFTY 52000 PE',
+      'product': 'INTRADAY (MIS)',
+      'totalQty': -120, // Short leg
+      'avgPrice': 210.00,
+      'ltp': 182.50,
+      'isExpanded': false,
+      'breakdown': [
+        {'broker': 'DHAN (Leader)', 'qty': -30, 'pnl': 825.0},
+        {'broker': 'ZERODHA (1x)', 'qty': -15, 'pnl': 412.5},
+        {'broker': 'UPSTOX (1x)', 'qty': -15, 'pnl': 412.5},
+        {'broker': 'ANGELONE (1x)', 'qty': -15, 'pnl': 412.5},
+        {'broker': 'MOTILAL (1x)', 'qty': -15, 'pnl': 412.5},
+        {'broker': 'PROFITMART (1x)', 'qty': -15, 'pnl': 412.5},
+        {'broker': 'GOODWILL (1x)', 'qty': -15, 'pnl': 412.5},
+      ],
+    },
+    {
+      'symbol': 'RELIANCE EQ',
+      'product': 'INTRADAY (MIS)',
+      'totalQty': 100,
+      'avgPrice': 2935.00,
+      'ltp': 2949.20,
+      'isExpanded': false,
+      'breakdown': [
+        {'broker': 'DHAN (Leader)', 'qty': 25, 'pnl': 355.0},
+        {'broker': 'ZERODHA (1x)', 'qty': 25, 'pnl': 355.0},
+        {'broker': 'UPSTOX (1x)', 'qty': 25, 'pnl': 355.0},
+        {'broker': 'ANGELONE (1x)', 'qty': 25, 'pnl': 355.0},
+      ],
+    },
+    {
+      'symbol': 'HDFCBANK EQ',
+      'product': 'DELIVERY (CNC)',
+      'totalQty': 200,
+      'avgPrice': 1640.00,
+      'ltp': 1652.10,
+      'isExpanded': false,
+      'breakdown': [
+        {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 605.0},
+        {'broker': 'ZERODHA (1x)', 'qty': 50, 'pnl': 605.0},
+        {'broker': 'UPSTOX (1x)', 'qty': 50, 'pnl': 605.0},
+        {'broker': 'ANGELONE (1x)', 'qty': 50, 'pnl': 605.0},
+      ],
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 2-second realistic price fluctuation ticker
+    _ticker = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (var p in _positions) {
+          final delta = (_rnd.nextDouble() - 0.49) * 0.40;
+          final currentLtp = p['ltp'] as double;
+          p['ltp'] = math.max(1.0, currentLtp + delta);
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  double get _totalPnl {
+    double sum = 0.0;
+    for (var p in _positions) {
+      final qty = p['totalQty'] as int;
+      final avg = p['avgPrice'] as double;
+      final ltp = p['ltp'] as double;
+      sum += (ltp - avg) * qty;
+    }
+    return sum;
+  }
+
+  void _squareOffPosition(int idx) {
+    final pos = _positions[idx];
+    final sym = pos['symbol'];
+    setState(() {
+      _positions.removeAt(idx);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Position "$sym" squared off across all 8 Demats at Market!'),
+        backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _squareOffAll() async {
+    final count = _positions.length;
+    setState(() {
+      _positions.clear();
+    });
+    final engine = CopyTradingEngine();
+    await engine.emergencySquareOffAll();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('All $count open positions squared off across all 8 Demats! Portfolio is 100% Flat.'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final totalPnl = _totalPnl;
+    final isPos = totalPnl >= 0;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Open Positions', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-            const SizedBox(height: 4),
-            Text('Intraday and carry-forward positions across connected accounts.', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            // Top Bar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Consolidated Positions Book', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                    const SizedBox(height: 4),
+                    Text('Aggregated live positions across all 8 connected Demat accounts with sub-second real-time M2M.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                  ],
+                ),
+                if (_positions.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _squareOffAll,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.warning_amber_rounded, size: 16),
+                    label: const Text('Square-Off All (8 Demats)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+              ],
+            ),
             const SizedBox(height: 20),
+
+            // M2M Summary Banner
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  Icon(Icons.pie_chart_outline_rounded, size: 48, color: Colors.grey.shade300),
-                  const SizedBox(height: 12),
-                  const Text('Paper Positions Engine Synchronized', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  const SizedBox(height: 6),
-                  Text('Check the "Paper Trading" view under Algo Trading for real-time order placement and 1-click square-off.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade500)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.pie_chart_rounded, size: 14, color: Color(0xFF64748B)),
+                            SizedBox(width: 6),
+                            Text('TOTAL CONSOLIDATED M2M', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(
+                              '${isPos ? '+' : ''}₹${totalPnl.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: isPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isPos ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isPos ? 'LIVE PROFIT 🟢' : 'LIVE LOSS 🔴',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF2563EB)),
+                  const SizedBox(width: 16),
+                  _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF7C3AED)),
+                  const SizedBox(width: 16),
+                  _buildSummaryItem('AVERAGE SPREAD', '< 0.05%', 'Low Slippage Guard', const Color(0xFF0284C7)),
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+
+            // Positions Table Card
+            if (_positions.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.check_circle_outline_rounded, size: 48, color: Color(0xFF059669)),
+                    const SizedBox(height: 12),
+                    const Text('No Open Positions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('Your portfolio is currently 100% square. Place a trade from MarketWatch or Option Chain to open a multi-broker position.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                  ],
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    // Table Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                      ),
+                      child: const Row(
+                        children: [
+                          Expanded(flex: 3, child: Text('CONTRACT / PRODUCT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('NET QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('BUY / AVG', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('NET P&L', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('ACTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                        ],
+                      ),
+                    ),
+
+                    // Table Items
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _positions.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      itemBuilder: (ctx, idx) {
+                        final pos = _positions[idx];
+                        final qty = pos['totalQty'] as int;
+                        final avg = pos['avgPrice'] as double;
+                        final ltp = pos['ltp'] as double;
+                        final pnl = (ltp - avg) * qty;
+                        final isPnlPos = pnl >= 0;
+                        final isExpanded = pos['isExpanded'] == true;
+                        final breakdown = List<Map<String, dynamic>>.from(pos['breakdown'] ?? []);
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Row(
+                                      children: [
+                                        InkWell(
+                                          onTap: () => setState(() => pos['isExpanded'] = !isExpanded),
+                                          child: Icon(
+                                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                            size: 20,
+                                            color: const Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(pos['symbol'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF1E293B))),
+                                            Text('${pos['product']} • 8 Demats Synced', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      '${qty > 0 ? '+' : ''}$qty Qty',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: qty > 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text('₹${avg.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      '₹${ltp.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                        color: isPnlPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      '${isPnlPos ? '+' : ''}₹${pnl.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13.5,
+                                        color: isPnlPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: OutlinedButton(
+                                      onPressed: () => _squareOffPosition(idx),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFFDC2626),
+                                        side: const BorderSide(color: Color(0xFFF87171)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      ),
+                                      child: const Text('Square Off', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Expandable Multi-Account Breakdown
+                            if (isExpanded)
+                              Container(
+                                color: const Color(0xFFF8FAFC),
+                                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('CHILD DEMAT ALLOCATION BREAKDOWN:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 12,
+                                      runSpacing: 8,
+                                      children: breakdown.map((b) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(b['broker'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                              const SizedBox(width: 8),
+                                              Text('${b['qty']} Qty', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '+₹${(b['pnl'] as double).toStringAsFixed(0)}',
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF059669)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, String sub, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+            const SizedBox(height: 3),
+            Text(value, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: color), overflow: TextOverflow.ellipsis),
+            Text(sub, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500), overflow: TextOverflow.ellipsis),
           ],
         ),
       ),

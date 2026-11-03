@@ -9,6 +9,7 @@ import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
+import '../../../reusable_widets/signal_bridge_dialog.dart';
 import 'approve_user_tab.dart';
 import 'child_accounts_tab.dart';
 import 'dashboard_tab.dart';
@@ -1126,14 +1127,7 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   void _showSignalBridgeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Signal Bridge & Webhooks'),
-        content: const Text('Connect TradingView webhooks, Excel RTD, or Amibroker signals directly into AutoTrader.'),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
-      ),
-    );
+    SignalBridgeDialog.show(context);
   }
 
   void _showSimulatorDialog(BuildContext context) {
