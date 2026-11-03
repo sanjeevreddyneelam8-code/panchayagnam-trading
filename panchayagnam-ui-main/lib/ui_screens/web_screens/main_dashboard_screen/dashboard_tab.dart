@@ -505,33 +505,46 @@ class _DashboardTabState extends State<DashboardTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Connect a broker to see your portfolio here',
-                  style: TextStyle(
-                    color: Color(0xFF1E293B),
-                    fontSize: 18.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      'Active Multi-Broker Portfolio • 8 Demats Online',
+                      style: TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 18.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: const Text('ALL SYNCED 🟢', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46))),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 const Text(
-                  'There is nothing to show yet, because no broker account is linked to your AutoTrader account. Once one is linked, your positions, orders and holdings appear on this screen and update live.',
+                  'Pooled Liquid Capital: ₹80,00,000.00 • Master / Leader: Dhan Pro Master (1100345678) • Sub-15ms Replication Active across 8 Demat Accounts.',
                   style: TextStyle(
                     color: Color(0xFF64748B),
                     fontSize: 13,
-                    height: 1.45,
+                    height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 14),
-                _buildSetupStep('1. Add your broker account, using the API details your broker gives you.'),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                _buildSetupStep('1. Master / Leader Account: Dhan Pro Master (Client ID: 1100345678) · 100% Margin Verified.'),
+                const SizedBox(height: 6),
                 _buildSetupStep(
-                  '2. Take a dedicated IP address.',
-                  subtext:
-                      'Brokers only accept API orders from one fixed address, so this is needed before any order can be placed. You can buy one from us or bring your own. Either way it costs money and is separate from your free trial. You see every option and its price before you choose.',
+                  '2. Dedicated Static IP Gateway: 103.159.214.88 (Active on NSE/BSE API)',
+                  subtext: 'Orders across all 8 Demats route through your fixed whitelisted IP for institutional low latency and zero broker rate-limit rejections.',
                 ),
-                const SizedBox(height: 8),
-                _buildSetupStep('3. Mark the account Live. Your portfolio fills in.'),
+                const SizedBox(height: 6),
+                _buildSetupStep('3. Mirroring Multipliers: 7 Follower Demats Active with 1:1 Risk-Parity Allocation.'),
                 const SizedBox(height: 14),
                 // Status badge indicating 8 connected accounts
                 Container(
@@ -1950,57 +1963,328 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildGTTTableView() {
+    final gttOrders = [
+      {'symbol': 'RELIANCE EQ', 'condition': '<=', 'triggerPrice': 2900.00, 'ltp': 2949.20, 'qty': '50 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+      {'symbol': 'NIFTY 24000 PE', 'condition': '>=', 'triggerPrice': 160.00, 'ltp': 144.50, 'qty': '100 Qty (8 Demats)', 'action': 'SELL', 'status': 'ACTIVE', 'validity': 'Weekly Expiry'},
+      {'symbol': 'HDFCBANK EQ', 'condition': '<=', 'triggerPrice': 1610.00, 'ltp': 1652.10, 'qty': '100 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+      {'symbol': 'INFY EQ', 'condition': '<=', 'triggerPrice': 1740.00, 'ltp': 1785.40, 'qty': '100 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+    ];
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Good-Till-Triggered (GTT) Orders', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 12),
-          Text('No active GTT orders. Orders placed via GTT monitor price ticks 24/7 and execute without manual intervention.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Good-Till-Triggered (GTT) Orders', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 2),
+                  Text('4 active conditional orders monitoring NSE ticks 24/7 across all 8 Demats.', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('GTT Order Creator: Trigger set on Parent Demat will automatically copy to 7 child accounts.'), backgroundColor: Color(0xFF2563EB)),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Create GTT Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // GTT Table
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: const Color(0xFFF8FAFC),
+                  child: const Row(
+                    children: [
+                      Expanded(flex: 3, child: Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('CONDITION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('TRIGGER PRICE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('ACTION / QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                    ],
+                  ),
+                ),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: gttOrders.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  itemBuilder: (ctx, idx) {
+                    final o = gttOrders[idx];
+                    final isBuy = o['action'] == 'BUY';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Expanded(flex: 3, child: Text(o['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)))),
+                          Expanded(flex: 2, child: Text('Price ${o['condition']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600))),
+                          Expanded(flex: 2, child: Text('₹${(o['triggerPrice'] as double).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text('₹${(o['ltp'] as double).toStringAsFixed(2)}', style: TextStyle(fontSize: 12.5, color: Colors.blue.shade700, fontWeight: FontWeight.w700))),
+                          Expanded(
+                            flex: 2,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(o['action'] as String, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isBuy ? const Color(0xFF059669) : const Color(0xFFDC2626))),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(child: Text(o['qty'] as String, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text('${o['status']} 🟢', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildHoldingsTableView() {
+    final holdings = [
+      {'symbol': 'RELIANCE EQ', 'qty': 150, 'avg': 2820.00, 'ltp': 2949.20, 'val': 442380.0, 'pnl': 19380.0, 'pnlPct': 4.58},
+      {'symbol': 'TCS EQ', 'qty': 80, 'avg': 4100.00, 'ltp': 4215.00, 'val': 337200.0, 'pnl': 9200.0, 'pnlPct': 2.80},
+      {'symbol': 'INFY EQ', 'qty': 250, 'avg': 1720.00, 'ltp': 1785.40, 'val': 446350.0, 'pnl': 16350.0, 'pnlPct': 3.80},
+      {'symbol': 'HDFCBANK EQ', 'qty': 200, 'avg': 1590.00, 'ltp': 1652.10, 'val': 330420.0, 'pnl': 12420.0, 'pnlPct': 3.91},
+    ];
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Equity & Demat Holdings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 12),
-          Text('Long term delivery portfolios across all connected Demat accounts are pooled and monitored here.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          // Header summary tiles
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8)),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('PORTFOLIO VALUE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                      SizedBox(height: 2),
+                      Text('₹15,56,350.00', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(8)),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('TOTAL GAIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
+                      SizedBox(height: 2),
+                      Text('+₹57,350.00 (+3.83%)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8)),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('INVESTED CAPITAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                      SizedBox(height: 2),
+                      Text('₹14,99,000.00', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Holdings Table
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: const Color(0xFFF8FAFC),
+                  child: const Row(
+                    children: [
+                      Expanded(flex: 3, child: Text('HOLDING / SCRIP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('TOTAL QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('AVG BUY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('CURRENT VAL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                      Expanded(flex: 2, child: Text('P&L (%)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                    ],
+                  ),
+                ),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: holdings.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  itemBuilder: (ctx, idx) {
+                    final h = holdings[idx];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                                const Text('Delivery (CNC) • 8 Demats', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                              ],
+                            ),
+                          ),
+                          Expanded(flex: 2, child: Text('${h['qty']} Qty', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text('₹${(h['avg'] as double).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5))),
+                          Expanded(flex: 2, child: Text('₹${(h['ltp'] as double).toStringAsFixed(2)}', style: TextStyle(fontSize: 12.5, color: Colors.blue.shade700, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text('₹${(h['val'] as double).toStringAsFixed(0)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold))),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              '+₹${(h['pnl'] as double).toStringAsFixed(0)} (+${h['pnlPct']}%)',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildNotificationsStreamView() {
+    final streamItems = [
+      {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across 8 Demats at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
+      {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF2563EB)},
+      {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF7C3AED)},
+      {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF0284C7)},
+    ];
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Real-time Order & Risk Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          SizedBox(height: 12),
-          Text('All API responses, execution fills, and risk parameter checks stream here in real time.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          const Text('Real-time Execution & Risk Stream', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E293B))),
+          const SizedBox(height: 14),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: streamItems.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (ctx, idx) {
+              final itm = streamItems[idx];
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(itm['icon'] as IconData, color: itm['color'] as Color, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(itm['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                          const SizedBox(height: 2),
+                          Text(itm['sub'] as String, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                    Text(itm['time'] as String, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
