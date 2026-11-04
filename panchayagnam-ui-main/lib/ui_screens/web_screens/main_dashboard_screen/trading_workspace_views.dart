@@ -1237,14 +1237,19 @@ class _HoldingsViewState extends State<HoldingsView> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   InkWell(
-                                    onTap: () {
-                                      final receipt = CopyTradingEngine().executeOrder(
+                                    onTap: () async {
+                                      final receipt = await CopyTradingEngine().replicateTrade(
                                         symbol: '${h['symbol']} EQ',
-                                        action: 'BUY',
-                                        lotSize: 20,
-                                        basePrice: ltp,
+                                        side: 'BUY',
+                                        baseQty: 20,
+                                        price: ltp,
+                                        orderType: 'MARKET',
+                                        productType: 'INTRADAY (MIS)',
+                                        lotSize: 1,
                                       );
-                                      CopyTradeReceiptDialog.show(context, receipt);
+                                      if (mounted) {
+                                        CopyTradeReceiptDialog.show(context, receipt);
+                                      }
                                     },
                                     borderRadius: BorderRadius.circular(4),
                                     child: Container(
@@ -1258,14 +1263,19 @@ class _HoldingsViewState extends State<HoldingsView> {
                                   ),
                                   const SizedBox(width: 4),
                                   InkWell(
-                                    onTap: () {
-                                      final receipt = CopyTradingEngine().executeOrder(
+                                    onTap: () async {
+                                      final receipt = await CopyTradingEngine().replicateTrade(
                                         symbol: '${h['symbol']} EQ',
-                                        action: 'SELL',
-                                        lotSize: 20,
-                                        basePrice: ltp,
+                                        side: 'SELL',
+                                        baseQty: 20,
+                                        price: ltp,
+                                        orderType: 'MARKET',
+                                        productType: 'INTRADAY (MIS)',
+                                        lotSize: 1,
                                       );
-                                      CopyTradeReceiptDialog.show(context, receipt);
+                                      if (mounted) {
+                                        CopyTradeReceiptDialog.show(context, receipt);
+                                      }
                                     },
                                     borderRadius: BorderRadius.circular(4),
                                     child: Container(
