@@ -627,12 +627,12 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                               }
                             });
                           },
-                          selectedColor: const Color(0xFFDDD6FE),
+                          selectedColor: const Color(0xFF34D399), // Highlight with color
                           checkmarkColor: const Color(0xFF6D28D9),
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(color: isSel ? const Color(0xFF7C3AED) : Colors.grey.shade300),
+                            side: BorderSide(color: isSel ? const Color(0xFF059669) : Colors.grey.shade300, width: isSel ? 1.5 : 1),
                           ),
                         );
                       }).toList(),
@@ -1824,69 +1824,88 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                     visualDensity: VisualDensity.compact,
                     foregroundColor: const Color(0xFF6D28D9),
                   ),
-                  child: const Text('+ Build New', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  child: const Text('+ Build New Strategies', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
                 ),
               ],
             ),
           ),
 
-          // ── Tabs Header ──
+          // ── Tabs Header (Highlighted with Color & Black Letters) ──
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
             child: TabBar(
               controller: _tabController,
-              labelColor: const Color(0xFF7C3AED),
-              unselectedLabelColor: const Color(0xFF6B7280),
-              indicatorColor: const Color(0xFF7C3AED),
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: Colors.black, // Sharp Black Letters
+              unselectedLabelColor: const Color(0xFF4B5563),
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF34D399).withOpacity(0.35), // Vibrant Color Highlight
+                border: Border.all(color: const Color(0xFF059669), width: 1.5),
+              ),
+              indicatorPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               tabs: [
                 Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.dashboard_customize_rounded, size: 17),
-                      const SizedBox(width: 8),
-                      Text('Deployed Strategies (${_strategies.length})'),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.dashboard_customize_rounded, size: 16, color: Colors.black),
+                        const SizedBox(width: 8),
+                        Text('Deployed Strategies (${_strategies.length})', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
                   ),
                 ),
                 const Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.storefront_rounded, size: 17),
-                      SizedBox(width: 8),
-                      Text('Strategy Marketplace (6)'),
-                    ],
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.storefront_rounded, size: 16, color: Colors.black),
+                        SizedBox(width: 8),
+                        Text('Strategy Marketplace (6)', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
                   ),
                 ),
                 Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.receipt_long_rounded, size: 17),
-                      const SizedBox(width: 8),
-                      Text('Live Execution Feed (${_executionLogs.length})'),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.receipt_long_rounded, size: 16, color: Colors.black),
+                        const SizedBox(width: 8),
+                        Text('Live Execution Feed (${_executionLogs.length})', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
                   ),
                 ),
                 const Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.tune_rounded, size: 17),
-                      SizedBox(width: 8),
-                      Text('Visual Rule Builder'),
-                    ],
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.tune_rounded, size: 16, color: Colors.black),
+                        SizedBox(width: 8),
+                        Text('Visual Rule Builder', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-
           // ── Tab Views ──
           Expanded(
             child: TabBarView(
@@ -1968,16 +1987,16 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(f, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.w700 : FontWeight.w500)),
+                  label: Text(f, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: isSel ? Colors.black : const Color(0xFF4B5563))),
                   selected: isSel,
                   onSelected: (val) {
                     if (val) setState(() => _activeFilter = f);
                   },
-                  selectedColor: const Color(0xFFDDD6FE),
+                  selectedColor: const Color(0xFF34D399), // Highlight with color
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: isSel ? const Color(0xFF7C3AED) : Colors.grey.shade300),
+                    side: BorderSide(color: isSel ? const Color(0xFF059669) : Colors.grey.shade300, width: isSel ? 1.5 : 1),
                   ),
                 ),
               );
@@ -2226,8 +2245,12 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
   // ── Tab 2: Strategy Marketplace (Panchayagnam / Panchayagnam Templates) ────
 
   Widget _buildMarketplaceTab() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final int crossCount = screenWidth > 1300 ? 3 : 2;
+    final double aspectRatio = screenWidth > 1300 ? 1.45 : 1.75;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2241,15 +2264,15 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                     'Institutional Strategy Marketplace',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     'Pre-built algorithms backtested on 5 years of verified NSE tick data. Deploy to 8 connected brokers in 1-click.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(8),
@@ -2257,25 +2280,25 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 16),
-                    SizedBox(width: 6),
-                    Text('Verified Institutional Quality', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF065F46))),
+                    Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 15),
+                    SizedBox(width: 5),
+                    Text('Verified Institutional Quality', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46))),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          // Template Cards Grid
+          // Compact Template Cards Grid - Zero Gaps!
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.35,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossCount,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: aspectRatio,
             ),
             itemCount: _marketplaceTemplates.length,
             itemBuilder: (ctx, idx) {
@@ -2292,104 +2315,109 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Header & Risk
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEDE9FE),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   t.category,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9)),
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: t.risk == 'LOW' || t.risk == 'VERY LOW'
                       ? const Color(0xFFECFDF5)
                       : const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   'Risk: ${t.risk}',
                   style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
                     color: t.risk == 'LOW' || t.risk == 'VERY LOW' ? const Color(0xFF065F46) : const Color(0xFF92400E),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
-          // Title & Description
+          // Title & Description (Compact without large vertical stretch)
           Text(
             t.title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
-          Expanded(
+          const SizedBox(height: 3),
+          SizedBox(
+            height: 32,
             child: Text(
               t.description,
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600, height: 1.35),
-              maxLines: 3,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, height: 1.25),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Metrics Grid
+          // Metrics Grid (Compact)
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildCardStat('WIN RATE', '${t.winRate}%', const Color(0xFF059669)),
                 _buildCardStat('MAX DD', '-${t.maxDrawdown}%', const Color(0xFFDC2626)),
-                _buildCardStat('TARGET ROI', '+${t.targetRoi}%/Yr', const Color(0xFF2563EB)),
-                _buildCardStat('CAPITAL', t.capitalReq, const Color(0xFF111827)),
+                _buildCardStat('TARGET ROI', '+${t.targetRoi}%/Yr', const Color(0xFF0284C7)),
+                _buildCardStat('CAPITAL', t.capitalReq, const Color(0xFF1E293B)),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
 
           // Action Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _showDeployModal(t),
-              icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-              label: const Text('Deploy Strategy to Brokers'),
+              icon: const Icon(Icons.rocket_launch_rounded, size: 14),
+              label: const Text('Deploy Strategy to Brokers', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                elevation: 0,
               ),
             ),
           ),

@@ -111,6 +111,31 @@ class _MainDashboardState extends State<MainDashboard> {
     final isSuperAdmin = currentUserRole == 'SUPER_ADMIN';
 
     return [
+      // 1. Auto Trading (1st side heading)
+      const _NavItem(
+        icon: Icons.psychology_rounded,
+        label: 'Auto Trading',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.auto_awesome_rounded, label: 'Auto Strategies'),
+          _SubNavItem(icon: Icons.history_toggle_off_rounded, label: 'Backtesting'),
+          _SubNavItem(icon: Icons.shield_outlined, label: 'Paper Trading'),
+          _SubNavItem(icon: Icons.psychology_alt_rounded, label: 'Strategy Builder'),
+        ],
+      ),
+
+      // 2. Parent Children Trading (2nd side heading)
+      const _NavItem(
+        icon: Icons.content_copy_rounded,
+        label: 'Parent Children Trading',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.people_alt_rounded, label: 'Parent Children Trading'),
+          _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
+        ],
+      ),
+
+      // 3. Trading Workspace (3rd side heading)
       const _NavItem(
         icon: Icons.trending_up_rounded,
         label: 'Trading Workspace',
@@ -124,25 +149,8 @@ class _MainDashboardState extends State<MainDashboard> {
           _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Holdings'),
         ],
       ),
-      const _NavItem(
-        icon: Icons.psychology_rounded,
-        label: 'Auto Trading',
-        type: _NavItemType.group,
-        children: [
-          _SubNavItem(icon: Icons.auto_awesome_rounded, label: 'Auto Strategies'),
-          _SubNavItem(icon: Icons.history_toggle_off_rounded, label: 'Backtesting'),
-          _SubNavItem(icon: Icons.shield_outlined, label: 'Paper Trading'),
-        ],
-      ),
-      const _NavItem(
-        icon: Icons.content_copy_rounded,
-        label: 'Parent Children Trading',
-        type: _NavItemType.group,
-        children: [
-          _SubNavItem(icon: Icons.people_alt_rounded, label: 'Parent Children Trading'),
-          _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
-        ],
-      ),
+
+      // 4. Option Chain (4th side heading)
       const _NavItem(
         icon: Icons.table_chart_rounded,
         label: 'Option Chain',
@@ -150,9 +158,10 @@ class _MainDashboardState extends State<MainDashboard> {
         children: [
           _SubNavItem(icon: Icons.table_chart_rounded, label: 'Option Chain (F&O)'),
           _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
-          _SubNavItem(icon: Icons.psychology_alt_rounded, label: 'Strategy Builder'),
         ],
       ),
+
+      // 5. Tools and Accounts (5th side heading)
       _NavItem(
         icon: Icons.construction_rounded,
         label: 'Tools & Accounts',
@@ -193,7 +202,31 @@ class _MainDashboardState extends State<MainDashboard> {
     final subIdx = _currentSelection.subIndex ?? 0;
 
     switch (topIdx) {
-      case 0: // Trading Workspace
+      case 0: // 1. Auto Trading
+        switch (subIdx) {
+          case 0:
+            return const AlgoStrategiesView();
+          case 1:
+            return const BacktestingView();
+          case 2:
+            return const PaperTradingView();
+          case 3:
+            return const OptionsChainView(initialTabIndex: 2); // Strategy Builder moved to Auto Trade
+          default:
+            return const AlgoStrategiesView();
+        }
+
+      case 1: // 2. Parent Children Trading
+        switch (subIdx) {
+          case 0:
+            return GroupOrdersTab();
+          case 1:
+            return const BasketOrdersView();
+          default:
+            return GroupOrdersTab();
+        }
+
+      case 2: // 3. Trading Workspace
         switch (subIdx) {
           case 0:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
@@ -211,41 +244,17 @@ class _MainDashboardState extends State<MainDashboard> {
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
         }
 
-      case 1: // Algo Trading
-        switch (subIdx) {
-          case 0:
-            return const AlgoStrategiesView();
-          case 1:
-            return const BacktestingView();
-          case 2:
-            return const PaperTradingView();
-          default:
-            return const AlgoStrategiesView();
-        }
-
-      case 2: // Copy Trading
-        switch (subIdx) {
-          case 0:
-            return GroupOrdersTab();
-          case 1:
-            return const BasketOrdersView();
-          default:
-            return GroupOrdersTab();
-        }
-
-      case 3: // Option Chain (Side Heading like Algo & Copy Trading)
+      case 3: // 4. Option Chain
         switch (subIdx) {
           case 0:
             return const OptionsChainView(initialTabIndex: 0);
           case 1:
             return const OptionsChainView(initialTabIndex: 1);
-          case 2:
-            return const OptionsChainView(initialTabIndex: 2);
           default:
             return const OptionsChainView(initialTabIndex: 0);
         }
 
-      case 4: // Tools & Accounts
+      case 4: // 5. Tools & Accounts
         switch (subIdx) {
           case 0:
             return const ChildAccountsTab();
@@ -266,7 +275,7 @@ class _MainDashboardState extends State<MainDashboard> {
         }
 
       default:
-        return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
+        return const AlgoStrategiesView();
     }
   }
 
@@ -391,7 +400,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        _currentSelection = const _NavSelection(2, 0); // Jump to Parent Children Trading
+                        _currentSelection = const _NavSelection(1, 0); // Jump to Parent Children Trading
                         _bodyKey = UniqueKey();
                       });
                     },

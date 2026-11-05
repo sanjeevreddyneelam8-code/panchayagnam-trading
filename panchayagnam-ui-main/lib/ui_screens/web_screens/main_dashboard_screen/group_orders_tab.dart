@@ -631,30 +631,25 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     return InkWell(
       onTap: () {
         setState(() => _selectedAccountNav = index);
-        if (index == 3) {
-          _tabCtrl.animateTo(1);
-        } else if (index == 1) {
-          _tabCtrl.animateTo(0);
-        }
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEFF6FF) : Colors.transparent,
+          color: isSelected ? const Color(0xFF34D399).withOpacity(0.35) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent),
+          border: Border.all(color: isSelected ? const Color(0xFF059669) : Colors.transparent, width: 1.5),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF6B7280)),
+            Icon(icon, size: 14, color: isSelected ? Colors.black : const Color(0xFF6B7280)),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF4B5563),
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                color: isSelected ? Colors.black : const Color(0xFF4B5563),
               ),
             ),
           ],
@@ -777,7 +772,14 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           ),
         ),
 
-        // AutoTrader Group Accounts Action & Search Header
+        if (_selectedAccountNav == 0)
+          _buildTradingAccountsHierarchyView(context)
+        else if (_selectedAccountNav == 2)
+          _buildMasterAccountsHierarchyView(context)
+        else if (_selectedAccountNav == 3)
+          _buildOwnersHierarchyView(context)
+        else ...[
+  // AutoTrader Group Accounts Action & Search Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -937,6 +939,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               onTrade: (g, side) => _showGroupOrderPanel(context, g, side),
             ),
           ),
+        ],
       ],
     );
   }
@@ -1598,6 +1601,408 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           ),
         );
       },
+    );
+  }
+
+  // ─── Accounts Hierarchy View: 1. Trading Accounts ─────────────────────────
+  Widget _buildTradingAccountsHierarchyView(BuildContext context) {
+    final accounts = [
+      {'name': 'Dhan Main Account', 'code': '1100345678', 'broker': 'DHAN', 'role': 'MASTER (Parent)', 'margin': '₹25,00,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': true},
+      {'name': 'AngelOne Child Account', 'code': 'AG789012', 'broker': 'ANGELONE', 'role': 'FOLLOWER (Child)', 'margin': '₹12,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Zerodha Kite Account', 'code': 'ZR442190', 'broker': 'ZERODHA', 'role': 'FOLLOWER (Child)', 'margin': '₹15,00,000', 'multiplier': '1.5x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Motilal Oswal Account', 'code': 'MO554433', 'broker': 'MOTILAL', 'role': 'FOLLOWER (Child)', 'margin': '₹8,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Groww Account', 'code': 'GR887766', 'broker': 'GROWW', 'role': 'FOLLOWER (Child)', 'margin': '₹6,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Goodwill Giga Account', 'code': 'GW332211', 'broker': 'GOODWILL', 'role': 'FOLLOWER (Child)', 'margin': '₹4,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Profitmart Account', 'code': 'PM998877', 'broker': 'PROFITMART', 'role': 'FOLLOWER (Child)', 'margin': '₹5,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+      {'name': 'Alice Blue ANT Account', 'code': 'AB665544', 'broker': 'ALICEBLUE', 'role': 'FOLLOWER (Child)', 'margin': '₹3,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Action Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Trading Accounts (8 Demats Connected)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                const SizedBox(height: 3),
+                Text('Real-time authenticated Demats configured for Multi-Broker Order Routing & Copy Trading', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All 8 Demat sessions active & synchronized · Latency: 11ms'), backgroundColor: Color(0xFF059669)));
+                  },
+                  icon: const Icon(Icons.sync_rounded, size: 16),
+                  label: const Text('Sync All'),
+                  style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link New Demat modal ready')));
+                  },
+                  icon: const Icon(Icons.add_link_rounded, size: 16),
+                  label: const Text('+ Add Account'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Accounts Table Card
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Table Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 3, child: Text('DEMAT & BROKER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('CLIENT CODE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('ROLE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('MARGIN', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('MULTIPLIER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('ACTIONS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                  ],
+                ),
+              ),
+
+              // Rows
+              ...accounts.map((acc) {
+                final isMaster = acc['isMaster'] as bool;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isMaster ? const Color(0xFFFFFBEB) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: isMaster ? const Color(0xFFFDE68A) : const Color(0xFFBFDBFE)),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isMaster ? Icons.star_rounded : Icons.account_balance_rounded,
+                                  size: 18,
+                                  color: isMaster ? const Color(0xFFD97706) : const Color(0xFF2563EB),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(acc['name'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF111827))),
+                                  Text(acc['broker'] as String, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(flex: 2, child: Text(acc['code'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF374151)))),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isMaster ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            acc['role'] as String,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: isMaster ? const Color(0xFFB45309) : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(flex: 2, child: Text(acc['margin'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)))),
+                      Expanded(flex: 2, child: Text(acc['multiplier'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF1E3A8A)))),
+                      Expanded(
+                        flex: 2,
+                        child: Row(
+                          children: [
+                            Container(width: 7, height: 7, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle)),
+                            const SizedBox(width: 6),
+                            const Text('Active 🟢', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: TextButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${acc['name']} latency: 12ms · Session OK'), backgroundColor: const Color(0xFF059669)));
+                          },
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+                          child: const Text('Test Ping', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0284C7))),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Accounts Hierarchy View: 2. Master Accounts ──────────────────────────
+  Widget _buildMasterAccountsHierarchyView(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Master Account & Copy Leadership Manager', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                const SizedBox(height: 3),
+                Text('Designate which primary Demat acts as the execution leader for 7 child accounts', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFA7F3D0))),
+              child: const Row(
+                children: [
+                  Icon(Icons.shield_rounded, color: Color(0xFF059669), size: 16),
+                  SizedBox(width: 6),
+                  Text('Leader Heartbeat Active', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF065F46))),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Leader Card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFFDE68A))),
+                    child: const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Current Master Leader: Dhan Pro Main Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                        SizedBox(height: 3),
+                        Text('Client Code: 1100345678 • Margin: ₹25,00,000 • Fan-Out Latency: 11ms', style: TextStyle(fontSize: 12.5, color: Color(0xFF4B5563))),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: const Color(0xFFD1FAE5), borderRadius: BorderRadius.circular(6)),
+                    child: const Text('ACTIVE LEADER 🟢', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: const Text(
+                  'Every trade executed on this master Demat (manual in MarketWatch, Charts, Option Chain or via webhook signal) automatically replicates to 7 follower child accounts at sub-millisecond speeds according to their respective multiplier rules.',
+                  style: TextStyle(fontSize: 12.5, color: Color(0xFF334155), height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text('Switch Master Leadership to another Demat:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _buildSwitchMasterButton(context, 'AngelOne Child (AG789012)'),
+                  _buildSwitchMasterButton(context, 'Zerodha Kite (ZR442190)'),
+                  _buildSwitchMasterButton(context, 'Motilal Oswal (MO554433)'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitchMasterButton(BuildContext context, String accountName) {
+    return OutlinedButton.icon(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Switched designated Master Leader to $accountName!'), backgroundColor: const Color(0xFF059669)),
+        );
+      },
+      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+      label: Text('Designate $accountName'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF1E3A8A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  // ─── Accounts Hierarchy View: 3. Owners / Follower Demats ──────────────────
+  Widget _buildOwnersHierarchyView(BuildContext context) {
+    final owners = [
+      {'name': 'Sanjeev Reddy', 'pan': 'ABCDE****F', 'role': 'Super Admin', 'demats': '4 Demats (Dhan, Angel, Zerodha, Motilal)', 'capital': '₹55,00,000', 'isPrimary': true},
+      {'name': 'Ramesh Kumar', 'pan': 'FGHIJ****K', 'role': 'Investor Client', 'demats': '2 Demats (Groww, Upstox)', 'capital': '₹15,00,000', 'isPrimary': false},
+      {'name': 'Vikram Patel', 'pan': 'KLMNO****P', 'role': 'Investor Client', 'demats': '1 Demat (AliceBlue)', 'capital': '₹5,00,000', 'isPrimary': false},
+      {'name': 'Priya Sharma', 'pan': 'PQRST****U', 'role': 'Investor Client', 'demats': '1 Demat (Profitmart)', 'capital': '₹5,00,000', 'isPrimary': false},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Multi-Tenant Owners & Demat Portfolios', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                const SizedBox(height: 3),
+                Text('PAN-verified Demat owners linked to this Panchayagnam instance', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Owner invite link generated!'), backgroundColor: Color(0xFF059669)));
+              },
+              icon: const Icon(Icons.person_add_rounded, size: 16),
+              label: const Text('+ Add Owner'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 3, child: Text('OWNER NAME', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('VERIFIED PAN', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('USER ROLE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 4, child: Text('LINKED DEMATS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('POOLED CAPITAL', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                  ],
+                ),
+              ),
+              ...owners.map((o) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(o['name'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF111827))),
+                      ),
+                      Expanded(flex: 2, child: Text(o['pan'] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Color(0xFF4B5563)))),
+                      Expanded(flex: 2, child: Text(o['role'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1D4ED8)))),
+                      Expanded(flex: 4, child: Text(o['demats'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF374151)))),
+                      Expanded(flex: 2, child: Text(o['capital'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)))),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
+                          child: const Text('VERIFIED 🟢', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
