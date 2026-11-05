@@ -532,7 +532,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
           children: [
             Row(
               children: [
-                const Icon(Icons.candlestick_chart, color: Color(0xFF2563EB), size: 22),
+                const Icon(Icons.candlestick_chart, color: Color(0xFF059669), size: 22),
                 const SizedBox(width: 8),
                 Text(scrip.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
                 const SizedBox(width: 8),
@@ -728,7 +728,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+                            color: isSelected ? const Color(0xFF059669) : Colors.transparent,
                             borderRadius: BorderRadius.circular(7),
                           ),
                           child: Text(
@@ -880,7 +880,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: item.instrumentType == 'INDEX' ? const Color(0xFF2563EB) : const Color(0xFF6D28D9),
+                                    color: item.instrumentType == 'INDEX' ? const Color(0xFF059669) : const Color(0xFF6D28D9),
                                   ),
                                 ),
                               ),
@@ -1016,9 +1016,9 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                                         child: const Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.show_chart_rounded, size: 13, color: Color(0xFF2563EB)),
+                                            Icon(Icons.show_chart_rounded, size: 13, color: Color(0xFF059669)),
                                             SizedBox(width: 3),
-                                            Text('Chart', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                                            Text('Chart', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
                                           ],
                                         ),
                                       ),

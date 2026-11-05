@@ -125,9 +125,9 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF031416), // Deep dark obsidian
-                Color(0xFF063B32), // Institutional dark emerald
-                Color(0xFF021B17), // Deep night forest
+                Color(0xFF022C22), // Deep rich forest emerald
+                Color(0xFF064E3B), // Institutional vibrant emerald
+                Color(0xFF047857), // Pure Panchayagnam green
               ],
               stops: [0.0, 0.55, 1.0],
             ),
@@ -269,15 +269,15 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withOpacity(0.7),
+        color: const Color(0xFF064E3B).withOpacity(0.85),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF10B981).withOpacity(0.35),
-          width: 1,
+          color: const Color(0xFF34D399).withOpacity(0.6),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: const Color(0xFF022C22).withOpacity(0.4),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -286,7 +286,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFFE2E8F0),
+          color: Color(0xFFECFDF5),
           fontSize: 13,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
@@ -345,16 +345,16 @@ class _FinancialWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF059669).withOpacity(0.25),
-          const Color(0xFF1E3A8A).withOpacity(0.02),
+          const Color(0xFF10B981).withOpacity(0.3),
+          const Color(0xFF047857).withOpacity(0.02),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h))
       ..style = PaintingStyle.fill;
     canvas.drawPath(fillPath, fillPaint);
 
-    // Glowing line stroke
+    // Glowing green line stroke
     final linePaint = Paint()
-      ..color = const Color(0xFF38BDF8)
+      ..color = const Color(0xFF34D399)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
     canvas.drawPath(path, linePaint);
@@ -370,7 +370,7 @@ class _AutoTraderGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.035)
+      ..color = const Color(0xFF34D399).withOpacity(0.07)
       ..strokeWidth = 1.0;
 
     const spacing = 48.0;
@@ -488,7 +488,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                           const Text(
                             'Sign In',
                             style: TextStyle(
-                              color: Color(0xFF0F172A),
+                              color: Color(0xFF064E3B),
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.6,
@@ -692,8 +692,8 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                                 );
                               },
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFFEFF6FF),
-                                side: const BorderSide(color: Color(0xFFBFDBFE)),
+                                backgroundColor: const Color(0xFFECFDF5),
+                                side: const BorderSide(color: Color(0xFFA7F3D0), width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),

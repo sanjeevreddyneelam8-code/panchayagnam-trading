@@ -578,14 +578,14 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.bolt_rounded, color: execMode == 'BROKER' ? const Color(0xFF2563EB) : Colors.grey, size: 20),
+                                Icon(Icons.bolt_rounded, color: execMode == 'BROKER' ? const Color(0xFF059669) : Colors.grey, size: 20),
                                 const SizedBox(width: 8),
                                 const Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text('Multi-Broker Live', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF1E40AF))),
-                                      Text('Simulated sandbox gate', style: TextStyle(fontSize: 10.5, color: Color(0xFF1D4ED8))),
+                                      Text('Simulated sandbox gate', style: TextStyle(fontSize: 10.5, color: Color(0xFF047857))),
                                     ],
                                   ),
                                 ),
@@ -920,7 +920,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             _buildMegaMenuItem(
                               ctx: ctx,
                               icon: Icons.auto_fix_high_rounded,
-                              iconColor: const Color(0xFF2563EB),
+                              iconColor: const Color(0xFF059669),
                               iconBg: const Color(0xFFEFF6FF),
                               title: 'Option Wizard',
                               description: 'Guided option legs, strike offsets and delta hedging',
@@ -1274,7 +1274,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.auto_fix_high_rounded, color: Color(0xFF2563EB)),
+              Icon(Icons.auto_fix_high_rounded, color: Color(0xFF059669)),
               SizedBox(width: 10),
               Text('Panchayagnam Option Wizard', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             ],
@@ -1323,7 +1323,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   min: 10.0,
                   max: 60.0,
                   divisions: 10,
-                  activeColor: const Color(0xFF2563EB),
+                  activeColor: const Color(0xFF059669),
                   label: '${slPct.toStringAsFixed(0)}%',
                   onChanged: (v) => setDlgState(() => slPct = v),
                 ),
@@ -1338,7 +1338,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 _deployReadyMadeStrategy('Option Wizard: $strategyStructure', 'BANKNIFTY-OPT', 'Guided Option Selling', 'Entry 09:20 AM, $strikeMode, SL ${slPct.toStringAsFixed(0)}%');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -1773,7 +1773,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                       label: 'CONNECTED BROKERS',
                       value: '8 Accounts Ready',
                       subtext: 'Dhan, Zerodha, Upstox, Angel...',
-                      color: const Color(0xFF2563EB),
+                      color: const Color(0xFF059669),
                       icon: Icons.hub_rounded,
                     ),
                     const SizedBox(width: 12),
@@ -2137,7 +2137,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                                     ),
                                     child: Text(
                                       b,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1D4ED8)),
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF047857)),
                                     ),
                                   );
                                 }).toList(),
@@ -2543,7 +2543,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             ),
                           ),
                           Expanded(flex: 2, child: Text('₹${log.price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700))),
-                          Expanded(flex: 2, child: Text(log.broker, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF2563EB)))),
+                          Expanded(flex: 2, child: Text(log.broker, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF059669)))),
                           Expanded(
                             flex: 2,
                             child: Row(

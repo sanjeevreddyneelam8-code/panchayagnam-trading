@@ -154,14 +154,14 @@ class _DashboardTabState extends State<DashboardTab> {
       icon: Icons.auto_awesome_rounded,
     ),
     _Slide(
-      gradient: [Color(0xFF1D4ED8), Color(0xFF7C3AED)],
+      gradient: [Color(0xFF047857), Color(0xFF7C3AED)],
       title: 'Multi-Broker Execution in One Click',
       subtitle: 'Place orders across Angel One, Motilal & more instantly.',
       tag: 'PRO',
       icon: Icons.flash_on_rounded,
     ),
     _Slide(
-      gradient: [Color(0xFF0F766E), Color(0xFF1D4ED8)],
+      gradient: [Color(0xFF0F766E), Color(0xFF047857)],
       title: 'Group Orders Now 3× Faster',
       subtitle: '500+ orders per second with zero slippage.',
       tag: 'UPDATE',
@@ -597,8 +597,8 @@ class _DashboardTabState extends State<DashboardTab> {
                       );
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF2563EB),
-                      side: const BorderSide(color: Color(0xFF2563EB)),
+                      foregroundColor: const Color(0xFF059669),
+                      side: const BorderSide(color: Color(0xFF059669)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
@@ -615,7 +615,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: const Color(0xFF059669),
                       elevation: 1,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                       shape: RoundedRectangleBorder(
@@ -690,12 +690,12 @@ class _DashboardTabState extends State<DashboardTab> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF2563EB), width: 1.2),
+            border: Border.all(color: const Color(0xFF059669), width: 1.2),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedAccount,
-              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2563EB), size: 20),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF059669), size: 20),
               style: const TextStyle(
                 color: Color(0xFF1E293B),
                 fontSize: 12.5,
@@ -836,10 +836,10 @@ class _DashboardTabState extends State<DashboardTab> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: isPrimary ? const Color(0xFF2563EB) : const Color(0xFFF1F5F9),
+            color: isPrimary ? const Color(0xFF059669) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: isPrimary ? const Color(0xFF1D4ED8) : const Color(0xFFE2E8F0),
+              color: isPrimary ? const Color(0xFF047857) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Icon(
@@ -882,7 +882,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: isSelected ? const Color(0xFFF1F5F9) : Colors.transparent,
                   border: Border(
                     bottom: BorderSide(
-                      color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+                      color: isSelected ? const Color(0xFF059669) : Colors.transparent,
                       width: 2.5,
                     ),
                   ),
@@ -892,7 +892,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Icon(
                       t.$2,
                       size: 15,
-                      color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                      color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B),
                     ),
                     const SizedBox(width: 7),
                     Text(
@@ -900,7 +900,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF475569),
+                        color: isSelected ? const Color(0xFF059669) : const Color(0xFF475569),
                       ),
                     ),
                   ],
@@ -1274,7 +1274,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ElevatedButton.icon(
                     onPressed: () => setState(() => _selectedPortfolioTab = 'Trade'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: const Color(0xFF059669),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
@@ -1311,7 +1311,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   const SizedBox(height: 14),
                   ElevatedButton(
                     onPressed: () => setState(() => _selectedPortfolioTab = 'Trade'),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
                     child: const Text('Open Trade Terminal', style: TextStyle(color: Colors.white)),
                   ),
                 ],
@@ -1415,7 +1415,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 final isBuy = ord['side'].toString().contains('BUY');
                 return DataRow(cells: [
                   DataCell(Text(ord['time'], style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: 'monospace'))),
-                  DataCell(Text(ord['id'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)))),
+                  DataCell(Text(ord['id'], style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF059669)))),
                   DataCell(Text(ord['scrip'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                   DataCell(Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1476,7 +1476,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
+                      color: const Color(0xFF059669),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 18),
@@ -1494,7 +1494,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.speed, size: 14, color: Color(0xFF2563EB)),
+                    const Icon(Icons.speed, size: 14, color: Color(0xFF059669)),
                     const SizedBox(width: 6),
                     Text('Sub-15ms Replication · Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin)}', style: const TextStyle(color: Color(0xFF1E40AF), fontSize: 11.5, fontWeight: FontWeight.bold)),
                   ],
@@ -1521,9 +1521,9 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFF8FAFC),
+                    color: isSelected ? const Color(0xFF059669) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0)),
+                    border: Border.all(color: isSelected ? const Color(0xFF059669) : const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1613,7 +1613,7 @@ class _DashboardTabState extends State<DashboardTab> {
                         ),
                         IconButton(
                           onPressed: () => setState(() => _tradeQty += 25),
-                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFF2563EB)),
+                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFF059669)),
                         ),
                       ],
                     ),
@@ -1669,7 +1669,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Text('Available Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin - _usedMargin)}', style: const TextStyle(fontSize: 12, color: Color(0xFF047857), fontWeight: FontWeight.bold)),
                   ],
                 ),
-                Text('LTP: ₹ $_tradeLtp', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                Text('LTP: ₹ $_tradeLtp', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
               ],
             ),
           ),
@@ -1822,7 +1822,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: item.$2.contains('INDEX') ? const Color(0xFF2563EB) : const Color(0xFF6D28D9),
+                        color: item.$2.contains('INDEX') ? const Color(0xFF059669) : const Color(0xFF6D28D9),
                       ),
                     ),
                   )),
@@ -1997,11 +1997,11 @@ class _DashboardTabState extends State<DashboardTab> {
               ElevatedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('GTT Order Creator: Trigger set on Parent Demat will automatically copy to 7 child accounts.'), backgroundColor: Color(0xFF2563EB)),
+                    const SnackBar(content: Text('GTT Order Creator: Trigger set on Parent Demat will automatically copy to 7 child accounts.'), backgroundColor: Color(0xFF059669)),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: const Color(0xFF059669),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -2155,7 +2155,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     children: [
                       Text('INVESTED CAPITAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
                       SizedBox(height: 2),
-                      Text('₹14,99,000.00', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                      Text('₹14,99,000.00', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
                     ],
                   ),
                 ),
@@ -2234,7 +2234,7 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _buildNotificationsStreamView() {
     final streamItems = [
       {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across 8 Demats at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
-      {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF2563EB)},
+      {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF7C3AED)},
       {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF0284C7)},
     ];
@@ -3816,7 +3816,7 @@ class _AccountPickerDialogState extends State<_AccountPickerDialog> {
   Color _brokerColor(String broker) {
     final b = broker.toUpperCase();
     if (b.contains('ANGEL')) return const Color(0xFF7C3AED);
-    if (b.contains('MOTILAL')) return const Color(0xFF1D4ED8);
+    if (b.contains('MOTILAL')) return const Color(0xFF047857);
     if (b.contains('PROFITMART') ||
         b.contains('PROFIT_MART') ||
         b.contains('PROFIT MART')) {

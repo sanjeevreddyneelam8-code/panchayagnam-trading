@@ -80,7 +80,13 @@ class _MainDashboardState extends State<MainDashboard> {
   _NavSelection _currentSelection = const _NavSelection(0, 0);
   bool _sidebarCollapsed = false;
   bool _roleLoaded = false;
+  int? _openGroupFlyoutIndex; // Side flyout menu index (opens on side, not down)
   Key _bodyKey = UniqueKey(); // ← forces full remount on every nav tap
+
+  double _calculateFlyoutTop(int groupIndex) {
+    final double base = 100.0 + (groupIndex * 46.0);
+    return base.clamp(60.0, 480.0);
+  }
 
   @override
   void initState() {
@@ -130,7 +136,9 @@ class _MainDashboardState extends State<MainDashboard> {
         label: 'Parent Children Trading',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.people_alt_rounded, label: 'Parent Children Trading'),
+          _SubNavItem(icon: Icons.account_balance_rounded, label: 'Trading Accounts'),
+          _SubNavItem(icon: Icons.group_work_rounded, label: 'Group Accounts'),
+          _SubNavItem(icon: Icons.star_rounded, label: 'Master Accounts'),
           _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
         ],
       ),
@@ -219,11 +227,15 @@ class _MainDashboardState extends State<MainDashboard> {
       case 1: // 2. Parent Children Trading
         switch (subIdx) {
           case 0:
-            return GroupOrdersTab();
+            return const GroupOrdersTab(initialHierarchyIndex: 0);
           case 1:
+            return const GroupOrdersTab(initialHierarchyIndex: 1);
+          case 2:
+            return const GroupOrdersTab(initialHierarchyIndex: 2);
+          case 3:
             return const BasketOrdersView();
           default:
-            return GroupOrdersTab();
+            return const GroupOrdersTab(initialHierarchyIndex: 0);
         }
 
       case 2: // 3. Trading Workspace
@@ -400,7 +412,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        _currentSelection = const _NavSelection(1, 0); // Jump to Parent Children Trading
+                        _currentSelection = const _NavSelection(1, 1); // Jump to Parent Children Trading Group Accounts
                         _bodyKey = UniqueKey();
                       });
                     },
@@ -425,7 +437,7 @@ class _MainDashboardState extends State<MainDashboard> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isActive ? 'Parent Children Trading: ACTIVE (${engine.activeFollowersCount} Childs)' : 'Parent Children Trading: PAUSED',
+                            isActive ? 'Parent Children Trading: ACTIVE' : 'Parent Children Trading: PAUSED',
                             style: TextStyle(
                               color: isActive ? const Color(0xFF6EE7B7) : const Color(0xFFCBD5E1),
                               fontSize: 11.5,
@@ -605,7 +617,7 @@ class _MainDashboardState extends State<MainDashboard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.language_rounded, color: Color(0xFF2563EB), size: 22),
+            Icon(Icons.language_rounded, color: Color(0xFF059669), size: 22),
             SizedBox(width: 10),
             Text('Dedicated Static IP Whitelist', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           ],
@@ -625,7 +637,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.verified, color: Color(0xFF2563EB), size: 20),
+                    Icon(Icons.verified, color: Color(0xFF059669), size: 20),
                     SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -687,7 +699,7 @@ class _MainDashboardState extends State<MainDashboard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.file_download_outlined, color: Color(0xFF2563EB), size: 22),
+            Icon(Icons.file_download_outlined, color: Color(0xFF059669), size: 22),
             SizedBox(width: 10),
             Text('AutoTrader Developer Hub & SDKs', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           ],
@@ -734,7 +746,7 @@ class _MainDashboardState extends State<MainDashboard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.show_chart_rounded, color: Color(0xFF2563EB), size: 22),
+            Icon(Icons.show_chart_rounded, color: Color(0xFF059669), size: 22),
             SizedBox(width: 10),
             Text('Replication Latency & Activity Logs', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           ],
@@ -916,7 +928,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.menu_book_rounded, color: Color(0xFF2563EB), size: 22),
+                    child: const Icon(Icons.menu_book_rounded, color: Color(0xFF059669), size: 22),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -945,7 +957,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Understood', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1015,7 +1027,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1103,7 +1115,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1225,7 +1237,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Acknowledge', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1260,7 +1272,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1288,7 +1300,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.tune_rounded, color: Color(0xFF2563EB), size: 22),
+                    child: const Icon(Icons.tune_rounded, color: Color(0xFF059669), size: 22),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -1362,7 +1374,7 @@ class _MainDashboardState extends State<MainDashboard> {
                         const SnackBar(content: Text('General preferences saved successfully!'), backgroundColor: Color(0xFF059669), duration: Duration(seconds: 2)),
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                     child: const Text('Save Preferences', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -1524,7 +1536,7 @@ class _MainDashboardState extends State<MainDashboard> {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Look & Feel settings applied.')));
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Apply Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1624,7 +1636,7 @@ class _MainDashboardState extends State<MainDashboard> {
                         const SnackBar(content: Text('Simulation completed! Net profit: +₹38,450.00'), backgroundColor: Color(0xFF059669)),
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                     child: const Text('Start Full Replay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -1675,7 +1687,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFBFDBFE))),
                 child: Row(
                   children: [
-                    const Icon(Icons.verified_user_rounded, color: Color(0xFF2563EB), size: 22),
+                    const Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 22),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
@@ -1702,7 +1714,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1768,7 +1780,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   const Text('Total Pooled Liquid Capital: ₹80,00,000 across 4 verified Demat owners.', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                     child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -1826,7 +1838,7 @@ class _MainDashboardState extends State<MainDashboard> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Color(0xFF2563EB),
+              backgroundColor: Color(0xFF059669),
               child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 20),
             ),
             SizedBox(width: 10),
@@ -1874,7 +1886,7 @@ class _MainDashboardState extends State<MainDashboard> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
             child: const Text('Start Chat', style: TextStyle(color: Colors.white)),
           ),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
@@ -2004,10 +2016,25 @@ class _MainDashboardState extends State<MainDashboard> {
                 collapsed: _sidebarCollapsed,
                 navItems: _navItems,
                 currentSelection: _currentSelection,
+                openGroupFlyoutIndex: _openGroupFlyoutIndex,
                 initials: _initials,
                 userRole: currentUserRole,
+                onGroupHeaderTap: (groupIndex) {
+                  setState(() {
+                    _openGroupFlyoutIndex =
+                        (_openGroupFlyoutIndex == groupIndex) ? null : groupIndex;
+                    _currentSelection = _NavSelection(
+                      groupIndex,
+                      _currentSelection.topIndex == groupIndex
+                          ? _currentSelection.subIndex
+                          : 0,
+                    );
+                    _bodyKey = UniqueKey();
+                  });
+                },
                 onItemTap: (sel) => setState(() {
                   _currentSelection = sel;
+                  _openGroupFlyoutIndex = null;
                   _bodyKey =
                       UniqueKey(); // ← new key on every tap → full remount
                 }),
@@ -2029,6 +2056,41 @@ class _MainDashboardState extends State<MainDashboard> {
               ),
             ],
           ),
+
+          // Floating side flyout menu that opens ON THE SIDE (not downward)
+          if (_openGroupFlyoutIndex != null &&
+              _openGroupFlyoutIndex! < _navItems.length &&
+              _navItems[_openGroupFlyoutIndex!].children.isNotEmpty) ...[
+            // Modal dismiss barrier when clicking anywhere outside
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => setState(() => _openGroupFlyoutIndex = null),
+              ),
+            ),
+
+            // Side flyout positioned directly to the right of the sidebar
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              left: sidebarWidth + 6,
+              top: _calculateFlyoutTop(_openGroupFlyoutIndex!),
+              child: _SideSubmenuFlyout(
+                groupItem: _navItems[_openGroupFlyoutIndex!],
+                groupIndex: _openGroupFlyoutIndex!,
+                currentSelection: _currentSelection,
+                onSubTap: (subIdx) {
+                  setState(() {
+                    _currentSelection = _NavSelection(_openGroupFlyoutIndex!, subIdx);
+                    _openGroupFlyoutIndex = null;
+                    _bodyKey = UniqueKey();
+                  });
+                },
+                onClose: () => setState(() => _openGroupFlyoutIndex = null),
+              ),
+            ),
+          ],
+
           AnimatedPositioned(
             duration: _kAnimDuration,
             curve: _kAnimCurve,
@@ -2545,8 +2607,10 @@ class _AnimatedSidebar extends StatelessWidget {
   final bool collapsed;
   final List<_NavItem> navItems;
   final _NavSelection currentSelection;
+  final int? openGroupFlyoutIndex;
   final String initials;
   final String userRole;
+  final ValueChanged<int> onGroupHeaderTap;
   final ValueChanged<_NavSelection> onItemTap;
   final VoidCallback onLogout;
 
@@ -2554,8 +2618,10 @@ class _AnimatedSidebar extends StatelessWidget {
     required this.collapsed,
     required this.navItems,
     required this.currentSelection,
+    required this.openGroupFlyoutIndex,
     required this.initials,
     required this.userRole,
+    required this.onGroupHeaderTap,
     required this.onItemTap,
     required this.onLogout,
   });
@@ -2589,16 +2655,13 @@ class _AnimatedSidebar extends StatelessWidget {
                 final item = navItems[i];
 
                 if (item.type == _NavItemType.group) {
-                  return _ExpandableNavItem(
+                  return _NavGroupTile(
                     icon: item.icon,
                     label: item.label,
-                    children: item.children,
                     isGroupActive: currentSelection.topIndex == i,
-                    activeSubIndex: currentSelection.topIndex == i
-                        ? currentSelection.subIndex
-                        : null,
+                    isFlyoutOpen: openGroupFlyoutIndex == i,
                     collapsed: collapsed,
-                    onSubTap: (subIdx) => onItemTap(_NavSelection(i, subIdx)),
+                    onTap: () => onGroupHeaderTap(i),
                   );
                 }
 
@@ -2640,325 +2703,144 @@ class _AnimatedSidebar extends StatelessWidget {
 
 // ─── Expandable Nav Item ──────────────────────────────────────────────────────
 
-class _ExpandableNavItem extends StatefulWidget {
+class _NavGroupTile extends StatefulWidget {
   final IconData icon;
   final String label;
-  final List<_SubNavItem> children;
   final bool isGroupActive;
-  final int? activeSubIndex;
+  final bool isFlyoutOpen;
   final bool collapsed;
-  final ValueChanged<int> onSubTap;
-
-  const _ExpandableNavItem({
-    required this.icon,
-    required this.label,
-    required this.children,
-    required this.isGroupActive,
-    required this.activeSubIndex,
-    required this.collapsed,
-    required this.onSubTap,
-  });
-
-  @override
-  State<_ExpandableNavItem> createState() => _ExpandableNavItemState();
-}
-
-class _ExpandableNavItemState extends State<_ExpandableNavItem>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _expandAnim;
-  bool _isExpanded = false;
-  bool _hovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isExpanded = widget.isGroupActive;
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 240),
-      value: _isExpanded ? 1.0 : 0.0,
-    );
-    _expandAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
-  @override
-  void didUpdateWidget(_ExpandableNavItem old) {
-    super.didUpdateWidget(old);
-    if (widget.collapsed && _isExpanded) {
-      _isExpanded = false;
-      _ctrl.reverse();
-    } else if (!old.isGroupActive && widget.isGroupActive && !widget.collapsed && !_isExpanded) {
-      _isExpanded = true;
-      _ctrl.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _toggle() {
-    if (widget.collapsed) {
-      widget.onSubTap(0);
-      return;
-    }
-    setState(() => _isExpanded = !_isExpanded);
-    _isExpanded ? _ctrl.forward() : _ctrl.reverse();
-  }
-
-  Color get _iconColor {
-    if (widget.isGroupActive || _hovered) return Colors.white;
-    return const Color(0xFFDDD6FE);
-  }
-
-  Color get _bgColor {
-    if (widget.isGroupActive) return Colors.white.withOpacity(0.15);
-    if (_hovered) return Colors.white.withOpacity(0.09);
-    return Colors.transparent;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Column(
-        children: [
-          Tooltip(
-            message: widget.collapsed ? widget.label : '',
-            preferBelow: false,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1B4B),
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(color: _kGradientTop.withOpacity(0.4)),
-            ),
-            textStyle: const TextStyle(
-              color: Color(0xFFE0E7FF),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-            ),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              onEnter: (_) => setState(() => _hovered = true),
-              onExit: (_) => setState(() => _hovered = false),
-              child: InkWell(
-                onTap: _toggle,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _bgColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
-                        width: 3,
-                        margin: const EdgeInsets.symmetric(vertical: 9),
-                        decoration: BoxDecoration(
-                          color: (widget.isGroupActive && !widget.collapsed)
-                              ? Colors.white
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: _kAnimDuration,
-                        curve: _kAnimCurve,
-                        width: widget.collapsed ? 51 : 36,
-                        child: Center(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: widget.isGroupActive
-                                  ? Colors.white.withOpacity(0.18)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              widget.icon,
-                              color: _iconColor,
-                              size: 17,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 160),
-                          opacity: widget.collapsed ? 0 : 1,
-                          child: Text(
-                            widget.label,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: _iconColor,
-                              fontSize: 12,
-                              fontWeight: widget.isGroupActive
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 160),
-                        opacity: widget.collapsed ? 0 : 1,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: AnimatedRotation(
-                            duration: const Duration(milliseconds: 240),
-                            curve: Curves.easeInOut,
-                            turns: _isExpanded ? 0.25 : 0.0,
-                            child: Icon(
-                              Icons.chevron_right_rounded,
-                              color: _iconColor.withOpacity(0.7),
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          SizeTransition(
-            sizeFactor: _expandAnim,
-            axisAlignment: -1,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: widget.collapsed ? 0 : 1,
-              child: Container(
-                margin: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E153D), // Distinct dark purple-charcoal inside card
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.14),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.28),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: widget.children.asMap().entries.map((e) {
-                    final idx = e.key;
-                    final sub = e.value;
-                    final isActive = widget.activeSubIndex == idx;
-                    return _SubNavItemWidget(
-                      icon: sub.icon,
-                      label: sub.label,
-                      isActive: isActive,
-                      onTap: () => widget.onSubTap(idx),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SubNavItemWidget extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
   final VoidCallback onTap;
 
-  const _SubNavItemWidget({
+  const _NavGroupTile({
     required this.icon,
     required this.label,
-    required this.isActive,
+    required this.isGroupActive,
+    required this.isFlyoutOpen,
+    required this.collapsed,
     required this.onTap,
   });
 
   @override
-  State<_SubNavItemWidget> createState() => _SubNavItemWidgetState();
+  State<_NavGroupTile> createState() => _NavGroupTileState();
 }
 
-class _SubNavItemWidgetState extends State<_SubNavItemWidget> {
+class _NavGroupTileState extends State<_NavGroupTile> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
+    final active = widget.isGroupActive || widget.isFlyoutOpen;
+    final iconColor = active || _hovered ? Colors.white : const Color(0xFFDDD6FE);
+    final bgColor = widget.isFlyoutOpen
+        ? const Color(0xFF059669).withOpacity(0.4)
+        : (widget.isGroupActive
+            ? Colors.white.withOpacity(0.18)
+            : (_hovered ? Colors.white.withOpacity(0.1) : Colors.transparent));
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: InkWell(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            height: 34,
-            decoration: BoxDecoration(
-              color: widget.isActive
-                  ? const Color(0xFF6D28D9) // Rich luminous active purple
-                  : _hovered
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(7),
-              border: widget.isActive
-                  ? Border.all(color: const Color(0xFFA78BFA).withOpacity(0.4), width: 1)
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 3,
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: widget.isActive
-                        ? const Color(0xFF34D399) // Glowing neon mint active strip
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 9),
-                Icon(
-                  widget.icon,
-                  size: 14,
-                  color: widget.isActive
-                      ? const Color(0xFF34D399) // Neon mint active icon
-                      : Colors.white.withOpacity(0.7),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.label,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: widget.isActive
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.6),
-                      fontSize: 11.5,
-                      fontWeight: widget.isActive
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+      child: Tooltip(
+        message: widget.collapsed ? widget.label : '',
+        preferBelow: false,
+        decoration: BoxDecoration(
+          color: const Color(0xFF064E3B),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+        ),
+        textStyle: const TextStyle(
+          color: Color(0xFFE0E7FF),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+        ),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              height: 40,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
+                border: widget.isFlyoutOpen
+                    ? Border.all(color: const Color(0xFF10B981).withOpacity(0.6), width: 1.2)
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: (active && !widget.collapsed)
+                          ? const Color(0xFF10B981)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-              ],
+                  AnimatedContainer(
+                    duration: _kAnimDuration,
+                    curve: _kAnimCurve,
+                    width: widget.collapsed ? 51 : 36,
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: active
+                              ? const Color(0xFF10B981).withOpacity(0.35)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          widget.icon,
+                          color: iconColor,
+                          size: 17,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 160),
+                      opacity: widget.collapsed ? 0 : 1,
+                      child: Text(
+                        widget.label,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: iconColor,
+                          fontSize: 12,
+                          fontWeight: active
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 160),
+                    opacity: widget.collapsed ? 0 : 1,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        widget.isFlyoutOpen
+                            ? Icons.arrow_forward_ios_rounded
+                            : Icons.chevron_right_rounded,
+                        color: widget.isFlyoutOpen
+                            ? const Color(0xFF34D399)
+                            : iconColor.withOpacity(0.7),
+                        size: widget.isFlyoutOpen ? 12 : 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -2967,7 +2849,200 @@ class _SubNavItemWidgetState extends State<_SubNavItemWidget> {
   }
 }
 
-// ─── Sidebar helpers ──────────────────────────────────────────────────────────
+// ─── Side Submenu Flyout (Opens on the side, NOT downward) ─────────────────────
+
+class _SideSubmenuFlyout extends StatelessWidget {
+  final _NavItem groupItem;
+  final int groupIndex;
+  final _NavSelection currentSelection;
+  final ValueChanged<int> onSubTap;
+  final VoidCallback onClose;
+
+  const _SideSubmenuFlyout({
+    required this.groupItem,
+    required this.groupIndex,
+    required this.currentSelection,
+    required this.onSubTap,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 235,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF022C22), Color(0xFF064E3B), Color(0xFF031E18)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.45),
+              blurRadius: 18,
+              offset: const Offset(4, 6),
+            ),
+            BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.12),
+              blurRadius: 8,
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Group Name + Close button
+            Row(
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                  ),
+                  child: Icon(groupItem.icon, size: 14, color: const Color(0xFF34D399)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    groupItem.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                InkWell(
+                  onTap: onClose,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Divider(color: const Color(0xFF10B981).withOpacity(0.25), height: 1, thickness: 1),
+            const SizedBox(height: 8),
+
+            // Sub items list
+            ...List.generate(groupItem.children.length, (subIdx) {
+              final sub = groupItem.children[subIdx];
+              final isSelected = currentSelection.topIndex == groupIndex &&
+                  currentSelection.subIndex == subIdx;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.5),
+                child: _FlyoutSubItemTile(
+                  icon: sub.icon,
+                  label: sub.label,
+                  isSelected: isSelected,
+                  onTap: () => onSubTap(subIdx),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FlyoutSubItemTile extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FlyoutSubItemTile({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_FlyoutSubItemTile> createState() => _FlyoutSubItemTileState();
+}
+
+class _FlyoutSubItemTileState extends State<_FlyoutSubItemTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = widget.isSelected;
+    final bg = active
+        ? const Color(0xFF059669)
+        : (_hovered ? const Color(0xFF10B981).withOpacity(0.15) : Colors.transparent);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: active
+                ? Border.all(color: const Color(0xFF34D399).withOpacity(0.6), width: 1)
+                : (_hovered
+                    ? Border.all(color: const Color(0xFF10B981).withOpacity(0.3), width: 1)
+                    : Border.all(color: Colors.transparent, width: 1)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                widget.icon,
+                size: 15,
+                color: active ? Colors.white : (_hovered ? const Color(0xFF6EE7B7) : const Color(0xFFA7F3D0)),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                    color: active ? Colors.white : (_hovered ? Colors.white : const Color(0xFFD1FAE5)),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (active)
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF34D399),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   final bool collapsed;
@@ -3322,11 +3397,11 @@ class _AutoTraderSupportFloatingButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF2563EB),
+            color: const Color(0xFF059669),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2563EB).withOpacity(0.4),
+                color: const Color(0xFF059669).withOpacity(0.4),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
@@ -3338,7 +3413,7 @@ class _AutoTraderSupportFloatingButton extends StatelessWidget {
               CircleAvatar(
                 radius: 12,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.support_agent_rounded, size: 16, color: Color(0xFF2563EB)),
+                child: Icon(Icons.support_agent_rounded, size: 16, color: Color(0xFF059669)),
               ),
               SizedBox(width: 8),
               Text(

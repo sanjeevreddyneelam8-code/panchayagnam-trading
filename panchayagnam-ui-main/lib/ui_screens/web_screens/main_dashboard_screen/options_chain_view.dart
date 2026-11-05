@@ -487,7 +487,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                     children: [
                       const Text('MAX PAIN STRIKE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
                       const SizedBox(height: 2),
-                      Text('₹${_maxPain.toInt()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                      Text('₹${_maxPain.toInt()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
                     ],
                   ),
 
@@ -563,7 +563,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                           label: Text(sym, style: TextStyle(fontSize: 11.5, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
                           selected: isSelected,
                           onSelected: (_) => _switchUnderlying(sym),
-                          selectedColor: const Color(0xFF2563EB),
+                          selectedColor: const Color(0xFF059669),
                           labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF334155)),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -643,7 +643,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+          color: isSelected ? const Color(0xFF059669) : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
         ),
         child: Row(
@@ -811,7 +811,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text('${s.callIv}%', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          Text('Δ ${s.callDelta}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                          Text('Δ ${s.callDelta}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
                         ],
                       ),
                     ),
@@ -1131,7 +1131,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
         'Max Profit: ₹${((otmCall.callLtp + otmPut.putLtp) * _lotSizes[_underlying]! * 0.7).toStringAsFixed(0)}',
         'Defined Risk: 85% POP',
         '1:3.0',
-        const Color(0xFF2563EB),
+        const Color(0xFF059669),
       ),
     ];
 

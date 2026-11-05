@@ -45,8 +45,8 @@ class AppColors {
   static const Color errorBg        = Color(0xFFFEE2E2);
   static const Color warning        = Color(0xFFF59E0B);
   static const Color warningBg      = Color(0xFFFEF3C7);
-  static const Color info           = Color(0xFF3B82F6);
-  static const Color infoBg         = Color(0xFFDBEAFE);
+  static const Color info           = Color(0xFF059669);
+  static const Color infoBg         = Color(0xFFD1FAE5);
 
   // ── Borders / Dividers ─────────────────────────────────────────────────────
   static const Color borderColor    = Color(0xFFE5E7EB);

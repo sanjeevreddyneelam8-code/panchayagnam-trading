@@ -154,7 +154,8 @@ List<GroupMember> _buildGroupMembers(Map<String, dynamic> group) {
 //  ROOT TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 class GroupOrdersTab extends StatefulWidget {
-  const GroupOrdersTab({super.key});
+  final int initialHierarchyIndex;
+  const GroupOrdersTab({super.key, this.initialHierarchyIndex = 1});
   @override
   State<GroupOrdersTab> createState() => _GroupOrdersTabState();
 }
@@ -166,13 +167,24 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   bool _isTestingSignal = false;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  int _selectedAccountNav = 1;
+  late int _selectedAccountNav;
 
   @override
   void initState() {
     super.initState();
+    _selectedAccountNav = widget.initialHierarchyIndex;
     _tabCtrl = TabController(length: 3, vsync: this);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant GroupOrdersTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialHierarchyIndex != widget.initialHierarchyIndex) {
+      setState(() {
+        _selectedAccountNav = widget.initialHierarchyIndex;
+      });
+    }
   }
 
   @override
@@ -484,7 +496,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                           label: 'CONNECTED FOLLOWER DEMATS',
                           value: '8 / 8 Accounts Online',
                           subtext: 'Zerodha, Upstox, Angel, Motilal...',
-                          color: const Color(0xFF2563EB),
+                          color: const Color(0xFF059669),
                           icon: Icons.hub_rounded,
                         ),
                         const SizedBox(width: 12),
@@ -690,7 +702,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color: const Color(0xFF059669),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.science_rounded, color: Colors.white, size: 18),
@@ -728,7 +740,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               ElevatedButton(
                 onPressed: () => _simulateMasterCopySignal(groups),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: const Color(0xFF059669),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -760,13 +772,11 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 const SizedBox(width: 8),
                 const Text('Accounts Hierarchy:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
                 const SizedBox(width: 14),
-                _buildHierarchyNavChip('Trading Accounts (1 Demat)', 0, Icons.account_balance_rounded),
+                _buildHierarchyNavChip('Trading Accounts', 0, Icons.account_balance_rounded),
                 const SizedBox(width: 8),
-                _buildHierarchyNavChip('Group Accounts ( Active)', 1, Icons.group_work_rounded),
+                _buildHierarchyNavChip('Group Accounts', 1, Icons.group_work_rounded),
                 const SizedBox(width: 8),
-                _buildHierarchyNavChip('Master Accounts (Dhan Pro)', 2, Icons.star_rounded),
-                const SizedBox(width: 8),
-                _buildHierarchyNavChip('Owners / Follower Demats (8)', 3, Icons.people_outline_rounded),
+                _buildHierarchyNavChip('Master Accounts', 2, Icons.star_rounded),
               ],
             ),
           ),
@@ -776,8 +786,6 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           _buildTradingAccountsHierarchyView(context)
         else if (_selectedAccountNav == 2)
           _buildMasterAccountsHierarchyView(context)
-        else if (_selectedAccountNav == 3)
-          _buildOwnersHierarchyView(context)
         else ...[
   // AutoTrader Group Accounts Action & Search Header
         Row(
@@ -804,7 +812,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('Create'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
@@ -866,7 +874,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))]
                                 : null,
                           ),
-                          child: Icon(Icons.grid_view_rounded, size: 15, color: _isCardView ? const Color(0xFF2563EB) : Colors.grey),
+                          child: Icon(Icons.grid_view_rounded, size: 15, color: _isCardView ? const Color(0xFF059669) : Colors.grey),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -882,7 +890,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 1))]
                                 : null,
                           ),
-                          child: Icon(Icons.table_chart_rounded, size: 15, color: !_isCardView ? const Color(0xFF2563EB) : Colors.grey),
+                          child: Icon(Icons.table_chart_rounded, size: 15, color: !_isCardView ? const Color(0xFF059669) : Colors.grey),
                         ),
                       ),
                     ],
@@ -1084,7 +1092,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                           ),
                                           child: Text(
                                             m['brokerType'] ?? 'BROKER',
-                                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857)),
                                           ),
                                         );
                                       }).toList(),
@@ -1488,7 +1496,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               ),
                               child: Text(
                                 child.broker,
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1586,7 +1594,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 },
                                 child: const Text(
                                   'Make Master',
-                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB), decoration: TextDecoration.underline),
+                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669), decoration: TextDecoration.underline),
                                 ),
                               ),
                             ],
@@ -1720,7 +1728,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 child: Icon(
                                   isMaster ? Icons.star_rounded : Icons.account_balance_rounded,
                                   size: 18,
-                                  color: isMaster ? const Color(0xFFD97706) : const Color(0xFF2563EB),
+                                  color: isMaster ? const Color(0xFFD97706) : const Color(0xFF059669),
                                 ),
                               ),
                             ),
@@ -1984,7 +1992,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         child: Text(o['name'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF111827))),
                       ),
                       Expanded(flex: 2, child: Text(o['pan'] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Color(0xFF4B5563)))),
-                      Expanded(flex: 2, child: Text(o['role'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1D4ED8)))),
+                      Expanded(flex: 2, child: Text(o['role'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF047857)))),
                       Expanded(flex: 4, child: Text(o['demats'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF374151)))),
                       Expanded(flex: 2, child: Text(o['capital'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)))),
                       Expanded(
@@ -5709,7 +5717,7 @@ class _GroupTable extends StatelessWidget {
                       ),
                       child: Text(
                         ' Accounts',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF047857)),
                       ),
                     )),
                     _td(Container(
@@ -6716,7 +6724,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                         'Mirror Latency',
                         '12ms Ultra-Low',
                         '100% Replication Parity',
-                        const Color(0xFF2563EB),
+                        const Color(0xFF059669),
                       ),
                     ),
                   ],
@@ -6785,7 +6793,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
-                                      color: isM ? const Color(0xFF6D28D9) : const Color(0xFF1D4ED8),
+                                      color: isM ? const Color(0xFF6D28D9) : const Color(0xFF047857),
                                     ),
                                   ),
                                 ),

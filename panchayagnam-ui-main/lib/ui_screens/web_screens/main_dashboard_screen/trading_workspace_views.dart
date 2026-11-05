@@ -140,7 +140,7 @@ class _OrdersViewState extends State<OrdersView> {
                     return ChoiceChip(
                       label: Text(f, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: isSel ? Colors.white : const Color(0xFF475569))),
                       selected: isSel,
-                      selectedColor: const Color(0xFF2563EB),
+                      selectedColor: const Color(0xFF059669),
                       backgroundColor: Colors.white,
                       onSelected: (_) => setState(() => _filter = f),
                     );
@@ -546,7 +546,7 @@ class _PositionsViewState extends State<PositionsView> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF2563EB)),
+                  _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF059669)),
                   const SizedBox(width: 16),
                   _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF7C3AED)),
                   const SizedBox(width: 16),
@@ -636,7 +636,7 @@ class _PositionsViewState extends State<PositionsView> {
                                           child: Icon(
                                             isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
                                             size: 20,
-                                            color: const Color(0xFF2563EB),
+                                            color: const Color(0xFF059669),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -963,7 +963,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(color: const Color(0xFFBFDBFE)),
                             ),
-                            child: const Text('8 DEMATS CONSOLIDATED', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8))),
+                            child: const Text('8 DEMATS CONSOLIDATED', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
                           ),
                         ],
                       ),
@@ -1007,7 +1007,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                   icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
                   label: const Text('Refresh', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
@@ -1087,7 +1087,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                       return ChoiceChip(
                         label: Text(sector, style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
                         selected: isSel,
-                        selectedColor: const Color(0xFF2563EB),
+                        selectedColor: const Color(0xFF059669),
                         backgroundColor: const Color(0xFFF1F5F9),
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         onSelected: (val) => setState(() => _selectedSector = sector),
@@ -1255,7 +1255,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2563EB),
+                                        color: const Color(0xFF059669),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text('B', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
@@ -1605,7 +1605,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                 const SizedBox(width: 14),
                 _buildCard('REALIZED P&L', '${_realizedPnl >= 0 ? '+' : ''}₹${NumberFormat('#,##,##0.00').format(_realizedPnl)}', 'Closed positions today', const Color(0xFF7C3AED), Icons.trending_up_rounded),
                 const SizedBox(width: 14),
-                _buildCard('OPEN POSITIONS', '${_openPositions.length}', 'Active holdings in sandbox', const Color(0xFF2563EB), Icons.pie_chart_rounded),
+                _buildCard('OPEN POSITIONS', '${_openPositions.length}', 'Active holdings in sandbox', const Color(0xFF059669), Icons.pie_chart_rounded),
                 const SizedBox(width: 14),
                 _buildCard('EXECUTED ORDERS', '${_orderHistory.length}', 'Session simulated fills', const Color(0xFFD97706), Icons.receipt_long_rounded),
               ],
@@ -1999,7 +1999,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                               ),
                               Expanded(flex: 1, child: Text('${order['quantity'] ?? order['filledshares'] ?? 0}', style: const TextStyle(fontSize: 12))),
                               Expanded(flex: 2, child: Text('₹${order['price'] ?? order['averageprice'] ?? 0}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                              Expanded(flex: 2, child: Text(order['broker'] ?? 'DHAN', style: const TextStyle(fontSize: 11.5, color: Color(0xFF2563EB), fontWeight: FontWeight.w600))),
+                              Expanded(flex: 2, child: Text(order['broker'] ?? 'DHAN', style: const TextStyle(fontSize: 11.5, color: Color(0xFF059669), fontWeight: FontWeight.w600))),
                               Expanded(
                                 flex: 2,
                                 child: Container(
@@ -2248,7 +2248,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
                   icon: const Icon(Icons.file_download_outlined, size: 16, color: Colors.white),
                   label: const Text('Export Trade Book (CSV)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
@@ -2280,8 +2280,8 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
               ),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: const Color(0xFF2563EB),
-                labelColor: const Color(0xFF2563EB),
+                indicatorColor: const Color(0xFF059669),
+                labelColor: const Color(0xFF059669),
                 unselectedLabelColor: const Color(0xFF64748B),
                 labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 tabs: const [
@@ -2357,13 +2357,13 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
                     children: [
                       Expanded(flex: 3, child: Text(t['date'] as String, style: const TextStyle(fontSize: 11.5, color: Color(0xFF334155)))),
                       Expanded(flex: 2, child: Text(t['orderId'] as String, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)))),
-                      Expanded(flex: 2, child: Text(t['account'] as String, style: const TextStyle(fontSize: 11.5, color: Color(0xFF2563EB), fontWeight: FontWeight.bold))),
+                      Expanded(flex: 2, child: Text(t['account'] as String, style: const TextStyle(fontSize: 11.5, color: Color(0xFF059669), fontWeight: FontWeight.bold))),
                       Expanded(flex: 3, child: Text(t['symbol'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)))),
                       Expanded(
                         flex: 1,
                         child: Text(
                           t['side'] as String,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: isBuy ? const Color(0xFF2563EB) : const Color(0xFFDC2626)),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: isBuy ? const Color(0xFF059669) : const Color(0xFFDC2626)),
                         ),
                       ),
                       Expanded(flex: 2, child: Text('${t['qty']} Qty', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700))),
@@ -2429,7 +2429,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
             decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 20),
+                const Icon(Icons.info_outline_rounded, color: Color(0xFF059669), size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -2572,7 +2572,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'time': '5 min ago • 14:27:00 IST',
       'latency': '4ms',
       'icon': Icons.sensors_rounded,
-      'color': const Color(0xFF2563EB),
+      'color': const Color(0xFF059669),
       'badge': 'WEBHOOK VERIFIED',
     },
     {
@@ -2671,7 +2671,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                   icon: const Icon(Icons.done_all_rounded, size: 16, color: Colors.white),
                   label: const Text('Mark All Read', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
@@ -2773,9 +2773,9 @@ class _NotificationsViewState extends State<NotificationsView> {
     return ChoiceChip(
       label: Text(label, style: TextStyle(fontSize: 11.5, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
       selected: isSel,
-      selectedColor: const Color(0xFF2563EB),
+      selectedColor: const Color(0xFF059669),
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: isSel ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: isSel ? const Color(0xFF059669) : const Color(0xFFCBD5E1))),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       onSelected: (_) => setState(() => _selectedCategory = key),
     );
@@ -2885,8 +2885,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               ),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: const Color(0xFF2563EB),
-                labelColor: const Color(0xFF2563EB),
+                indicatorColor: const Color(0xFF059669),
+                labelColor: const Color(0xFF059669),
                 unselectedLabelColor: const Color(0xFF64748B),
                 labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 tabs: const [
@@ -2929,7 +2929,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFBFDBFE))),
             child: const Row(
               children: [
-                Icon(Icons.shield_rounded, color: Color(0xFF2563EB), size: 20),
+                Icon(Icons.shield_rounded, color: Color(0xFF059669), size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -2967,7 +2967,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Max Order Value Per Demat Account', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: Color(0xFF0F172A))),
-              Text('₹${_maxOrderValue.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF2563EB))),
+              Text('₹${_maxOrderValue.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF059669))),
             ],
           ),
           const SizedBox(height: 4),
@@ -2977,7 +2977,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             min: 50000,
             max: 2000000,
             divisions: 39,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _maxOrderValue = v),
           ),
           const Divider(height: 24),
@@ -2987,21 +2987,21 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             title: const Text('F&O Lot-size Auto-Snapping', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Guarantees child orders automatically round to valid NSE exchange lot sizes (NIFTY 25, BANKNIFTY 15).', style: TextStyle(fontSize: 11.5)),
             value: _lotSizeSnapping,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _lotSizeSnapping = v),
           ),
           SwitchListTile(
             title: const Text('Emergency Auto-Square-off at 15:15 IST', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Automatically squares off all MIS intraday positions at 15:15 IST to prevent broker penalty charges.', style: TextStyle(fontSize: 11.5)),
             value: _autoSquareOff,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _autoSquareOff = v),
           ),
           SwitchListTile(
             title: const Text('Reject Market Orders on Illiquid Strikes', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Protects against extreme slippage on options strikes with Open Interest < 10,000 contracts.', style: TextStyle(fontSize: 11.5)),
             value: _rejectIlliquid,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _rejectIlliquid = v),
           ),
         ],
@@ -3050,14 +3050,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             title: const Text('Asynchronous Parallel Fan-Out (Sub-20ms)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Dispatches copy trades across all 8 Demats concurrently using 8 non-blocking worker threads.', style: TextStyle(fontSize: 11.5)),
             value: _asyncFanOut,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _asyncFanOut = v),
           ),
           SwitchListTile(
             title: const Text('Automatic Failover Master Switch', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('If Dhan Master experiences a temporary token disconnect, immediately routes leadership to Angel One.', style: TextStyle(fontSize: 11.5)),
             value: _fallbackMaster,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _fallbackMaster = v),
           ),
         ],
@@ -3075,14 +3075,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             title: const Text('Order Placed / Filled Chime Bell', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Plays an audible chime bell whenever an order is successfully filled.', style: TextStyle(fontSize: 11.5)),
             value: _soundOnFill,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _soundOnFill = v),
           ),
           SwitchListTile(
             title: const Text('Child Trade Replicated Sound', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Plays a subtle confirmation click when child accounts replicate the leader.', style: TextStyle(fontSize: 11.5)),
             value: _soundOnChildFill,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _soundOnChildFill = v),
           ),
           SwitchListTile(
@@ -3096,14 +3096,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             title: const Text('Telegram Bot Instant Dispatch', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Transmits filled order tickets and execution P&L summaries directly to your Telegram bot.', style: TextStyle(fontSize: 11.5)),
             value: _telegramBridge,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _telegramBridge = v),
           ),
           SwitchListTile(
             title: const Text('Desktop Browser Push Notifications', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Shows desktop push notifications even when the browser tab is minimized.', style: TextStyle(fontSize: 11.5)),
             value: _browserNotifications,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _browserNotifications = v),
           ),
         ],
@@ -3126,7 +3126,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               return ChoiceChip(
                 label: Text(th, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
                 selected: isSel,
-                selectedColor: const Color(0xFF2563EB),
+                selectedColor: const Color(0xFF059669),
                 backgroundColor: const Color(0xFFF1F5F9),
                 onSelected: (_) => setState(() => _selectedTheme = th),
               );
@@ -3143,7 +3143,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               return ChoiceChip(
                 label: Text(den, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
                 selected: isSel,
-                selectedColor: const Color(0xFF2563EB),
+                selectedColor: const Color(0xFF059669),
                 backgroundColor: const Color(0xFFF1F5F9),
                 onSelected: (_) => setState(() => _tableDensity = den),
               );
@@ -3155,7 +3155,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             title: const Text('Show Live M2M P&L in Browser Tab Title', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             subtitle: const Text('Updates document title dynamically with live portfolio gain (e.g. "+₹42.8K | Panchayagnam").', style: TextStyle(fontSize: 11.5)),
             value: _showM2mInTitle,
-            activeColor: const Color(0xFF2563EB),
+            activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _showM2mInTitle = v),
           ),
         ],
