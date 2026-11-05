@@ -318,179 +318,69 @@ class _MainDashboardState extends State<MainDashboard> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
+        color: Color(0xFF031416),
         border: Border(
-          bottom: BorderSide(color: Color(0xFF1E293B), width: 1),
+          bottom: BorderSide(color: Color(0xFF063B32), width: 1),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _currentSelection = const _NavSelection(0, 0);
-                      _bodyKey = UniqueKey();
-                    });
-                  },
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(Icons.trending_up, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Panchayagnam',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)]),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFF60A5FA).withOpacity(0.5)),
-                        ),
-                        child: const Text(
-                          'ALGO PRO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                    ],
+          // Left: Brand Logo & ALGO PRO Badge (Navigation is consolidated in Left Sidebar only)
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _currentSelection = const _NavSelection(0, 0);
+                  _bodyKey = UniqueKey();
+                });
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.trending_up, color: Colors.white, size: 18),
                   ),
-                ),
-              ),
-
-              const SizedBox(width: 20),
-
-              // 1. Trading dropdown
-              _buildTopNavDropdown(
-                label: 'Trading',
-                items: [
-                  _TopNavMenuItem(icon: Icons.dashboard_outlined, label: 'Portfolio / Workspace', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 0); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.remove_red_eye_outlined, label: 'MarketWatch', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 1); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.candlestick_chart_outlined, label: 'Charts', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 2); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.shopping_bag_outlined, label: 'Orders', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 3); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 4); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.inventory_2_outlined, label: 'Holdings', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(0, 5); _bodyKey = UniqueKey(); });
-                  }),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Panchayagnam',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF059669), Color(0xFF10B981)]),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFF34D399).withOpacity(0.5)),
+                    ),
+                    child: const Text(
+                      'ALGO PRO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-
-              const SizedBox(width: 2),
-
-              // 2. Alert Auto. dropdown
-              _buildTopNavDropdown(
-                label: 'Alert Auto.',
-                items: [
-                  _TopNavMenuItem(icon: Icons.auto_awesome_rounded, label: 'Strategy Lab Beta', badge: 'BETA', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.construction_outlined, label: 'Panchayagnam Mega Builder', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(1, 0); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.sensors_rounded, label: 'Signal Bridge & Webhooks', onTap: () => _showSignalBridgeDialog(context)),
-                  _TopNavMenuItem(icon: Icons.history_edu_outlined, label: 'Strategy Simulator', onTap: () => _showSimulatorDialog(context)),
-                  _TopNavMenuItem(icon: Icons.insights_rounded, label: 'Backtesting Engine', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(1, 1); _bodyKey = UniqueKey(); });
-                  }),
-                ],
-              ),
-
-              const SizedBox(width: 2),
-
-              // 3. Accounts dropdown (Image 2)
-              _buildTopNavDropdown(
-                label: 'Accounts',
-                items: [
-                  _TopNavMenuItem(icon: Icons.account_balance_wallet_outlined, label: 'Trading Accounts', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(4, 0); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.people_outline_rounded, label: 'Group Accounts', onTap: () {
-                    setState(() { _currentSelection = const _NavSelection(2, 0); _bodyKey = UniqueKey(); });
-                  }),
-                  _TopNavMenuItem(icon: Icons.star_outline_rounded, label: 'Master Accounts', onTap: () => _showMasterAccountsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.person_outline_rounded, label: 'Owners', onTap: () => _showOwnersDialog(context)),
-                ],
-              ),
-
-              const SizedBox(width: 2),
-
-              // 4. Settings dropdown (Image 3)
-              _buildTopNavDropdown(
-                label: 'Settings',
-                items: [
-                  _TopNavMenuItem(icon: Icons.tune_rounded, label: 'General', onTap: () => _showGeneralSettingsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.lock_outline_rounded, label: 'Security', onTap: () => _showSecuritySettingsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.language_rounded, label: 'My IPs', onTap: () => _showMyIpsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.wb_sunny_outlined, label: 'Look & Feel', badge: 'NEW', onTap: () => _showLookAndFeelDialog(context)),
-                ],
-              ),
-
-              const SizedBox(width: 2),
-
-              // 5. Tools dropdown (Image 4)
-              _buildTopNavDropdown(
-                label: 'Tools',
-                items: [
-                  _TopNavMenuItem(icon: Icons.show_chart_rounded, label: 'Activity', onTap: () => _showActivityLogDialog(context)),
-                  _TopNavMenuItem(icon: Icons.insert_chart_outlined_rounded, label: 'Instruments', onTap: () => _showInstrumentsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.file_download_outlined, label: 'Client Libraries', badge: 'NEW', onTap: () => _showClientLibrariesDialog(context)),
-                ],
-              ),
-
-              const SizedBox(width: 2),
-
-              // 6. Help dropdown (Image 5)
-              _buildTopNavDropdown(
-                label: 'Help',
-                items: [
-                  _TopNavMenuItem(icon: Icons.star_border_rounded, label: "What's New", badge: 'NEW', onTap: () => _showWhatsNewDialog(context)),
-                  _TopNavMenuItem(icon: Icons.menu_book_outlined, label: 'User Guide', onTap: () => _showUserGuideDialog(context)),
-                  _TopNavMenuItem(icon: Icons.play_circle_outline_rounded, label: 'Demo Videos', onTap: () => _showDemoVideosDialog(context)),
-                  _TopNavMenuItem(icon: Icons.search_rounded, label: 'Knowledge Base', onTap: () => _showKnowledgeBaseDialog(context)),
-                  _TopNavMenuItem(icon: Icons.shield_outlined, label: 'Security', onTap: () => _showSecurityDialog(context)),
-                  _TopNavMenuItem(icon: Icons.warning_amber_rounded, label: 'Precautions', badge: 'IMP', isWarning: true, onTap: () => _showPrecautionsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.description_outlined, label: 'Terms', onTap: () => _showTermsDialog(context)),
-                  _TopNavMenuItem(icon: Icons.verified_user_outlined, label: 'Privacy Policy', onTap: () => _showPrivacyPolicyDialog(context)),
-                  _TopNavMenuItem(icon: Icons.chat_bubble_outline_rounded, label: 'Contact Us', onTap: () => _showSupportDialog(context)),
-                ],
-              ),
-            ],
+            ),
           ),
 
-          // Right: Payment Gateway Button, Theme Toggle & User Avatar
+          // Right: Parent Children Trading Status, Help & Support, Theme Toggle & User Avatar
           Row(
             children: [
               AnimatedBuilder(
@@ -501,7 +391,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        _currentSelection = const _NavSelection(2, 0); // Jump to Copy Trading
+                        _currentSelection = const _NavSelection(2, 0); // Jump to Parent Children Trading
                         _bodyKey = UniqueKey();
                       });
                     },
@@ -541,18 +431,95 @@ class _MainDashboardState extends State<MainDashboard> {
               ),
 
               const SizedBox(width: 10),
+
+              // Help & Support Popup
+              PopupMenuButton<String>(
+                tooltip: 'Help & Knowledge Base',
+                offset: const Offset(0, 44),
+                color: const Color(0xFF1E293B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: Color(0xFF334155)),
+                ),
+                onSelected: (val) {
+                  switch (val) {
+                    case 'guide':
+                      _showUserGuideDialog(context);
+                      break;
+                    case 'faq':
+                      _showKnowledgeBaseDialog(context);
+                      break;
+                    case 'support':
+                      _showSupportDialog(context);
+                      break;
+                    case 'terms':
+                      _showTermsDialog(context);
+                      break;
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'guide',
+                    child: Row(
+                      children: [
+                        Icon(Icons.menu_book_outlined, size: 16, color: Color(0xFF94A3B8)),
+                        SizedBox(width: 8),
+                        Text('User Guide', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'faq',
+                    child: Row(
+                      children: [
+                        Icon(Icons.help_center_outlined, size: 16, color: Color(0xFF94A3B8)),
+                        SizedBox(width: 8),
+                        Text('Knowledge Base', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'support',
+                    child: Row(
+                      children: [
+                        Icon(Icons.headset_mic_outlined, size: 16, color: Color(0xFF34D399)),
+                        SizedBox(width: 8),
+                        Text('Live Support', style: TextStyle(color: Color(0xFF34D399), fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'terms',
+                    child: Row(
+                      children: [
+                        Icon(Icons.description_outlined, size: 16, color: Color(0xFF94A3B8)),
+                        SizedBox(width: 8),
+                        Text('Terms & Policy', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  child: const Icon(Icons.help_outline_rounded, color: Color(0xFF94A3B8), size: 19),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
               IconButton(
                 icon: const Icon(Icons.light_mode_outlined, color: Color(0xFF94A3B8), size: 19),
                 tooltip: 'Toggle Theme',
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('AutoTrader Dark Theme is Active'),
+                      content: Text('Panchayagnam Dark Theme is Active'),
                       duration: Duration(seconds: 1),
                     ),
                   );
                 },
               ),
+
               const SizedBox(width: 8),
 
               PopupMenuButton<String>(
@@ -594,7 +561,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: const Color(0xFF10B981),
                       child: Text(
                         userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
                         style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
@@ -616,94 +583,6 @@ class _MainDashboardState extends State<MainDashboard> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTopNavDropdown({
-    required String label,
-    required List<_TopNavMenuItem> items,
-  }) {
-    return PopupMenuButton<int>(
-      tooltip: label,
-      offset: const Offset(0, 40),
-      color: Colors.white,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      onSelected: (idx) {
-        if (idx >= 0 && idx < items.length) {
-          items[idx].onTap();
-        }
-      },
-      itemBuilder: (ctx) {
-        return List.generate(items.length, (i) {
-          final itm = items[i];
-          return PopupMenuItem<int>(
-            value: i,
-            height: 40,
-            child: Row(
-              children: [
-                Icon(itm.icon, size: 16, color: const Color(0xFF64748B)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    itm.label,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                if (itm.badge != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: itm.isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: itm.isWarning ? const Color(0xFFF59E0B) : const Color(0xFF3B82F6),
-                      ),
-                    ),
-                    child: Text(
-                      itm.badge!,
-                      style: TextStyle(
-                        color: itm.isWarning ? const Color(0xFFB45309) : const Color(0xFF2563EB),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF94A3B8), size: 16),
-          ],
-        ),
       ),
     );
   }
@@ -3419,22 +3298,6 @@ class _ToggleButtonState extends State<_ToggleButton> {
 }
 
 // ─── AutoTrader Top Nav Helper Classes ────────────────────────────────────────
-
-class _TopNavMenuItem {
-  final IconData icon;
-  final String label;
-  final String? badge;
-  final bool isWarning;
-  final VoidCallback onTap;
-
-  _TopNavMenuItem({
-    required this.icon,
-    required this.label,
-    this.badge,
-    this.isWarning = false,
-    required this.onTap,
-  });
-}
 
 class _AutoTraderSupportFloatingButton extends StatelessWidget {
   final VoidCallback onTap;
