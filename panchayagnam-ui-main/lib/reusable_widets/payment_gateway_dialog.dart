@@ -41,6 +41,24 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   late String _selectedPlan;
   late double _amount;
   PaymentMethod _selectedMethod = PaymentMethod.upi;
+  int _clientCount = 12; // Flexible client accounts count (10, 11, 12, 13, 14, 15...)
+  bool _includeDedicatedIp = false;
+
+  double _calculateClientPrice(int count) {
+    double unitPrice;
+    if (count <= 10) {
+      unitPrice = 199.0;
+    } else if (count <= 25) {
+      unitPrice = 179.0;
+    } else if (count <= 50) {
+      unitPrice = 149.0;
+    } else {
+      unitPrice = 119.0;
+    }
+    double total = count * unitPrice;
+    if (_includeDedicatedIp) total += 1500.0;
+    return total;
+  }
 
   // UPI fields
   final _upiIdCtrl = TextEditingController(text: 'sanjeev@okhdfcbank');
@@ -74,8 +92,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedPlan = widget.initialPlan;
-    _amount = widget.initialAmount;
+    _selectedPlan = 'Custom Client Accounts';
+    _amount = _calculateClientPrice(_clientCount);
     if (!_plans.containsKey(_selectedPlan)) {
       _plans[_selectedPlan] = _amount;
     }
@@ -172,7 +190,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
+                      color: const Color(0xFF059669),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.payment_rounded, color: Colors.white, size: 20),
@@ -229,49 +247,141 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           ),
         ),
 
-        // Plan / Item Summary Banner
+        // Plan / Custom Client Accounts Summary Banner
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: const BoxDecoration(
             color: Color(0xFFF8FAFC),
             border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('PURCHASE ITEM / SERVICE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
-                  const SizedBox(height: 4),
-                  DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _plans.containsKey(_selectedPlan) ? _selectedPlan : _plans.keys.first,
-                      style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 14),
-                      items: _plans.keys.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
-                      onChanged: (newPlan) {
-                        if (newPlan != null) {
-                          setState(() {
-                            _selectedPlan = newPlan;
-                            _amount = _plans[newPlan] ?? 1500.0;
-                          });
-                        }
-                      },
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(Icons.people_alt_rounded, color: Color(0xFF059669), size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('FLEXIBLE CLIENT ACCOUNTS PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669), letterSpacing: 0.8)),
+                          Text('Choose any number of Demat accounts based on your requirement', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('TOTAL PAYABLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
+                      Text(
+                        _formatINR(_amount),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(height: 10),
+              // Counter, Slider and Pricing Breakdown Row
+              Row(
                 children: [
-                  const Text('TOTAL PAYABLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.8)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatINR(_amount),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF2563EB),
+                  // Minus button
+                  InkWell(
+                    onTap: () {
+                      if (_clientCount > 1) {
+                        setState(() {
+                          _clientCount--;
+                          _amount = _calculateClientPrice(_clientCount);
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: const Center(child: Icon(Icons.remove_rounded, size: 18, color: Color(0xFF1E293B))),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Display count badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$_clientCount Demats',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Plus button
+                  InkWell(
+                    onTap: () {
+                      if (_clientCount < 100) {
+                        setState(() {
+                          _clientCount++;
+                          _amount = _calculateClientPrice(_clientCount);
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: const Center(child: Icon(Icons.add_rounded, size: 18, color: Color(0xFF1E293B))),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Quick selection chips (10, 11, 12, 13, 14, 15, 20, 25)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [10, 11, 12, 13, 14, 15, 20, 25, 30, 50].map((c) {
+                          final isSel = _clientCount == c;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ChoiceChip(
+                              label: Text('$c', style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF334155))),
+                              selected: isSel,
+                              selectedColor: const Color(0xFF059669),
+                              backgroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) {
+                                setState(() {
+                                  _clientCount = c;
+                                  _amount = _calculateClientPrice(_clientCount);
+                                });
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ],
@@ -337,8 +447,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
               ElevatedButton(
                 onPressed: _isProcessing ? null : _triggerPayment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  disabledBackgroundColor: const Color(0xFF93C5FD),
+                  backgroundColor: const Color(0xFF059669),
+                  disabledBackgroundColor: const Color(0xFFA7F3D0),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 2,
@@ -375,7 +485,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           color: isSelected ? Colors.white : Colors.transparent,
           border: Border(
             left: BorderSide(
-              color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+              color: isSelected ? const Color(0xFF059669) : Colors.transparent,
               width: 3.5,
             ),
             bottom: const BorderSide(color: Color(0xFFE2E8F0), width: 0.5),
@@ -383,7 +493,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B)),
+            Icon(icon, size: 18, color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B)),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -491,12 +601,12 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                             decoration: BoxDecoration(
                               color: isSel ? const Color(0xFFEFF6FF) : Colors.white,
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: isSel ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1)),
+                              border: Border.all(color: isSel ? const Color(0xFF059669) : const Color(0xFFCBD5E1)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.bolt, size: 14, color: Color(0xFF2563EB)),
+                                const Icon(Icons.bolt, size: 14, color: Color(0xFF059669)),
                                 const SizedBox(width: 4),
                                 Text(app, style: TextStyle(fontSize: 11.5, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
                               ],
@@ -569,8 +679,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                     _cardNameCtrl.text = 'SANJEEV REDDY';
                   });
                 },
-                icon: const Icon(Icons.auto_fix_high_rounded, size: 14, color: Color(0xFF2563EB)),
-                label: const Text('Use Demo Test Card', style: TextStyle(fontSize: 11, color: Color(0xFF2563EB))),
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 14, color: Color(0xFF059669)),
+                label: const Text('Use Demo Test Card', style: TextStyle(fontSize: 11, color: Color(0xFF059669))),
               ),
             ],
           ),
@@ -653,11 +763,11 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                   decoration: BoxDecoration(
                     color: isSel ? const Color(0xFFEFF6FF) : Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: isSel ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0), width: isSel ? 1.5 : 1),
+                    border: Border.all(color: isSel ? const Color(0xFF059669) : const Color(0xFFE2E8F0), width: isSel ? 1.5 : 1),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.account_balance, size: 16, color: isSel ? const Color(0xFF2563EB) : const Color(0xFF64748B)),
+                      Icon(Icons.account_balance, size: 16, color: isSel ? const Color(0xFF059669) : const Color(0xFF64748B)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -685,7 +795,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
         const SizedBox(height: 12),
         ListTile(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Color(0xFFE2E8F0))),
-          leading: const Icon(Icons.account_balance_wallet, color: Color(0xFF2563EB)),
+          leading: const Icon(Icons.account_balance_wallet, color: Color(0xFF059669)),
           title: const Text('Paytm Wallet', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           subtitle: const Text('Link your mobile number for 1-click checkout', style: TextStyle(fontSize: 11)),
           trailing: const Icon(Icons.chevron_right),
@@ -712,7 +822,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           SizedBox(
             width: 44,
             height: 44,
-            child: CircularProgressIndicator(color: Color(0xFF2563EB), strokeWidth: 3),
+            child: CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 3),
           ),
           const SizedBox(height: 20),
           const Text('Securing Connection with Bank...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
@@ -782,8 +892,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                     const SnackBar(content: Text('Receipt downloaded successfully (PDF)')),
                   );
                 },
-                icon: const Icon(Icons.receipt_long, size: 16, color: Color(0xFF2563EB)),
-                label: const Text('Download Receipt', style: TextStyle(color: Color(0xFF2563EB))),
+                icon: const Icon(Icons.receipt_long, size: 16, color: Color(0xFF059669)),
+                label: const Text('Download Receipt', style: TextStyle(color: Color(0xFF059669))),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -793,7 +903,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: const Color(0xFF059669),
                   padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),

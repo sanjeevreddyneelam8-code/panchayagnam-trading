@@ -466,12 +466,12 @@ class _DashboardTabState extends State<DashboardTab> {
             _buildAutoTraderMultiAccountToolbar(),
             const SizedBox(height: 14),
 
-            // 3. AutoTrader 9-Tab Portfolio Navigation Bar (Image 2)
-            _buildAutoTraderPortfolioTabs(),
+            // 3. AutoTrader Live Multi-Broker KPI Summary Banner
+            _buildAutoTraderLiveSummaryKPIBanner(),
             const SizedBox(height: 16),
 
-            // 4. View corresponding to Selected Portfolio Tab
-            _buildSelectedPortfolioTabContent(),
+            // 4. Multi-Broker Margins & Execution Overview
+            _buildMarginsTableView(),
           ],
         ),
       ),

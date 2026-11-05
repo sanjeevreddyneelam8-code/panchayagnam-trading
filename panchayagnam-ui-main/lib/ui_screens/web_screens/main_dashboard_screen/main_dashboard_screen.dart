@@ -126,20 +126,20 @@ class _MainDashboardState extends State<MainDashboard> {
       ),
       const _NavItem(
         icon: Icons.psychology_rounded,
-        label: 'Algo Trading',
+        label: 'Auto Trading',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.auto_awesome_rounded, label: 'Algo Strategies'),
+          _SubNavItem(icon: Icons.auto_awesome_rounded, label: 'Auto Strategies'),
           _SubNavItem(icon: Icons.history_toggle_off_rounded, label: 'Backtesting'),
           _SubNavItem(icon: Icons.shield_outlined, label: 'Paper Trading'),
         ],
       ),
       const _NavItem(
         icon: Icons.content_copy_rounded,
-        label: 'Copy Trading',
+        label: 'Parent Children Trading',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.people_alt_rounded, label: 'Copy Trading'),
+          _SubNavItem(icon: Icons.people_alt_rounded, label: 'Parent Children Trading'),
           _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
         ],
       ),
@@ -526,7 +526,7 @@ class _MainDashboardState extends State<MainDashboard> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isActive ? 'Copy Trading: ACTIVE (${engine.activeFollowersCount} Childs)' : 'Copy Trading: PAUSED',
+                            isActive ? 'Parent Children Trading: ACTIVE (${engine.activeFollowersCount} Childs)' : 'Parent Children Trading: PAUSED',
                             style: TextStyle(
                               color: isActive ? const Color(0xFF6EE7B7) : const Color(0xFFCBD5E1),
                               fontSize: 11.5,
@@ -1966,7 +1966,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       children: [
                         Icon(Icons.phone_outlined, size: 18, color: Color(0xFF2563EB)),
                         SizedBox(width: 10),
-                        Text('Phone: 9284455924', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Phone: 9390076827', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ],
                     ),
                     SizedBox(height: 8),
@@ -2948,8 +2948,24 @@ class _ExpandableNavItemState extends State<_ExpandableNavItem>
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: widget.collapsed ? 0 : 1,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, top: 2, bottom: 2),
+              child: Container(
+                margin: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E153D), // Distinct dark purple-charcoal inside card
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.14),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: widget.children.asMap().entries.map((e) {
                     final idx = e.key;
@@ -3007,34 +3023,34 @@ class _SubNavItemWidgetState extends State<_SubNavItemWidget> {
             height: 34,
             decoration: BoxDecoration(
               color: widget.isActive
-                  ? Colors.white.withOpacity(0.13)
+                  ? const Color(0xFF6D28D9) // Rich luminous active purple
                   : _hovered
-                  ? Colors.white.withOpacity(0.07)
+                  ? Colors.white.withOpacity(0.08)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
               border: widget.isActive
-                  ? Border.all(color: Colors.white.withOpacity(0.18))
+                  ? Border.all(color: const Color(0xFFA78BFA).withOpacity(0.4), width: 1)
                   : null,
             ),
             child: Row(
               children: [
                 Container(
-                  width: 2,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  width: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 6),
                   decoration: BoxDecoration(
                     color: widget.isActive
-                        ? const Color(0xFFA78BFA)
-                        : Colors.white.withOpacity(0.2),
+                        ? const Color(0xFF34D399) // Glowing neon mint active strip
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 9),
                 Icon(
                   widget.icon,
                   size: 14,
                   color: widget.isActive
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.55),
+                      ? const Color(0xFF34D399) // Neon mint active icon
+                      : Colors.white.withOpacity(0.7),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

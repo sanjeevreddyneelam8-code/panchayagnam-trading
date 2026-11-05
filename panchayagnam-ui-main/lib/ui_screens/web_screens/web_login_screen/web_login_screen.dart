@@ -125,9 +125,9 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0F172A), // Dark slate navy
-                Color(0xFF1E3A8A), // Vibrant tech blue
-                Color(0xFF0B132B), // Deep night navy
+                Color(0xFF031416), // Deep dark obsidian
+                Color(0xFF063B32), // Institutional dark emerald
+                Color(0xFF021B17), // Deep night forest
               ],
               stops: [0.0, 0.55, 1.0],
             ),
@@ -166,19 +166,19 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withOpacity(0.3),
+                      color: const Color(0xFF059669).withOpacity(0.25),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.5)),
+                      border: Border.all(color: const Color(0xFF10B981).withOpacity(0.5)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.trending_up, color: Color(0xFF60A5FA), size: 16),
+                        Icon(Icons.trending_up, color: Color(0xFF34D399), size: 16),
                         SizedBox(width: 6),
                         Text(
-                          'PANCHAYAGNAM · AUTOTRADER WEB',
+                          'PANCHAYAGNAM · INSTITUTIONAL ALGO TRADING',
                           style: TextStyle(
-                            color: Color(0xFF93C5FD),
+                            color: Color(0xFF6EE7B7),
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
@@ -240,7 +240,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
                   ),
                   const SizedBox(width: 20),
                   Text(
-                    '9284455924',
+                    '9390076827',
                     style: TextStyle(
                       color: const Color(0xFF94A3B8).withOpacity(0.9),
                       fontSize: 13,
@@ -272,7 +272,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
         color: const Color(0xFF1E293B).withOpacity(0.7),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF3B82F6).withOpacity(0.35),
+          color: const Color(0xFF10B981).withOpacity(0.35),
           width: 1,
         ),
         boxShadow: [
@@ -345,7 +345,7 @@ class _FinancialWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF2563EB).withOpacity(0.25),
+          const Color(0xFF059669).withOpacity(0.25),
           const Color(0xFF1E3A8A).withOpacity(0.02),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h))
@@ -403,7 +403,7 @@ class _RightSignInPanel extends StatefulWidget {
 
 class _RightSignInPanelState extends State<_RightSignInPanel> {
   final _formKey = GlobalKey<FormState>();
-  final _loginIdCtrl = TextEditingController(text: '9999999999');
+  final _loginIdCtrl = TextEditingController(text: '9390076827');
   final _passwordCtrl = TextEditingController(text: '1234');
 
   @override
@@ -417,7 +417,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
     String phone = _loginIdCtrl.text.trim();
     String mpin = _passwordCtrl.text.trim();
 
-    if (phone.isEmpty) phone = '9999999999';
+    if (phone.isEmpty) phone = '9390076827';
     if (mpin.isEmpty) mpin = '1234';
 
     context.read<AuthBloc>().add(
@@ -476,7 +476,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                           const Text(
                             'WELCOME BACK',
                             style: TextStyle(
-                              color: Color(0xFF2563EB),
+                              color: Color(0xFF059669),
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.4,
@@ -536,7 +536,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.8),
+                                borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
                               ),
                             ),
                           ),
@@ -581,7 +581,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.8),
+                                borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
                               ),
                             ),
                           ),
@@ -605,7 +605,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               child: const Text(
                                 'Forgot or Reset Password?',
                                 style: TextStyle(
-                                  color: Color(0xFF2563EB),
+                                  color: Color(0xFF059669),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -621,10 +621,10 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                             child: ElevatedButton(
                               onPressed: isLoading ? null : _submitLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2563EB),
-                                disabledBackgroundColor: const Color(0xFF93C5FD),
+                                backgroundColor: const Color(0xFF059669),
+                                disabledBackgroundColor: const Color(0xFFA7F3D0),
                                 elevation: 2,
-                                shadowColor: const Color(0xFF2563EB).withOpacity(0.35),
+                                shadowColor: const Color(0xFF059669).withOpacity(0.35),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -701,7 +701,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               child: const Text(
                                 'Register',
                                 style: TextStyle(
-                                  color: Color(0xFF2563EB),
+                                  color: Color(0xFF059669),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -750,7 +750,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF2563EB)),
+                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF059669)),
                       SizedBox(width: 4),
                       Text(
                         'SSL Protected',
