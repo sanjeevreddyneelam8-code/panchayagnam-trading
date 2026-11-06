@@ -1,0 +1,32 @@
+services:
+  # Panchayagnam Core Trading Engine Backend (Spring Boot)
+  - type: web
+    name: panchayagnam-api
+    runtime: docker
+    dockerfilePath: ./panchayagnam-service-main/Dockerfile
+    dockerContext: ./panchayagnam-service-main
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8080
+      - key: PAPER_TRADING_ENABLED
+        value: "true"
+      - key: TRADING_LIVE_TRADING_ENABLED
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: panchayagnam-db
+          property: connectionString
+
+databases:
+  # Managed PostgreSQL Database for Multi-Broker User State
+  - name: panchayagnam-db
+    plan: free
+    databaseName: panchayagnam
+    user: py_user
