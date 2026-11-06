@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:easy_trade_web/constants/colors.dart';
 import 'package:flutter/material.dart';
@@ -403,8 +404,8 @@ class _RightSignInPanel extends StatefulWidget {
 
 class _RightSignInPanelState extends State<_RightSignInPanel> {
   final _formKey = GlobalKey<FormState>();
-  final _loginIdCtrl = TextEditingController(text: '9390076827');
-  final _passwordCtrl = TextEditingController(text: '1234');
+  final _loginIdCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -414,11 +415,9 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
   }
 
   void _submitLogin() {
+    if (!_formKey.currentState!.validate()) return;
     String phone = _loginIdCtrl.text.trim();
     String mpin = _passwordCtrl.text.trim();
-
-    if (phone.isEmpty) phone = '9390076827';
-    if (mpin.isEmpty) mpin = '1234';
 
     context.read<AuthBloc>().add(
       LoginRequested(
@@ -506,22 +505,75 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
-                          const SizedBox(height: 36),
+                          const SizedBox(height: 14),
 
-                          // Your Login Id input
+                          // Optional Quick Demo autofill chip
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _loginIdCtrl.text = '9390076827';
+                                _passwordCtrl.text = '1234';
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFA7F3D0)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF059669)),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Demo Account: Click to autofill test credentials (9390076827 / 1234)',
+                                    style: TextStyle(
+                                      color: Color(0xFF065F46),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Mobile Number Input
                           TextFormField(
                             controller: _loginIdCtrl,
-                            keyboardType: TextInputType.text,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your 10-digit mobile number';
+                              }
+                              if (v.trim().length != 10) {
+                                return 'Mobile number must be exactly 10 digits';
+                              }
+                              return null;
+                            },
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF064E3B),
                               fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Your Login Id',
+                              hintText: 'Enter 10-digit Mobile Number',
                               hintStyle: const TextStyle(
                                 color: Color(0xFF94A3B8),
-                                fontSize: 14,
+                                fontSize: 13.5,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.phone_android_rounded,
+                                size: 18,
+                                color: Color(0xFF059669),
                               ),
                               filled: true,
                               fillColor: const Color(0xFFF8FAFC),
@@ -542,20 +594,39 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                           ),
                           const SizedBox(height: 18),
 
-                          // Password input
+                          // MPIN Password Input
                           TextFormField(
                             controller: _passwordCtrl,
                             obscureText: widget.obscurePassword,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(6),
+                            ],
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your MPIN';
+                              }
+                              if (v.trim().length < 4) {
+                                return 'MPIN must be at least 4 digits';
+                              }
+                              return null;
+                            },
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF064E3B),
                               fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Password',
+                              hintText: 'Enter 4-digit MPIN',
                               hintStyle: const TextStyle(
                                 color: Color(0xFF94A3B8),
-                                fontSize: 14,
+                                fontSize: 13.5,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                                size: 18,
+                                color: Color(0xFF059669),
                               ),
                               filled: true,
                               fillColor: const Color(0xFFF8FAFC),
