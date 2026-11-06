@@ -1078,7 +1078,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
-              headingRowColor: WidgetStateProperty.all(AppColors.primary),
+              headingRowColor: WidgetStateProperty.all(const Color(0xFF0F172A)), // Sleek Institutional Dark Slate
               columns: [
                 const DataColumn(label: _HeaderLabel('Name')),
                 const DataColumn(label: _HeaderLabel('Client Code')),
@@ -1126,15 +1126,11 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                 // ── Row color: token-expired overrides other states ────────
                 final Color rowColor;
                 if (needsReconnect) {
-                  // Soft red tint so the row stands out as needing attention
                   rowColor = const Color(0xFFFFF5F5);
                 } else if (isInactive) {
-                  rowColor = const Color(0xFFFFF0F0);
-                } else if (isOwnAccount) {
-                  rowColor = const Color(0xFFFFFBEB);
+                  rowColor = const Color(0xFFF8FAFC);
                 } else {
-                  rowColor =
-                  index.isEven ? Colors.white : const Color(0xFFF9FAFB);
+                  rowColor = index.isEven ? Colors.white : const Color(0xFFF8FAFC);
                 }
 
                 final phone =
@@ -1403,7 +1399,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                         children: [
                           _ActionButton(
                             icon: Icons.edit_outlined,
-                            color: const Color(0xFF6366F1),
+                            color: const Color(0xFF64748B),
                             tooltip: 'Edit Account',
                             onTap: (_) => _showEditAccountDialog(
                               account,
@@ -1437,7 +1433,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                             )
                                 : _ActionButton(
                               icon: Icons.link_rounded,
-                              color: const Color(0xFF0284C7),
+                              color: const Color(0xFF059669),
                               tooltip: 'Connect $broker Account',
                               onTap: (_) =>
                                   _showConnectDialog(account),
@@ -3257,12 +3253,12 @@ class _HeaderLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    label,
+    label.toUpperCase(),
     style: const TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      color: Colors.white,
-      letterSpacing: 0.4,
+      fontSize: 10.5,
+      fontWeight: FontWeight.w800,
+      color: Color(0xFFF1F5F9),
+      letterSpacing: 0.6,
     ),
   );
 }

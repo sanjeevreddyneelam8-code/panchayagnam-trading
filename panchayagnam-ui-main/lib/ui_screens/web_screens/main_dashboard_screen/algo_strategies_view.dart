@@ -492,10 +492,10 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7C3AED).withOpacity(0.12),
+                  color: const Color(0xFF059669).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.rocket_launch_rounded, color: Color(0xFF7C3AED), size: 22),
+                child: const Icon(Icons.rocket_launch_rounded, color: Color(0xFF059669), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -628,7 +628,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             });
                           },
                           selectedColor: const Color(0xFF34D399), // Highlight with color
-                          checkmarkColor: const Color(0xFF6D28D9),
+                          checkmarkColor: const Color(0xFF047857),
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -696,18 +696,18 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
+                      color: const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.2)),
+                      border: Border.all(color: const Color(0xFF059669).withOpacity(0.2)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline_rounded, color: Color(0xFF6D28D9), size: 18),
+                        const Icon(Icons.info_outline_rounded, color: Color(0xFF047857), size: 18),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Deploying across ${selectedBrokers.length} broker accounts with ${multiplier}x lot multiplier in ${execMode == 'PAPER' ? 'Paper Simulation' : 'Paper-Protected Live'} mode.',
-                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF5B21B6), height: 1.3),
+                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF064E3B), height: 1.3),
                           ),
                         ),
                       ],
@@ -759,7 +759,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               icon: const Icon(Icons.check_rounded, size: 18),
               label: const Text('Confirm & Deploy Strategy'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -896,8 +896,8 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             _buildMegaMenuItem(
                               ctx: ctx,
                               icon: Icons.auto_awesome_rounded,
-                              iconColor: const Color(0xFF8B5CF6),
-                              iconBg: const Color(0xFFEDE9FE),
+                              iconColor: const Color(0xFF10B981),
+                              iconBg: const Color(0xFFECFDF5),
                               title: 'Using AI',
                               description: 'Connect Claude, ChatGPT and other AI tools to generate strategies',
                               onTap: () {
@@ -932,7 +932,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             _buildMegaMenuItem(
                               ctx: ctx,
                               icon: Icons.layers_rounded,
-                              iconColor: const Color(0xFF7C3AED),
+                              iconColor: const Color(0xFF059669),
                               iconBg: const Color(0xFFF5F3FF),
                               title: 'Advanced Wizard',
                               description: 'Multi-leg builder with automated entry and exit rules',
@@ -1191,7 +1191,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: Color(0xFF8B5CF6)),
+            Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981)),
             SizedBox(width: 10),
             Text('Create Strategy Using AI', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           ],
@@ -1230,10 +1230,10 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
+                      color: const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(p, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                    child: Text(p, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                   ),
                 )).toList(),
               ),
@@ -1252,7 +1252,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             icon: const Icon(Icons.bolt_rounded, size: 16),
             label: const Text('Generate & Deploy to 8 Demats'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
+              backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -1459,7 +1459,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.psychology_rounded, color: Color(0xFF7C3AED)),
+              Icon(Icons.psychology_rounded, color: Color(0xFF059669)),
               SizedBox(width: 8),
               Text('Create Visual Rule Strategy', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             ],
@@ -1636,7 +1636,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -1677,7 +1677,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+                              colors: [Color(0xFF059669), Color(0xFF4F46E5)],
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1695,7 +1695,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                                 ),
                                 SizedBox(width: 8),
                                 Chip(
-                                  label: Text('Panchayagnam Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                                  label: Text('Panchayagnam Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                                   backgroundColor: Color(0xFFF5F3FF),
                                   visualDensity: VisualDensity.compact,
                                   padding: EdgeInsets.zero,
@@ -1738,7 +1738,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: const Text('Create Strategy'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C3AED),
+                            backgroundColor: const Color(0xFF059669),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1765,7 +1765,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                       label: 'RUNNING STRATEGIES',
                       value: '$activeCount / ${_strategies.length} Active',
                       subtext: 'Auto-executing on signals',
-                      color: const Color(0xFF7C3AED),
+                      color: const Color(0xFF059669),
                       icon: Icons.play_circle_outline_rounded,
                     ),
                     const SizedBox(width: 12),
@@ -1795,25 +1795,25 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
             decoration: const BoxDecoration(
               color: Color(0xFFF5F3FF),
-              border: Border(bottom: BorderSide(color: Color(0xFFDDD6FE))),
+              border: Border(bottom: BorderSide(color: Color(0xFFA7F3D0))),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6D28D9),
+                    color: const Color(0xFF047857),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text('NOTICE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                 ),
                 const SizedBox(width: 10),
-                const Icon(Icons.check_box_outlined, size: 14, color: Color(0xFF6D28D9)),
+                const Icon(Icons.check_box_outlined, size: 14, color: Color(0xFF047857)),
                 const SizedBox(width: 6),
                 const Expanded(
                   child: Text(
                     'RSI & Mean Reversion, tested on real NIFTY data • Multi-Broker Algorithmic Execution Active across 8 Demat Accounts.',
-                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF4C1D95)),
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF022C22)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1822,7 +1822,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   onPressed: _showPanchayagnamCreateMegaMenu,
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    foregroundColor: const Color(0xFF6D28D9),
+                    foregroundColor: const Color(0xFF047857),
                   ),
                   child: const Text('+ Build New Strategies', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
                 ),
@@ -2084,12 +2084,12 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9FE),
+                    color: const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     s.strategyType,
-                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9)),
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF047857)),
                   ),
                 ),
               ],
@@ -2337,12 +2337,12 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE9FE),
+                  color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   t.category,
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
                 ),
               ),
               Container(
@@ -2611,7 +2611,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ENTRY CONDITION BLOCK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                const Text('ENTRY CONDITION BLOCK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -2670,7 +2670,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 const Divider(),
                 const SizedBox(height: 20),
 
-                const Text('RISK & EXIT RULES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                const Text('RISK & EXIT RULES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -2715,7 +2715,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   icon: const Icon(Icons.hub_rounded, size: 18),
                   label: const Text('Open Panchayagnam Strategy Creator Hub'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

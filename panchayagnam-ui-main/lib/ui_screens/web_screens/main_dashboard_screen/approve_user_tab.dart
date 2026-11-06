@@ -12,8 +12,8 @@ int kSuperAdminId = 0;
 // Design tokens
 // ─────────────────────────────────────────────────────────────────────────────
 class _T {
-  static const Color purple     = Color(0xFF6D28D9);
-  static const Color purpleSoft = Color(0xFFEDE9FE);
+  static const Color purple     = Color(0xFF047857);
+  static const Color purpleSoft = Color(0xFFECFDF5);
   static const Color bg         = Color(0xFFF3F4F8);
   static const Color border     = Color(0xFFE5E7EB);
   static const Color textDark   = Color(0xFF111827);
@@ -642,7 +642,7 @@ class _TabBar extends StatelessWidget {
         controller: controller,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+            colors: [Color(0xFF059669), Color(0xFF064E3B)],
           ),
           borderRadius: BorderRadius.circular(9),
           boxShadow: [
@@ -803,7 +803,7 @@ class _TableHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF6D28D9), Color(0xFF4C1D95)],
+          colors: [Color(0xFF047857), Color(0xFF022C22)],
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -993,7 +993,7 @@ class _TableRow extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                          colors: [Color(0xFF059669), Color(0xFF022C22)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),

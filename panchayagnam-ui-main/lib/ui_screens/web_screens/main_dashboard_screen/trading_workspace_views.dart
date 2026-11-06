@@ -548,7 +548,7 @@ class _PositionsViewState extends State<PositionsView> {
                   const SizedBox(width: 16),
                   _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF059669)),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF7C3AED)),
+                  _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF059669)),
                   const SizedBox(width: 16),
                   _buildSummaryItem('AVERAGE SPREAD', '< 0.05%', 'Low Slippage Guard', const Color(0xFF0284C7)),
                 ],
@@ -1588,7 +1588,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                       : const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Refresh Station'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1603,7 +1603,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
               children: [
                 _buildCard('AVAILABLE PAPER CAPITAL', '₹${NumberFormat('#,##,##0.00').format(_virtualCash)}', 'Multi-Broker Pool: ₹80,00,000', const Color(0xFF059669), Icons.account_balance_wallet_rounded),
                 const SizedBox(width: 14),
-                _buildCard('REALIZED P&L', '${_realizedPnl >= 0 ? '+' : ''}₹${NumberFormat('#,##,##0.00').format(_realizedPnl)}', 'Closed positions today', const Color(0xFF7C3AED), Icons.trending_up_rounded),
+                _buildCard('REALIZED P&L', '${_realizedPnl >= 0 ? '+' : ''}₹${NumberFormat('#,##,##0.00').format(_realizedPnl)}', 'Closed positions today', const Color(0xFF059669), Icons.trending_up_rounded),
                 const SizedBox(width: 14),
                 _buildCard('OPEN POSITIONS', '${_openPositions.length}', 'Active holdings in sandbox', const Color(0xFF059669), Icons.pie_chart_rounded),
                 const SizedBox(width: 14),
@@ -2583,7 +2583,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'time': '12 min ago • 14:20:15 IST',
       'latency': '18ms',
       'icon': Icons.sync_alt_rounded,
-      'color': const Color(0xFF8B5CF6),
+      'color': const Color(0xFF10B981),
       'badge': 'FAN-OUT COMPLETE',
     },
     {

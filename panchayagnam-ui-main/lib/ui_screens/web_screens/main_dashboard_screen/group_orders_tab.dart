@@ -27,11 +27,11 @@ import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../reusable_widets/group_order_panel.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kPrimary = Color(0xFF6D28D9);
-const _kPrimaryLight = Color(0xFF7C3AED);
-const _kPrimaryDark = Color(0xFF4C1D95);
+const _kPrimary = Color(0xFF047857);
+const _kPrimaryLight = Color(0xFF059669);
+const _kPrimaryDark = Color(0xFF022C22);
 const _kPrimaryBg = Color(0xFFF5F3FF);
-const _kPrimaryBorder = Color(0xFFDDD6FE);
+const _kPrimaryBorder = Color(0xFFA7F3D0);
 const _kSurface = Color(0xFFFFFFFF);
 const _kBg = Color(0xFFFAFAFC);
 const _kBorder = Color(0xFFE5E7EB);
@@ -406,7 +406,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF6D28D9), Color(0xFF4C1D95)],
+                                  colors: [Color(0xFF047857), Color(0xFF022C22)],
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -424,7 +424,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                     ),
                                     SizedBox(width: 8),
                                     Chip(
-                                      label: Text('eToro Multi-Broker Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                                      label: Text('eToro Multi-Broker Mode', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                                       backgroundColor: Color(0xFFF5F3FF),
                                       visualDensity: VisualDensity.compact,
                                       padding: EdgeInsets.zero,
@@ -461,7 +461,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               icon: const Icon(Icons.add_rounded, size: 18),
                               label: const Text('New Copy Pool'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7C3AED),
+                                backgroundColor: const Color(0xFF059669),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -488,7 +488,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                           label: 'POOLED LIQUID CAPITAL',
                           value: '₹80,00,000.00',
                           subtext: '₹10 Lakh x 8 Broker Demats',
-                          color: const Color(0xFF7C3AED),
+                          color: const Color(0xFF059669),
                           icon: Icons.account_balance_wallet_rounded,
                         ),
                         const SizedBox(width: 12),
@@ -519,9 +519,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: TabBar(
                   controller: _tabCtrl,
-                  labelColor: const Color(0xFF7C3AED),
+                  labelColor: const Color(0xFF059669),
                   unselectedLabelColor: const Color(0xFF6B7280),
-                  indicatorColor: const Color(0xFF7C3AED),
+                  indicatorColor: const Color(0xFF059669),
                   indicatorWeight: 3,
                   labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                   unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
@@ -996,10 +996,10 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEDE9FE),
+                        color: const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.hub_rounded, color: Color(0xFF6D28D9), size: 20),
+                      child: const Icon(Icons.hub_rounded, color: Color(0xFF047857), size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1283,7 +1283,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                       ElevatedButton.icon(
                         onPressed: () => _openQuickCopyTestDialog(context, side: 'BUY'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C3AED),
+                          backgroundColor: const Color(0xFF059669),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1326,13 +1326,13 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF5B21B6), Color(0xFF7C3AED)],
+                    colors: [Color(0xFF064E3B), Color(0xFF059669)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(color: const Color(0xFF7C3AED).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+                    BoxShadow(color: const Color(0xFF059669).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
                   ],
                 ),
                 child: Row(
@@ -1395,7 +1395,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Master account switched to Client ID: $clientId'),
-                            backgroundColor: const Color(0xFF7C3AED),
+                            backgroundColor: const Color(0xFF059669),
                           ),
                         );
                       },
@@ -1408,7 +1408,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 Text('${acc.broker} - ${acc.name}', style: TextStyle(fontWeight: acc.isMaster ? FontWeight.bold : FontWeight.normal, fontSize: 12.5)),
                                 if (acc.isMaster) ...[
                                   const SizedBox(width: 6),
-                                  const Icon(Icons.check, size: 16, color: Color(0xFF7C3AED)),
+                                  const Icon(Icons.check, size: 16, color: Color(0xFF059669)),
                                 ],
                               ],
                             ),
@@ -1426,9 +1426,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF6D28D9)),
+                            Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF047857)),
                             SizedBox(width: 6),
-                            Text('Change Master', style: TextStyle(color: Color(0xFF6D28D9), fontWeight: FontWeight.w800, fontSize: 12)),
+                            Text('Change Master', style: TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.w800, fontSize: 12)),
                           ],
                         ),
                       ),
@@ -1558,7 +1558,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                     value: child.multiplier,
                                     isDense: true,
                                     underline: const SizedBox(),
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF7C3AED)),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
                                     items: [0.5, 1.0, 1.5, 2.0, 3.0].map((m) {
                                       return DropdownMenuItem<double>(
                                         value: m,
@@ -1578,12 +1578,12 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEDE9FE),
+                                  color: const Color(0xFFECFDF5),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   child.copyMode,
-                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
                                 ),
                               ),
 
@@ -5160,7 +5160,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isM ? const Color(0xFFEDE9FE) : Colors.white,
+                              color: isM ? const Color(0xFFECFDF5) : Colors.white,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: isM ? const Color(0xFFC4B5FD) : const Color(0xFFE2E8F0)),
                             ),
@@ -5169,7 +5169,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                               children: [
                                 Text(
                                   b['broker'] as String,
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isM ? const Color(0xFF6D28D9) : const Color(0xFF334155)),
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isM ? const Color(0xFF047857) : const Color(0xFF334155)),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -5343,10 +5343,10 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
+                              color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(b['broker'] as String, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9))),
+                            child: Text(b['broker'] as String, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -5396,8 +5396,8 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
               OutlinedButton(
                 onPressed: () => setState(() => _executionReceipt = null),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF6D28D9),
-                  side: const BorderSide(color: Color(0xFFDDD6FE)),
+                  foregroundColor: const Color(0xFF047857),
+                  side: const BorderSide(color: Color(0xFFA7F3D0)),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 child: const Text('Place Another Order', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -6706,7 +6706,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                         'Master Demat',
                         'Dhan Pro (#1100345678)',
                         'Primary Broadcaster',
-                        const Color(0xFF7C3AED),
+                        const Color(0xFF059669),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -6785,7 +6785,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: isM ? const Color(0xFFEDE9FE) : const Color(0xFFEFF6FF),
+                                    color: isM ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -6793,7 +6793,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
-                                      color: isM ? const Color(0xFF6D28D9) : const Color(0xFF047857),
+                                      color: isM ? const Color(0xFF047857) : const Color(0xFF047857),
                                     ),
                                   ),
                                 ),
@@ -6813,7 +6813,7 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF7C3AED),
+                                                color: const Color(0xFF059669),
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
                                               child: const Text('MASTER BROADCASTER', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Colors.white)),
@@ -7417,7 +7417,7 @@ class _GroupAvatar extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFA78BFA), _kPrimary],
+          colors: [Color(0xFF34D399), _kPrimary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

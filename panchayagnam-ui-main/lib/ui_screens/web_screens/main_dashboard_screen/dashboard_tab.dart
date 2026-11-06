@@ -147,14 +147,14 @@ class _DashboardTabState extends State<DashboardTab> {
 
   static const _slides = [
     _Slide(
-      gradient: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+      gradient: [Color(0xFF059669), Color(0xFF0D9488)],
       title: 'Smart Signals. Better Trades.',
       subtitle: 'Real-time buy/sell alerts across NSE & BSE.',
       tag: 'NEW',
       icon: Icons.auto_awesome_rounded,
     ),
     _Slide(
-      gradient: [Color(0xFF047857), Color(0xFF7C3AED)],
+      gradient: [Color(0xFF047857), Color(0xFF059669)],
       title: 'Multi-Broker Execution in One Click',
       subtitle: 'Place orders across Angel One, Motilal & more instantly.',
       tag: 'PRO',
@@ -244,7 +244,7 @@ class _DashboardTabState extends State<DashboardTab> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFF7C3AED),
+            primary: Color(0xFF059669),
             onPrimary: Colors.white,
           ),
         ),
@@ -1080,12 +1080,12 @@ class _DashboardTabState extends State<DashboardTab> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: const Color(0xFFEDE9FE),
+                          color: const Color(0xFFECFDF5),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withOpacity(0.06),
+                            color: const Color(0xFF059669).withOpacity(0.06),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -1814,7 +1814,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   DataCell(Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: item.$2.contains('INDEX') ? const Color(0xFFEFF6FF) : const Color(0xFFEDE9FE),
+                      color: item.$2.contains('INDEX') ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -1822,7 +1822,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: item.$2.contains('INDEX') ? const Color(0xFF059669) : const Color(0xFF6D28D9),
+                        color: item.$2.contains('INDEX') ? const Color(0xFF059669) : const Color(0xFF047857),
                       ),
                     ),
                   )),
@@ -2235,7 +2235,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final streamItems = [
       {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across 8 Demats at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF059669)},
-      {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF7C3AED)},
+      {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF0284C7)},
     ];
 
@@ -2388,9 +2388,9 @@ class _DashboardTabState extends State<DashboardTab> {
 
     final paperTradingCard = _StatCardConfig(
       icon: Icons.shield_outlined,
-      iconColor: const Color(0xFF7C3AED),
-      iconBg: const Color(0xFFEDE9FE),
-      accentColor: const Color(0xFF7C3AED),
+      iconColor: const Color(0xFF059669),
+      iconBg: const Color(0xFFECFDF5),
+      accentColor: const Color(0xFF059669),
       title: 'Paper Trading',
       value: 'Simulation Mode',
       trend: 'Zero Real Funds at Risk',
@@ -2451,9 +2451,9 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           _StatCardConfig(
             icon: Icons.people_alt_rounded,
-            iconColor: const Color(0xFF7C3AED),
-            iconBg: const Color(0xFFEDE9FE),
-            accentColor: const Color(0xFF7C3AED),
+            iconColor: const Color(0xFF059669),
+            iconBg: const Color(0xFFECFDF5),
+            accentColor: const Color(0xFF059669),
             title: 'Total Users',
             value: s != null ? _fmt(s.totalUsers) : '—',
             trend: 'Registered traders',
@@ -2506,9 +2506,9 @@ class _DashboardTabState extends State<DashboardTab> {
           marketCard,
           _StatCardConfig(
             icon: Icons.account_balance_wallet_rounded,
-            iconColor: const Color(0xFF7C3AED),
-            iconBg: const Color(0xFFEDE9FE),
-            accentColor: const Color(0xFF7C3AED),
+            iconColor: const Color(0xFF059669),
+            iconBg: const Color(0xFFECFDF5),
+            accentColor: const Color(0xFF059669),
             title: 'Broker Accounts',
             value: s != null
                 ? (s.totalBrokerAccounts == 0 ? '0 connected' : _fmt(s.totalBrokerAccounts))
@@ -2617,7 +2617,7 @@ class _DashboardTabState extends State<DashboardTab> {
               width: active ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: active ? AppColors.primary : const Color(0xFFDDD6FE),
+                color: active ? AppColors.primary : const Color(0xFFA7F3D0),
                 borderRadius: BorderRadius.circular(3),
               ),
             );
@@ -2705,7 +2705,7 @@ class _DashboardTabState extends State<DashboardTab> {
       borderRadius: BorderRadius.circular(10),
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFEDE9FE), width: 1.5),
+          border: Border.all(color: const Color(0xFFECFDF5), width: 1.5),
           borderRadius: BorderRadius.circular(10),
         ),
         child: ListView.separated(
@@ -2916,14 +2916,14 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+                      colors: [Color(0xFF059669), Color(0xFF0D9488)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF7C3AED).withOpacity(0.30),
+                        color: const Color(0xFF059669).withOpacity(0.30),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -2981,14 +2981,14 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+                      colors: [Color(0xFF059669), Color(0xFF0D9488)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF7C3AED).withOpacity(0.30),
+                        color: const Color(0xFF059669).withOpacity(0.30),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -3134,7 +3134,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 padding: EdgeInsets.zero,
                 itemCount: activeStocks.length,
                 separatorBuilder: (_, __) =>
-                    Container(height: 1, color: const Color(0xFFEDE9FE)),
+                    Container(height: 1, color: const Color(0xFFECFDF5)),
                 itemBuilder: (_, i) => _StockRow(
                   stock: activeStocks[i],
                   isLast: i == activeStocks.length - 1,
@@ -3695,7 +3695,7 @@ class _ShimmerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEDE9FE)),
+        border: Border.all(color: const Color(0xFFECFDF5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: horizontal ? _buildHorizontal() : _buildVertical(),
@@ -3705,7 +3705,7 @@ class _ShimmerCard extends StatelessWidget {
   Widget _buildHorizontal() {
     return Row(
       children: [
-        Container(width: 4, color: const Color(0xFFEDE9FE)),
+        Container(width: 4, color: const Color(0xFFECFDF5)),
         Container(
           width: 72,
           color: const Color(0xFFF5F3FF),
@@ -3815,7 +3815,7 @@ class _AccountPickerDialogState extends State<_AccountPickerDialog> {
   // ── Updated broker color mapping (removed Upstox, added ProfitMart & GoodWill) ──
   Color _brokerColor(String broker) {
     final b = broker.toUpperCase();
-    if (b.contains('ANGEL')) return const Color(0xFF7C3AED);
+    if (b.contains('ANGEL')) return const Color(0xFF059669);
     if (b.contains('MOTILAL')) return const Color(0xFF047857);
     if (b.contains('PROFITMART') ||
         b.contains('PROFIT_MART') ||
@@ -4223,8 +4223,8 @@ class _SubPillRow extends StatelessWidget {
           pillBorder = const Color(0xFF6EE7B7);
         } else {
           pillBg = const Color(0xFFF5F3FF);
-          pillFg = const Color(0xFF7C3AED);
-          pillBorder = const Color(0xFFDDD6FE);
+          pillFg = const Color(0xFF059669);
+          pillBorder = const Color(0xFFA7F3D0);
         }
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -4351,7 +4351,7 @@ class _TableVLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      color: headerLine ? const Color(0xFFD4C9FF) : const Color(0xFFEDE9FE),
+      color: headerLine ? const Color(0xFFD4C9FF) : const Color(0xFFECFDF5),
     );
   }
 }
@@ -4388,7 +4388,7 @@ class _DatePill extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF5F3FF),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFDDD6FE)),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -4396,7 +4396,7 @@ class _DatePill extends StatelessWidget {
             const Icon(
               Icons.calendar_today_rounded,
               size: 11,
-              color: Color(0xFF7C3AED),
+              color: Color(0xFF059669),
             ),
             const SizedBox(width: 5),
             Text(
@@ -4404,7 +4404,7 @@ class _DatePill extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF7C3AED),
+                color: Color(0xFF059669),
               ),
             ),
           ],
@@ -4430,14 +4430,14 @@ class _AddButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+            colors: [Color(0xFF059669), Color(0xFF0D9488)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C3AED).withOpacity(0.30),
+              color: const Color(0xFF059669).withOpacity(0.30),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -4493,13 +4493,13 @@ class _CategoryChips extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF7C3AED)
+                      ? const Color(0xFF059669)
                       : const Color(0xFFF5F3FF),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF7C3AED)
-                        : const Color(0xFFDDD6FE),
+                        ? const Color(0xFF059669)
+                        : const Color(0xFFA7F3D0),
                   ),
                 ),
                 child: Text(
@@ -4507,7 +4507,7 @@ class _CategoryChips extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : const Color(0xFF7C3AED),
+                    color: isSelected ? Colors.white : const Color(0xFF059669),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -4770,7 +4770,7 @@ class _StockRow extends StatelessWidget {
                           child: Icon(
                             Icons.edit_rounded,
                             size: 14,
-                            color: Color(0xFF7C3AED),
+                            color: Color(0xFF059669),
                           ),
                         ),
                       ),
@@ -4803,7 +4803,7 @@ class _StockRow extends StatelessWidget {
       case HotStockSignal.BUY:
         return const Color(0xFF10B981);
       case HotStockSignal.STRONG_BUY:
-        return const Color(0xFF7C3AED);
+        return const Color(0xFF059669);
       case HotStockSignal.HOLD:
         return const Color(0xFFF59E0B);
       case HotStockSignal.SELL:
@@ -5064,7 +5064,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7C3AED).withOpacity(0.15),
+                color: const Color(0xFF059669).withOpacity(0.15),
                 blurRadius: 32,
                 offset: const Offset(0, 8),
               ),
@@ -5134,7 +5134,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 1.5,
-                                          color: Color(0xFF7C3AED),
+                                          color: Color(0xFF059669),
                                         ),
                                       )
                                     : null,
@@ -5222,7 +5222,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                               child: ElevatedButton(
                                 onPressed: _submit,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF7C3AED),
+                                  backgroundColor: const Color(0xFF059669),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
@@ -5312,7 +5312,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+          colors: [Color(0xFF059669), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -5438,7 +5438,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFF7C3AED),
+                                color: Color(0xFF059669),
                               ),
                             ),
                           )
@@ -5513,7 +5513,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
+                              color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(
@@ -5524,7 +5524,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF7C3AED),
+                                  color: Color(0xFF059669),
                                 ),
                               ),
                             ),
@@ -5600,14 +5600,14 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F3FF),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDDD6FE)),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.check_circle_rounded,
                     size: 13,
-                    color: Color(0xFF7C3AED),
+                    color: Color(0xFF059669),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -5615,7 +5615,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                       '${_selectedScrip!.tradingSymbol} · ${_selectedScrip!.exchange}  —  price auto-filled from LTP',
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF7C3AED),
+                        color: Color(0xFF059669),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -5626,7 +5626,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
                       height: 12,
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
-                        color: Color(0xFF7C3AED),
+                        color: Color(0xFF059669),
                       ),
                     ),
                 ],
@@ -5689,7 +5689,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
-                color: Color(0xFF7C3AED),
+                color: Color(0xFF059669),
                 width: 1.5,
               ),
             ),
@@ -5828,11 +5828,11 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: sel
-                  ? const Color(0xFF7C3AED).withOpacity(0.10)
+                  ? const Color(0xFF059669).withOpacity(0.10)
                   : const Color(0xFFF9F9FF),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: sel ? const Color(0xFF7C3AED) : const Color(0xFFE5E7EB),
+                color: sel ? const Color(0xFF059669) : const Color(0xFFE5E7EB),
                 width: sel ? 1.5 : 1,
               ),
             ),
@@ -5841,7 +5841,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: sel ? const Color(0xFF7C3AED) : const Color(0xFF9CA3AF),
+                color: sel ? const Color(0xFF059669) : const Color(0xFF9CA3AF),
               ),
             ),
           ),
@@ -5853,7 +5853,7 @@ class _HotStockFormDialogState extends State<_HotStockFormDialog> {
   Widget _signalSelector() {
     const options = [
       (HotStockSignal.BUY, Color(0xFF10B981)),
-      (HotStockSignal.STRONG_BUY, Color(0xFF7C3AED)),
+      (HotStockSignal.STRONG_BUY, Color(0xFF059669)),
       (HotStockSignal.HOLD, Color(0xFFF59E0B)),
       (HotStockSignal.SELL, Color(0xFFEF4444)),
     ];
@@ -5947,7 +5947,7 @@ class _ShimmerState extends State<_Shimmer>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: const Color(0xFFEDE9FE),
+            color: const Color(0xFFECFDF5),
             borderRadius: BorderRadius.circular(widget.radius),
           ),
         ),

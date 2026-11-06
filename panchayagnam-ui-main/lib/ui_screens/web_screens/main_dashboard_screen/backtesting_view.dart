@@ -241,7 +241,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                         ),
                         SizedBox(width: 8),
                         Chip(
-                          label: Text('Quantman & Panchayagnam Verified', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                          label: Text('Quantman & Panchayagnam Verified', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                           backgroundColor: Color(0xFFF5F3FF),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
@@ -262,7 +262,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                       : const Icon(Icons.rocket_launch_rounded, size: 18),
                   label: Text(_isSimulating ? 'Simulating...' : '🚀 Run Backtest Simulation'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -423,7 +423,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                                   children: [
                                     Icon(
                                       _includeSlippage ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                      color: _includeSlippage ? const Color(0xFF7C3AED) : Colors.grey,
+                                      color: _includeSlippage ? const Color(0xFF059669) : Colors.grey,
                                       size: 18,
                                     ),
                                     const SizedBox(width: 6),
@@ -448,7 +448,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                 children: [
                   _buildStatCard('NET PROFIT', '+₹${NumberFormat('#,##,##0.00').format(_result!.netProfit)}', '+${_result!.roiPct.toStringAsFixed(2)}% RoI', const Color(0xFF059669)),
                   const SizedBox(width: 14),
-                  _buildStatCard('WIN RATE', '${_result!.winRate.toStringAsFixed(1)}%', '${_result!.winningTrades} Wins / ${_result!.losingTrades} Losses', const Color(0xFF7C3AED)),
+                  _buildStatCard('WIN RATE', '${_result!.winRate.toStringAsFixed(1)}%', '${_result!.winningTrades} Wins / ${_result!.losingTrades} Losses', const Color(0xFF059669)),
                   const SizedBox(width: 14),
                   _buildStatCard('PROFIT FACTOR', _result!.profitFactor.toStringAsFixed(2), 'Gross Gain / Loss', const Color(0xFF2563EB)),
                   const SizedBox(width: 14),
@@ -725,8 +725,8 @@ class _EquityCurvePainter extends CustomPainter {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        const Color(0xFF7C3AED).withOpacity(0.25),
-        const Color(0xFF7C3AED).withOpacity(0.0),
+        const Color(0xFF059669).withOpacity(0.25),
+        const Color(0xFF059669).withOpacity(0.0),
       ],
     );
     final fillPaint = Paint()
@@ -737,7 +737,7 @@ class _EquityCurvePainter extends CustomPainter {
 
     // Stroke Line
     final linePaint = Paint()
-      ..color = const Color(0xFF7C3AED)
+      ..color = const Color(0xFF059669)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 

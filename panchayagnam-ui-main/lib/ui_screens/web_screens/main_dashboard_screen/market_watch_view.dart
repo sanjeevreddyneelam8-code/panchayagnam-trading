@@ -538,8 +538,8 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: const Color(0xFFEDE9FE), borderRadius: BorderRadius.circular(4)),
-                  child: Text(scrip.exchange, style: const TextStyle(color: Color(0xFF6D28D9), fontWeight: FontWeight.bold, fontSize: 10)),
+                  decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(4)),
+                  child: Text(scrip.exchange, style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 10)),
                 ),
               ],
             ),
@@ -871,7 +871,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: item.instrumentType == 'INDEX' ? const Color(0xFFEFF6FF) : const Color(0xFFEDE9FE),
+                                  color: item.instrumentType == 'INDEX' ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -880,7 +880,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: item.instrumentType == 'INDEX' ? const Color(0xFF059669) : const Color(0xFF6D28D9),
+                                    color: item.instrumentType == 'INDEX' ? const Color(0xFF059669) : const Color(0xFF047857),
                                   ),
                                 ),
                               ),

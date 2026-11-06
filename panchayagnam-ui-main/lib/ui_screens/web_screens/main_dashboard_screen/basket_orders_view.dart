@@ -133,7 +133,7 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
                 Navigator.of(ctx).pop();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -168,7 +168,7 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED), foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
               child: const Text('Done'),
             ),
           ],
@@ -202,7 +202,7 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('Add Leg'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
