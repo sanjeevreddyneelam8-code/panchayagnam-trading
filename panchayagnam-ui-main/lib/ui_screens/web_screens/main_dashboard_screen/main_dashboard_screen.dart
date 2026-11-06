@@ -80,6 +80,7 @@ class _MainDashboardState extends State<MainDashboard> {
   _NavSelection _currentSelection = const _NavSelection(0, 0);
   bool _sidebarCollapsed = false;
   bool _roleLoaded = false;
+  bool _isDarkMode = false;
   int? _openGroupFlyoutIndex; // Side flyout menu index (opens on side, not down)
   Key _bodyKey = UniqueKey(); // ← forces full remount on every nav tap
 
@@ -103,6 +104,7 @@ class _MainDashboardState extends State<MainDashboard> {
     session.token = html.window.sessionStorage['auth_token'] ?? '';
     session.userId =
         int.tryParse(html.window.sessionStorage['user_id'] ?? '0') ?? 0;
+    _isDarkMode = html.window.sessionStorage['is_dark_mode'] == 'true';
     if (mounted) setState(() => _roleLoaded = true);
   }
 
@@ -529,13 +531,36 @@ class _MainDashboardState extends State<MainDashboard> {
               const SizedBox(width: 4),
 
               IconButton(
-                icon: const Icon(Icons.light_mode_outlined, color: Color(0xFF94A3B8), size: 19),
-                tooltip: 'Toggle Theme',
+                icon: Icon(
+                  _isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: _isDarkMode ? const Color(0xFFFBBF24) : const Color(0xFF94A3B8),
+                  size: 19,
+                ),
+                tooltip: _isDarkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme',
                 onPressed: () {
+                  setState(() {
+                    _isDarkMode = !_isDarkMode;
+                    html.window.sessionStorage['is_dark_mode'] = _isDarkMode ? 'true' : 'false';
+                    _bodyKey = UniqueKey();
+                  });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Panchayagnam Dark Theme is Active'),
-                      duration: Duration(seconds: 1),
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            _isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(_isDarkMode
+                              ? 'Panchayagnam Institutional Dark Theme is Active 🌙'
+                              : 'Panchayagnam FinTech Light Theme is Active ☀️'),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF059669),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 },
@@ -1832,66 +1857,8 @@ class _MainDashboardState extends State<MainDashboard> {
   void _showSupportDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Color(0xFF059669),
-              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 20),
-            ),
-            SizedBox(width: 10),
-            Text('AutoTrader Support Desk', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SizedBox(
-          width: 440,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Need assistance with your broker API, IP whitelist, or copy trading setup? Our engineers are live online.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.phone_outlined, size: 18, color: Color(0xFF2563EB)),
-                        SizedBox(width: 10),
-                        Text('Phone: 9390076827', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.email_outlined, size: 18, color: Color(0xFF2563EB)),
-                        SizedBox(width: 10),
-                        Text('Email: support@panchayagnam.com', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
-            child: const Text('Start Chat', style: TextStyle(color: Colors.white)),
-          ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-        ],
-      ),
+      barrierDismissible: true,
+      builder: (ctx) => const _AIChatSupportDialog(),
     );
   }
 
@@ -2006,13 +1973,41 @@ class _MainDashboardState extends State<MainDashboard> {
         ? _kCollapsedWidth
         : _kExpandedWidth;
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      body: Stack(
-        children: [
-          Row(
-            children: [
-              _AnimatedSidebar(
+    final bgColor = _isDarkMode ? const Color(0xFF081214) : AppColors.scaffold;
+
+    return Theme(
+      data: _isDarkMode
+          ? ThemeData.dark().copyWith(
+              scaffoldBackgroundColor: const Color(0xFF081214),
+              cardColor: const Color(0xFF0F1E22),
+              canvasColor: const Color(0xFF0F1E22),
+              dialogBackgroundColor: const Color(0xFF0F1E22),
+              dividerColor: const Color(0xFF162E34),
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF10B981),
+                secondary: Color(0xFF34D399),
+                surface: Color(0xFF0F1E22),
+              ),
+            )
+          : ThemeData.light().copyWith(
+              scaffoldBackgroundColor: AppColors.scaffold,
+              cardColor: Colors.white,
+              canvasColor: Colors.white,
+              dialogBackgroundColor: Colors.white,
+              dividerColor: const Color(0xFFE2E8F0),
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF059669),
+                secondary: Color(0xFF10B981),
+                surface: Colors.white,
+              ),
+            ),
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: Stack(
+          children: [
+            Row(
+              children: [
+                _AnimatedSidebar(
                 collapsed: _sidebarCollapsed,
                 navItems: _navItems,
                 currentSelection: _currentSelection,
@@ -2114,6 +2109,7 @@ class _MainDashboardState extends State<MainDashboard> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -3403,36 +3399,521 @@ class _AutoTraderSupportFloatingButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF059669),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF047857), Color(0xFF10B981)],
+            ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF059669).withOpacity(0.4),
-                blurRadius: 14,
+                color: const Color(0xFF059669).withOpacity(0.45),
+                blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.support_agent_rounded, size: 16, color: Color(0xFF059669)),
+              Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, size: 15, color: Color(0xFF047857)),
               ),
-              SizedBox(width: 8),
-              Text(
-                'Support',
+              const SizedBox(width: 9),
+              const Text(
+                'AI Support & Chat',
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
                   letterSpacing: 0.2,
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ─── Panchayagnam AI Client Chat Support Dialog ──────────────────────────────
+
+class _AIChatSupportDialog extends StatefulWidget {
+  const _AIChatSupportDialog();
+
+  @override
+  State<_AIChatSupportDialog> createState() => _AIChatSupportDialogState();
+}
+
+class _AIChatMsg {
+  final String text;
+  final bool isUser;
+  final String time;
+
+  const _AIChatMsg({
+    required this.text,
+    required this.isUser,
+    required this.time,
+  });
+}
+
+class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
+  final TextEditingController _inputCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
+  bool _isTyping = false;
+
+  final List<_AIChatMsg> _messages = [
+    const _AIChatMsg(
+      text: "Hello! 👋 I'm your Panchayagnam AI Assistant.\n\nHow can I help your trading operations today? You can ask me about Parent-Children copy trading, linking broker APIs, execution latency, or subscription renewals.",
+      isUser: false,
+      time: 'Just now',
+    ),
+  ];
+
+  final List<String> _quickChips = [
+    "⚡ Parent-Children Trading",
+    "🔑 Link Broker Account",
+    "⏱️ Order Latency (<15ms)",
+    "💳 Renew / Pay Online",
+    "🛡️ Risk Limits & Circuits",
+    "📞 Human Desk Contact",
+  ];
+
+  @override
+  void dispose() {
+    _inputCtrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _handleSend(String message) {
+    final query = message.trim();
+    if (query.isEmpty) return;
+
+    _inputCtrl.clear();
+    final now = DateTime.now();
+    final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    setState(() {
+      _messages.add(_AIChatMsg(text: query, isUser: true, time: timeStr));
+      _isTyping = true;
+    });
+    _scrollToEnd();
+
+    Future.delayed(const Duration(milliseconds: 380), () {
+      if (!mounted) return;
+      final reply = _generateAIResponse(query);
+      setState(() {
+        _isTyping = false;
+        _messages.add(_AIChatMsg(text: reply, isUser: false, time: timeStr));
+      });
+      _scrollToEnd();
+    });
+  }
+
+  String _generateAIResponse(String q) {
+    final lower = q.toLowerCase();
+
+    if (lower.contains('parent') || lower.contains('children') || lower.contains('copy') || lower.contains('follower') || lower.contains('master')) {
+      return "⚡ Parent-Children Copy Trading Architecture:\n\n"
+          "• 1 Master (Parent) Account: Executes and broadcasts signals (e.g., Dhan Pro Master).\n"
+          "• Follower (Child) Accounts: Replicates concurrently across connected brokers (AngelOne, Zerodha, Upstox, Motilal, Groww, etc.).\n"
+          "• Custom Multipliers: Each child account can be tuned to 0.5x, 1.0x, 1.5x, or 2.0x.\n"
+          "• Latency: Sub-15ms parallel API routing with active slippage guards.";
+    }
+
+    if (lower.contains('link') || lower.contains('add account') || lower.contains('broker') || lower.contains('api') || lower.contains('key')) {
+      return "🔑 How to Link a Broker Account:\n\n"
+          "1. Click 'Parent Children Trading' in the left menu.\n"
+          "2. In the Accounts Hierarchy bar, tap 'Trading Accounts'.\n"
+          "3. Click '+ Add Account'.\n"
+          "4. Select your broker (Dhan, AngelOne, Zerodha, Upstox, Motilal, Groww, Goodwill, Profitmart, AliceBlue, Fyers).\n"
+          "5. Enter your Client Code & Name, pick role (Parent or Child), and set Multiplier.\n"
+          "6. Click '+ Link Trading Account' to connect in real time!";
+    }
+
+    if (lower.contains('latency') || lower.contains('speed') || lower.contains('fast') || lower.contains('ms')) {
+      return "⏱️ Execution Latency & Performance:\n\n"
+          "• Order Latency: < 15ms across all connected broker APIs.\n"
+          "• Protocol: Direct encrypted WebSocket pipelines with dedicated low-latency memory caching.\n"
+          "• Synchronization: All follower accounts receive fills simultaneously.";
+    }
+
+    if (lower.contains('renew') || lower.contains('pay') || lower.contains('plan') || lower.contains('subscri') || lower.contains('pricing') || lower.contains('cost')) {
+      return "💳 Subscriptions & Flexible Client Pricing:\n\n"
+          "• Click 'Renew / Pay Online' at the bottom-left of the sidebar.\n"
+          "• Plans are tailored to your interest: Starter (20 Accounts), Pro (50 Accounts), or custom Institutional scale.\n"
+          "• Supports secure UPI, Credit/Debit Cards, and NetBanking.";
+    }
+
+    if (lower.contains('risk') || lower.contains('stop') || lower.contains('circuit') || lower.contains('m2m') || lower.contains('panic') || lower.contains('square')) {
+      return "🛡️ Risk Management & Stop-Losses:\n\n"
+          "• M2M Circuit: Strict 2% safety parameter monitors cumulative drawdowns.\n"
+          "• Emergency Square-Off: One-click panic button liquidates all open positions across all connected brokers instantaneously.";
+    }
+
+    if (lower.contains('contact') || lower.contains('human') || lower.contains('phone') || lower.contains('call') || lower.contains('email') || lower.contains('number') || lower.contains('desk')) {
+      return "📞 Panchayagnam Human Support Desk:\n\n"
+          "• Direct Phone: +91 9390076827\n"
+          "• Email: support@panchayagnam.com\n"
+          "• Trading Hours: 9:00 AM – 11:30 PM (Mon – Fri)\n\n"
+          "Senior technical engineers are standing by to assist with IP whitelisting and broker auth!";
+    }
+
+    return "🤖 Panchayagnam Trading AI:\n\n"
+        "I'm here to assist with all platform operations including Auto Strategies, Options Chain Greeks, Backtesting, and Multi-Broker Routing.\n\n"
+        "For urgent account verification or authorization, our Human Desk is available at 9390076827 or support@panchayagnam.com.";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 520,
+        height: 640,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.18),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF022C22), Color(0xFF064E3B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF34D399), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Panchayagnam AI Assistant',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Color(0xFF059669),
+                                borderRadius: BorderRadius.all(Radius.circular(4)),
+                              ),
+                              child: Text(
+                                '• ONLINE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '24/7 AI Trading, Broker Linking & Copy Assistant',
+                          style: TextStyle(fontSize: 11, color: Color(0xFFA7F3D0)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // Emergency Human Support Contact Strip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                border: Border(
+                  bottom: BorderSide(color: const Color(0xFF10B981).withOpacity(0.25)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.phone_in_talk_rounded, size: 14, color: Color(0xFF047857)),
+                      SizedBox(width: 6),
+                      Text('9390076827', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF065F46))),
+                      SizedBox(width: 12),
+                      Icon(Icons.email_outlined, size: 14, color: Color(0xFF047857)),
+                      SizedBox(width: 6),
+                      Text('support@panchayagnam.com', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF065F46))),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                    ),
+                    child: const Text('Human Desk', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF047857))),
+                  ),
+                ],
+              ),
+            ),
+
+            // Chat Messages Stream
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                itemCount: _messages.length,
+                itemBuilder: (ctx, i) {
+                  final msg = _messages[i];
+                  if (msg.isUser) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12, left: 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(14),
+                            topRight: Radius.circular(14),
+                            bottomLeft: Radius.circular(14),
+                            bottomRight: Radius.circular(3),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF059669).withOpacity(0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              msg.text,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              msg.time,
+                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12, right: 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(14),
+                            topRight: Radius.circular(14),
+                            bottomRight: Radius.circular(14),
+                            bottomLeft: Radius.circular(3),
+                          ),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF059669),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.auto_awesome_rounded, size: 10, color: Colors.white),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Panchayagnam AI',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF047857)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              msg.text,
+                              style: const TextStyle(color: Color(0xFF1E293B), fontSize: 12.5, height: 1.4),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              msg.time,
+                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+
+            if (_isTyping)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF059669)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AI Assistant is typing...',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Quick Prompts Chips
+            Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _quickChips.length,
+                itemBuilder: (ctx, idx) {
+                  final chip = _quickChips[idx];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      label: Text(chip, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF065F46))),
+                      backgroundColor: const Color(0xFFECFDF5),
+                      side: BorderSide(color: const Color(0xFF10B981).withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      onPressed: () => _handleSend(chip),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            // Input Bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _inputCtrl,
+                      onSubmitted: _handleSend,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Ask Panchayagnam AI anything...',
+                        hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _handleSend(_inputCtrl.text),
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF10B981)],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
