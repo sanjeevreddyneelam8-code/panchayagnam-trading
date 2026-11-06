@@ -140,7 +140,7 @@ class CopyTradeReceiptDialog extends StatelessWidget {
                       label: 'AVG DISPATCH SPEED',
                       value: '${receipt.avgLatencyMs.toStringAsFixed(1)} ms',
                       subtext: 'Parallel CompletableFuture',
-                      color: const Color(0xFF0284C7),
+                      color: const Color(0xFF059669),
                     ),
                   ],
                 ),

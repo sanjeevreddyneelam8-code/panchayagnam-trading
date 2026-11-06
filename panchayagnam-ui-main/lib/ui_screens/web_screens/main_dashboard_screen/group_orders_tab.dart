@@ -169,6 +169,17 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   String _searchQuery = '';
   late int _selectedAccountNav;
 
+  final List<Map<String, dynamic>> _tradingAccountsHierarchy = [
+    {'name': 'Dhan Main Account', 'code': '1100345678', 'broker': 'DHAN', 'role': 'MASTER (Parent)', 'margin': '₹25,00,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': true},
+    {'name': 'AngelOne Child Account', 'code': 'AG789012', 'broker': 'ANGELONE', 'role': 'FOLLOWER (Child)', 'margin': '₹12,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Zerodha Kite Account', 'code': 'ZR442190', 'broker': 'ZERODHA', 'role': 'FOLLOWER (Child)', 'margin': '₹15,00,000', 'multiplier': '1.5x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Motilal Oswal Account', 'code': 'MO554433', 'broker': 'MOTILAL', 'role': 'FOLLOWER (Child)', 'margin': '₹8,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Groww Account', 'code': 'GR887766', 'broker': 'GROWW', 'role': 'FOLLOWER (Child)', 'margin': '₹6,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Goodwill Giga Account', 'code': 'GW332211', 'broker': 'GOODWILL', 'role': 'FOLLOWER (Child)', 'margin': '₹4,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Profitmart Account', 'code': 'PM998877', 'broker': 'PROFITMART', 'role': 'FOLLOWER (Child)', 'margin': '₹5,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+    {'name': 'Alice Blue ANT Account', 'code': 'AB665544', 'broker': 'ALICEBLUE', 'role': 'FOLLOWER (Child)', 'margin': '₹3,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -716,7 +727,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                       children: [
                         const Text(
                           'New: Strategy Lab',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E3A8A)),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)),
                         ),
                         const SizedBox(width: 8),
                         Container(
@@ -732,7 +743,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     const SizedBox(height: 2),
                     const Text(
                       'Test your own multi-broker mirror ideas with zero simulated slippage, costs, and fills across 8 Demats.',
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF3B82F6)),
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF059669)),
                     ),
                   ],
                 ),
@@ -1613,17 +1624,294 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   }
 
   // ─── Accounts Hierarchy View: 1. Trading Accounts ─────────────────────────
-  Widget _buildTradingAccountsHierarchyView(BuildContext context) {
-    final accounts = [
-      {'name': 'Dhan Main Account', 'code': '1100345678', 'broker': 'DHAN', 'role': 'MASTER (Parent)', 'margin': '₹25,00,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': true},
-      {'name': 'AngelOne Child Account', 'code': 'AG789012', 'broker': 'ANGELONE', 'role': 'FOLLOWER (Child)', 'margin': '₹12,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Zerodha Kite Account', 'code': 'ZR442190', 'broker': 'ZERODHA', 'role': 'FOLLOWER (Child)', 'margin': '₹15,00,000', 'multiplier': '1.5x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Motilal Oswal Account', 'code': 'MO554433', 'broker': 'MOTILAL', 'role': 'FOLLOWER (Child)', 'margin': '₹8,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Groww Account', 'code': 'GR887766', 'broker': 'GROWW', 'role': 'FOLLOWER (Child)', 'margin': '₹6,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Goodwill Giga Account', 'code': 'GW332211', 'broker': 'GOODWILL', 'role': 'FOLLOWER (Child)', 'margin': '₹4,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Profitmart Account', 'code': 'PM998877', 'broker': 'PROFITMART', 'role': 'FOLLOWER (Child)', 'margin': '₹5,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-      {'name': 'Alice Blue ANT Account', 'code': 'AB665544', 'broker': 'ALICEBLUE', 'role': 'FOLLOWER (Child)', 'margin': '₹3,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+  void _showAddTradingAccountModal(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final codeCtrl = TextEditingController();
+    String selectedBroker = 'DHAN';
+    bool isMaster = false;
+    double multiplier = 1.0;
+
+    final brokers = [
+      'DHAN',
+      'ANGELONE',
+      'ZERODHA',
+      'UPSTOX',
+      'MOTILAL',
+      'GROWW',
+      'GOODWILL',
+      'PROFITMART',
+      'ALICEBLUE',
+      'FYERS',
     ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                width: 520,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Emerald Dialog Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF022C22), Color(0xFF064E3B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                            ),
+                            child: const Icon(Icons.account_balance_rounded, color: Color(0xFF34D399), size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Add Trading Account',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Link a new broker account to Parent Children Trading',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFFA7F3D0)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Form Body
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Account Label
+                          const Text('Account Display Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: nameCtrl,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. AngelOne Pro Account',
+                              hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Broker Selector & Client Code Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Broker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                                      ),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          value: selectedBroker,
+                                          isExpanded: true,
+                                          items: brokers.map((b) => DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)))).toList(),
+                                          onChanged: (v) {
+                                            if (v != null) setModalState(() => selectedBroker = v);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Client Code / User ID', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                                    const SizedBox(height: 6),
+                                    TextField(
+                                      controller: codeCtrl,
+                                      style: const TextStyle(fontSize: 13),
+                                      decoration: InputDecoration(
+                                        hintText: 'e.g. AG123456',
+                                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Role selection
+                          const Text('Account Role in Copy Trading', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => setModalState(() => isMaster = false),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: !isMaster ? const Color(0xFFECFDF5) : const Color(0xFFF9FAFB),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: !isMaster ? const Color(0xFF059669) : const Color(0xFFE5E7EB), width: !isMaster ? 1.5 : 1),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Child Account (Follower)',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: !isMaster ? const Color(0xFF047857) : const Color(0xFF6B7280)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => setModalState(() => isMaster = true),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isMaster ? const Color(0xFFECFDF5) : const Color(0xFFF9FAFB),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: isMaster ? const Color(0xFF059669) : const Color(0xFFE5E7EB), width: isMaster ? 1.5 : 1),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Master Account (Leader)',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isMaster ? const Color(0xFF047857) : const Color(0xFF6B7280)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Multiplier Slider
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Quantity Multiplier', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                              Text('${multiplier.toStringAsFixed(1)}x', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                            ],
+                          ),
+                          Slider(
+                            value: multiplier,
+                            min: 0.5,
+                            max: 5.0,
+                            divisions: 9,
+                            activeColor: const Color(0xFF059669),
+                            inactiveColor: const Color(0xFFE5E7EB),
+                            onChanged: (v) => setModalState(() => multiplier = v),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 42,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final name = nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : '$selectedBroker Account';
+                                final code = codeCtrl.text.trim().isNotEmpty ? codeCtrl.text.trim() : 'AC${DateTime.now().millisecondsSinceEpoch % 1000000}';
+                                setState(() {
+                                  _tradingAccountsHierarchy.insert(0, {
+                                    'name': name,
+                                    'code': code,
+                                    'broker': selectedBroker,
+                                    'role': isMaster ? 'MASTER (Parent)' : 'FOLLOWER (Child)',
+                                    'margin': '₹10,00,000',
+                                    'multiplier': '${multiplier.toStringAsFixed(1)}x',
+                                    'status': 'Connected',
+                                    'isMaster': isMaster,
+                                  });
+                                });
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Trading Account linked and connected successfully!'),
+                                    backgroundColor: Color(0xFF059669),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.add_link_rounded, size: 18),
+                              label: const Text('+ Link Trading Account', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF059669),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTradingAccountsHierarchyView(BuildContext context) {
+    final accounts = _tradingAccountsHierarchy;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1635,16 +1923,16 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Trading Accounts (8 Demats Connected)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                Text('Trading Accounts (${_tradingAccountsHierarchy.length} Accounts Connected)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
                 const SizedBox(height: 3),
-                Text('Real-time authenticated Demats configured for Multi-Broker Order Routing & Copy Trading', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text('Real-time authenticated trading accounts configured for Multi-Broker Order Routing & Copy Trading', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
             Row(
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All 8 Demat sessions active & synchronized · Latency: 11ms'), backgroundColor: Color(0xFF059669)));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All trading account sessions active & synchronized · Latency: 11ms'), backgroundColor: Color(0xFF059669)));
                   },
                   icon: const Icon(Icons.sync_rounded, size: 16),
                   label: const Text('Sync All'),
@@ -1652,9 +1940,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link New Demat modal ready')));
-                  },
+                  onPressed: () => _showAddTradingAccountModal(context),
                   icon: const Icon(Icons.add_link_rounded, size: 16),
                   label: const Text('+ Add Account'),
                   style: ElevatedButton.styleFrom(
@@ -1691,7 +1977,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 ),
                 child: const Row(
                   children: [
-                    Expanded(flex: 3, child: Text('DEMAT & BROKER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
+                    Expanded(flex: 3, child: Text('TRADING ACCOUNT & BROKER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
                     Expanded(flex: 2, child: Text('CLIENT CODE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
                     Expanded(flex: 2, child: Text('ROLE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
                     Expanded(flex: 2, child: Text('MARGIN', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
@@ -1765,7 +2051,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         ),
                       ),
                       Expanded(flex: 2, child: Text(acc['margin'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)))),
-                      Expanded(flex: 2, child: Text(acc['multiplier'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF1E3A8A)))),
+                      Expanded(flex: 2, child: Text(acc['multiplier'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF047857)))),
                       Expanded(
                         flex: 2,
                         child: Row(
@@ -1783,7 +2069,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${acc['name']} latency: 12ms · Session OK'), backgroundColor: const Color(0xFF059669)));
                           },
                           style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                          child: const Text('Test Ping', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0284C7))),
+                          child: const Text('Test Ping', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
                         ),
                       ),
                     ],
@@ -1810,7 +2096,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               children: [
                 const Text('Master Account & Copy Leadership Manager', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
                 const SizedBox(height: 3),
-                Text('Designate which primary Demat acts as the execution leader for 7 child accounts', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text('Designate which Primary trading account acts as the execution leader for child accounts', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
             Container(
@@ -1905,7 +2191,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
       icon: const Icon(Icons.swap_horiz_rounded, size: 16),
       label: Text('Designate $accountName'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: const Color(0xFF047857),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
@@ -3869,7 +4155,7 @@ class _SingleOrderDialogState extends State<_SingleOrderDialog>
                     gradient: LinearGradient(
                       colors: _isBOSO
                           ? [const Color(0xFF065F46), const Color(0xFF047857)]
-                          : [const Color(0xFF1E40AF), const Color(0xFF3B82F6)],
+                          : [const Color(0xFF047857), const Color(0xFF10B981)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -4254,7 +4540,7 @@ class _ExitResultDialog extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: failedCount == 0
                       ? [const Color(0xFF065F46), const Color(0xFF059669)]
-                      : [const Color(0xFF1E40AF), const Color(0xFF3B82F6)],
+                      : [const Color(0xFF047857), const Color(0xFF10B981)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -5694,7 +5980,7 @@ class _GroupTable extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E40AF),
+                                    color: Color(0xFF059669),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),

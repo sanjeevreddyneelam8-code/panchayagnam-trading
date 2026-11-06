@@ -1496,7 +1496,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   children: [
                     const Icon(Icons.speed, size: 14, color: Color(0xFF059669)),
                     const SizedBox(width: 6),
-                    Text('Sub-15ms Replication · Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin)}', style: const TextStyle(color: Color(0xFF1E40AF), fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    Text('Sub-15ms Replication · Pooled Margin: ₹ ${_formatINRDouble(_pooledMargin)}', style: const TextStyle(color: Color(0xFF065F46), fontSize: 11.5, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -1530,7 +1530,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     children: [
                       Text(item.$1, style: TextStyle(color: isSelected ? Colors.white : const Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 12)),
                       const SizedBox(width: 8),
-                      Text('₹ ${item.$2}', style: TextStyle(color: isSelected ? const Color(0xFF93C5FD) : const Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 11.5)),
+                      Text('₹ ${item.$2}', style: TextStyle(color: isSelected ? const Color(0xFF6EE7B7) : const Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 11.5)),
                     ],
                   ),
                 ),
@@ -2236,7 +2236,7 @@ class _DashboardTabState extends State<DashboardTab> {
       {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across 8 Demats at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF059669)},
-      {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF0284C7)},
+      {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF059669)},
     ];
 
     return Container(
@@ -2399,9 +2399,9 @@ class _DashboardTabState extends State<DashboardTab> {
 
     final algoCard = _StatCardConfig(
       icon: Icons.psychology_rounded,
-      iconColor: const Color(0xFF3B82F6),
+      iconColor: const Color(0xFF10B981),
       iconBg: const Color(0xFFDBEAFE),
-      accentColor: const Color(0xFF3B82F6),
+      accentColor: const Color(0xFF10B981),
       title: 'Algo Strategies',
       value: '0 active',
       trend: 'Setup in Algo Strategies',

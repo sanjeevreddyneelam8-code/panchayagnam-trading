@@ -729,10 +729,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
   Widget _buildDialogHeader() {
     final isReview = _showReviewScreen;
     final Color gradStart = _isUpdate
-        ? const Color(0xFF1D4ED8)
+        ? const Color(0xFF047857)
         : const Color(0xFF0F766E);
     final Color gradEnd = _isUpdate
-        ? const Color(0xFF3B82F6)
+        ? const Color(0xFF10B981)
         : const Color(0xFF14B8A6);
 
     return Container(
@@ -1225,7 +1225,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     } else if (isNotFound) {
       bgColor = const Color(0xFFF0F9FF);
       borderColor = const Color(0xFFBAE6FD);
-      iconColor = const Color(0xFF0284C7);
+      iconColor = const Color(0xFF059669);
       textColor = const Color(0xFF0C4A6E);
       icon = Icons.info_outline_rounded;
     } else {
@@ -1938,7 +1938,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
               true,
               'Yes',
               Icons.person_rounded,
-              const Color(0xFF1D4ED8),
+              const Color(0xFF047857),
               const Color(0xFFEFF6FF),
             ),
           ),

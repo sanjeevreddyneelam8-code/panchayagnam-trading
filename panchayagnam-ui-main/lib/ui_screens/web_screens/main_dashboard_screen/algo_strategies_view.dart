@@ -572,7 +572,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                               color: execMode == 'BROKER' ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: execMode == 'BROKER' ? const Color(0xFF3B82F6) : Colors.grey.shade300,
+                                color: execMode == 'BROKER' ? const Color(0xFF10B981) : Colors.grey.shade300,
                                 width: execMode == 'BROKER' ? 1.8 : 1,
                               ),
                             ),
@@ -584,7 +584,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Multi-Broker Live', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF1E40AF))),
+                                      Text('Multi-Broker Live', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF047857))),
                                       Text('Simulated sandbox gate', style: TextStyle(fontSize: 10.5, color: Color(0xFF047857))),
                                     ],
                                   ),
@@ -956,7 +956,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             _buildMegaMenuItem(
                               ctx: ctx,
                               icon: Icons.code_rounded,
-                              iconColor: const Color(0xFF0284C7),
+                              iconColor: const Color(0xFF059669),
                               iconBg: const Color(0xFFE0F2FE),
                               title: 'Pine Script Strategy',
                               description: 'Bring a TradingView script & Webhook alert across',
@@ -1357,7 +1357,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.code_rounded, color: Color(0xFF0284C7)),
+            Icon(Icons.code_rounded, color: Color(0xFF059669)),
             SizedBox(width: 10),
             Text('TradingView Pine Script Bridge', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           ],
@@ -1382,10 +1382,10 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                     Expanded(
                       child: Text(
                         'https://panchayagnam-api.onrender.com/webhook/tradingview/bridge',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF047857)),
                       ),
                     ),
-                    Icon(Icons.copy_rounded, size: 16, color: Color(0xFF0284C7)),
+                    Icon(Icons.copy_rounded, size: 16, color: Color(0xFF059669)),
                   ],
                 ),
               ),
@@ -1400,7 +1400,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 ),
                 child: const Text(
                   '{\n  "ticker": "{{ticker}}",\n  "action": "{{strategy.order.action}}",\n  "quantity": {{strategy.order.contracts}},\n  "price": {{close}},\n  "replicateAll8Demats": true\n}',
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFF38BDF8)),
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFF34D399)),
                 ),
               ),
             ],
@@ -1416,7 +1416,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             icon: const Icon(Icons.check_rounded, size: 16),
             label: const Text('Save & Arm Pine Webhook'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
+              backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -2398,7 +2398,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               children: [
                 _buildCardStat('WIN RATE', '${t.winRate}%', const Color(0xFF059669)),
                 _buildCardStat('MAX DD', '-${t.maxDrawdown}%', const Color(0xFFDC2626)),
-                _buildCardStat('TARGET ROI', '+${t.targetRoi}%/Yr', const Color(0xFF0284C7)),
+                _buildCardStat('TARGET ROI', '+${t.targetRoi}%/Yr', const Color(0xFF059669)),
                 _buildCardStat('CAPITAL', t.capitalReq, const Color(0xFF1E293B)),
               ],
             ),

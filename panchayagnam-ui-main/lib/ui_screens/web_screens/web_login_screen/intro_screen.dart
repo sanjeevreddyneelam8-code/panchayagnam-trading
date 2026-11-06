@@ -6,30 +6,30 @@ import '../../../app_route/app_route.dart';
 
 
 class _T {
-  // Ink & Obsidian palette
-  static const bg = Color(0xFF0A0A0F);
-  static const surface = Color(0xFF111118);
-  static const surfaceCard = Color(0xFF16161F);
-  static const surfaceHover = Color(0xFF1C1C28);
+  // Radiant Institutional Forest & Emerald Green Palette
+  static const bg = Color(0xFF032E24); // Rich vibrant emerald forest background (distinctly green!)
+  static const surface = Color(0xFF064E3B); // Forest green surface
+  static const surfaceCard = Color(0xFF065F46); // Deep rich emerald card
+  static const surfaceHover = Color(0xFF047857); // Elevated emerald hover
 
-  // Gold accent
-  static const gold = Color(0xFFC9A84C);
-  static const goldLight = Color(0xFFE8C97A);
-  static const goldDim = Color(0xFF7A6228);
-  static const goldGlow = Color(0xFFC9A84C);
+  // Emerald & Mint accents
+  static const gold = Color(0xFF10B981); // Radiant emerald jade
+  static const goldLight = Color(0xFF34D399); // Vibrant light mint
+  static const goldDim = Color(0xFF059669); // Rich institutional green
+  static const goldGlow = Color(0xFF10B981); // Emerald glow
 
   // Text
-  static const textPrimary = Color(0xFFF0EDE8);
-  static const textSecondary = Color(0xFF8B8A9A);
-  static const textMuted = Color(0xFF4A4A5A);
+  static const textPrimary = Color(0xFFFFFFFF); // Pure crisp white
+  static const textSecondary = Color(0xFFA7F3D0); // Soft mint jade
+  static const textMuted = Color(0xFF6EE7B7); // Vibrant muted emerald
 
   // Borders
-  static const border = Color(0xFF22222E);
-  static const borderGold = Color(0xFF3A3020);
+  static const border = Color(0xFF065F46); // Forest emerald border
+  static const borderGold = Color(0xFF10B981); // Radiant emerald border
 
   // Semantic
-  static const positive = Color(0xFF34C759);
-  static const negative = Color(0xFFFF3B30);
+  static const positive = Color(0xFF34D399);
+  static const negative = Color(0xFFEF4444);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -214,7 +214,7 @@ class _AmbientOrbs extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [_T.gold.withOpacity(0.06), Colors.transparent],
+                  colors: [const Color(0xFF10B981).withOpacity(0.18), Colors.transparent],
                 ),
               ),
             ),
@@ -266,7 +266,7 @@ class _NavBar extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       height: 80,
       decoration: BoxDecoration(
-        color: elevated ? _T.surface.withOpacity(0.92) : Colors.transparent,
+        color: elevated ? const Color(0xFF043E31).withOpacity(0.95) : const Color(0xFF032E24).withOpacity(0.85),
         border: Border(
           bottom: BorderSide(
             color: elevated ? _T.border : Colors.transparent,
@@ -1566,7 +1566,7 @@ class _CtaBand extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: _T.borderGold, width: 1),
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A1408), Color(0xFF0F0F18)],
+          colors: [Color(0xFF022C22), Color(0xFF042822)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -2040,7 +2040,7 @@ class _GoldButtonState extends State<_GoldButton> {
               Text(
                 widget.label,
                 style: TextStyle(
-                  color: const Color(0xFF0A0A0F),
+                  color: const Color(0xFF021B17),
                   fontSize: widget.small ? 12 : 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.3,
@@ -2050,7 +2050,7 @@ class _GoldButtonState extends State<_GoldButton> {
                 const SizedBox(width: 8),
                 Icon(
                   widget.icon,
-                  color: const Color(0xFF0A0A0F),
+                  color: const Color(0xFF021B17),
                   size: widget.small ? 15 : 17,
                 ),
               ],
@@ -2298,7 +2298,7 @@ class _GoldPinPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       size.width * 0.1,
-      Paint()..color = const Color(0xFF0A0A0F),
+      Paint()..color = const Color(0xFF021B17),
     );
   }
 

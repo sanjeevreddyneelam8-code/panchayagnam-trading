@@ -43,7 +43,7 @@ const _purpleBorder = Color(0xFFDDD6FE);
 // ── Exchange brand colours (matching StockSearchWidget) ───────────────────
 const _kNseFg = Color(0xFF6366F1);
 const _kNseBg = Color(0xFFEEEDFF);
-const _kBseFg = Color(0xFF1D4ED8);
+const _kBseFg = Color(0xFF059669);
 const _kBseBg = Color(0xFFDBEAFE);
 const _kNfoFg = Color(0xFFC2410C);
 const _kNfoBg = Color(0xFFFFF7ED);
@@ -56,7 +56,7 @@ const _kExchanges = ['NSE', 'BSE', 'NFO'];
 const _kEqFg = Color(0xFF166534);
 const _kEqBg = Color(0xFFDCFCE7);
 const _kEqBd = Color(0xFFBBF7D0);
-const _kFutFg = Color(0xFF1E40AF);
+const _kFutFg = Color(0xFF047857);
 const _kFutBg = Color(0xFFDBEAFE);
 const _kFutBd = Color(0xFFBFDBFE);
 const _kOptFg = Color(0xFF92400E);
@@ -3308,7 +3308,7 @@ class _EmbeddedDropdownOverlayState
 
   static Color _avatarColor(String name) {
     const colors = [
-      Color(0xFF6366F1), Color(0xFF0EA5E9), Color(0xFF10B981),
+      Color(0xFF047857), Color(0xFF059669), Color(0xFF10B981),
       Color(0xFFF59E0B), Color(0xFFEF4444), Color(0xFF8B5CF6),
       Color(0xFF06B6D4), Color(0xFFEC4899),
     ];

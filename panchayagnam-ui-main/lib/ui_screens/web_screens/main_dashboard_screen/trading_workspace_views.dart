@@ -550,7 +550,7 @@ class _PositionsViewState extends State<PositionsView> {
                   const SizedBox(width: 16),
                   _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF059669)),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('AVERAGE SPREAD', '< 0.05%', 'Low Slippage Guard', const Color(0xFF0284C7)),
+                  _buildSummaryItem('AVERAGE SPREAD', '< 0.05%', 'Low Slippage Guard', const Color(0xFF059669)),
                 ],
               ),
             ),
@@ -1028,7 +1028,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                   mainAxisSpacing: 12,
                   childAspectRatio: isWide ? 2.3 : 1.8,
                   children: [
-                    _buildKpiCard('Total Portfolio Value', '₹${totalCurrent.toStringAsFixed(2)}', 'Liquid Demat Worth', Icons.account_balance_rounded, const Color(0xFF0284C7)),
+                    _buildKpiCard('Total Portfolio Value', '₹${totalCurrent.toStringAsFixed(2)}', 'Liquid Demat Worth', Icons.account_balance_rounded, const Color(0xFF059669)),
                     _buildKpiCard('Invested Capital', '₹${totalInvested.toStringAsFixed(2)}', 'Total Cost Basis', Icons.payments_rounded, const Color(0xFF475569)),
                     _buildKpiCard(
                       'Unrealized P&L',
@@ -2260,7 +2260,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
             // KPI Summary Cards
             Row(
               children: [
-                Expanded(child: _buildKpiCard('Gross Turnover', '₹1,42,80,500.00', 'Total Traded Volume', Icons.bar_chart_rounded, const Color(0xFF0284C7))),
+                Expanded(child: _buildKpiCard('Gross Turnover', '₹1,42,80,500.00', 'Total Traded Volume', Icons.bar_chart_rounded, const Color(0xFF059669))),
                 const SizedBox(width: 12),
                 Expanded(child: _buildKpiCard('Realized Net P&L', '+₹2,84,350.00', '+78.4% Win Rate (87/111)', Icons.trending_up_rounded, const Color(0xFF059669), isProfit: true)),
                 const SizedBox(width: 12),
@@ -2594,7 +2594,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'time': '25 min ago • 14:07:00 IST',
       'latency': '35ms',
       'icon': Icons.account_balance_wallet_rounded,
-      'color': const Color(0xFF0EA5E9),
+      'color': const Color(0xFF10B981),
       'badge': 'MARGIN HEALTHY',
     },
     {
@@ -2934,7 +2934,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 Expanded(
                   child: Text(
                     'Paper Trading Mode is ACTIVE. All strategy executions simulate against live tick feeds with zero financial capital exposure.',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E3A8A)),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF047857)),
                   ),
                 ),
               ],

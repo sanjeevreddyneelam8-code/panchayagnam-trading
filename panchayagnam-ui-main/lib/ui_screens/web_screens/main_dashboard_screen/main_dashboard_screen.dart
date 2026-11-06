@@ -645,7 +645,7 @@ class _MainDashboardState extends State<MainDashboard> {
                         children: [
                           Text('Dedicated Gateway IP: 164.52.203.189', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                           SizedBox(height: 2),
-                          Text('Status: ACTIVE & WHITELISTED · Latency: 12 ms', style: TextStyle(color: Color(0xFF1E40AF), fontSize: 11)),
+                          Text('Status: ACTIVE & WHITELISTED · Latency: 12 ms', style: TextStyle(color: Color(0xFF047857), fontSize: 11)),
                         ],
                       ),
                     ),
@@ -723,7 +723,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   children: [
                     Text('# Python SDK Installation', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontFamily: 'monospace')),
                     SizedBox(height: 4),
-                    Text('pip install autotrader-sdk', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                    Text('pip install autotrader-sdk', style: TextStyle(color: Color(0xFF34D399), fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                     SizedBox(height: 10),
                     Text('from autotrader import AutoTrader\nclient = AutoTrader(token="py_live_9999999999")\n# Broadcast order across 8 Demats\nclient.place_group_order(symbol="NIFTY", qty=50)', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, fontFamily: 'monospace')),
                   ],
@@ -1693,7 +1693,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Current Master Leader: Dhan Pro Master (Client: 1100345678)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E3A8A))),
+                          Text('Current Master Leader: Dhan Pro Master (Client: 1100345678)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF065F46))),
                           SizedBox(height: 2),
                           Text('Latency: 11ms • Pooled Followers: 7 Child Demats • Status: ACTIVE LEADER', style: TextStyle(fontSize: 11.5, color: Color(0xFF2563EB))),
                         ],
@@ -2124,18 +2124,56 @@ class _SubscriptionExpiryCard extends StatelessWidget {
   final bool collapsed;
   const _SubscriptionExpiryCard({required this.collapsed});
 
+  int get _expiresInDays {
+    final raw = html.window.sessionStorage['expiresInDays'] ?? '';
+    return int.tryParse(raw) ?? 0;
+  }
+
+  Color get _statusColor {
+    final days = _expiresInDays;
+    if (days <= 5) return const Color(0xFFEF4444);
+    if (days <= 15) return const Color(0xFFF59E0B);
+    return const Color(0xFF10B981);
+  }
+
+  String get _statusLabel {
+    final days = _expiresInDays;
+    if (days <= 0) return 'Expired';
+    if (days <= 5) return 'Critical';
+    if (days <= 15) return 'Expiring Soon';
+    return 'Active';
+  }
+
+  IconData get _statusIcon {
+    final days = _expiresInDays;
+    if (days <= 0) return Icons.cancel_rounded;
+    if (days <= 5) return Icons.warning_amber_rounded;
+    if (days <= 15) return Icons.hourglass_bottom_rounded;
+    return Icons.verified_rounded;
+  }
+
+  double get _progress {
+    final days = _expiresInDays.clamp(0, 30);
+    return days / 30;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final days = _expiresInDays;
+    final color = _statusColor;
+
     if (collapsed) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Tooltip(
-          message: 'Panchayagnam Pro Trading Engine • Active',
+          message: days <= 0
+              ? 'Subscription Expired'
+              : 'Expires in $days day${days == 1 ? '' : 's'}',
           preferBelow: false,
           decoration: BoxDecoration(
             color: const Color(0xFF064E3B),
             borderRadius: BorderRadius.circular(7),
-            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+            border: Border.all(color: _kGradientTop.withOpacity(0.4)),
           ),
           textStyle: const TextStyle(
             color: Color(0xFFECFDF5),
@@ -2145,29 +2183,29 @@ class _SubscriptionExpiryCard extends StatelessWidget {
           child: Container(
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.12),
+              color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF10B981).withOpacity(0.35)),
+              border: Border.all(color: color.withOpacity(0.35)),
             ),
-            child: const Center(
-              child: Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 17),
-            ),
+            child: Center(child: Icon(_statusIcon, color: color, size: 17)),
           ),
         ),
       );
     }
 
-    return Container(
+    return AnimatedContainer(
+      duration: _kAnimDuration,
+      curve: _kAnimCurve,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF062B25).withOpacity(0.7),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.35), width: 1.2),
+        border: Border.all(color: color.withOpacity(0.28), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 10,
+            color: color.withOpacity(0.15),
+            blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
@@ -2181,11 +2219,11 @@ class _SubscriptionExpiryCard extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.2),
+                  color: color.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(7),
-                  border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                  border: Border.all(color: color.withOpacity(0.35)),
                 ),
-                child: const Icon(Icons.bolt_rounded, color: Color(0xFF34D399), size: 16),
+                child: Icon(_statusIcon, color: color, size: 14),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -2193,36 +2231,33 @@ class _SubscriptionExpiryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Panchayagnam Pro',
+                      'Subscription',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF34D399),
-                            shape: BoxShape.circle,
-                          ),
+                    const SizedBox(height: 1),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _statusLabel,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'LIVE TERMINAL',
-                          style: TextStyle(
-                            color: Color(0xFF6EE7B7),
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -2232,23 +2267,55 @@ class _SubscriptionExpiryCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Multi-Broker Engine',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                days <= 0 ? '0' : '$days',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  letterSpacing: -0.5,
                 ),
-                Text(
-                  '<15ms Latency',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF34D399), fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  days == 1 ? 'day left' : 'days left',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              children: [
+                Container(
+                  height: 5,
+                  width: double.infinity,
+                  color: Colors.white.withOpacity(0.08),
+                ),
+                FractionallySizedBox(
+                  widthFactor: _progress,
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color.withOpacity(0.7), color],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -2266,24 +2333,21 @@ class _SubscriptionExpiryCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF059669), Color(0xFF047857)],
-                ),
+                color: Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.tune_rounded, size: 12, color: Colors.white),
-                  SizedBox(width: 5),
+                  Icon(Icons.payment, size: 12, color: Colors.white),
+                  SizedBox(width: 4),
                   Text(
-                    'Manage License & Plans',
+                    'Renew / Pay Online',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],

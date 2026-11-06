@@ -125,9 +125,9 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF022C22), // Deep rich forest emerald
-                Color(0xFF064E3B), // Institutional vibrant emerald
-                Color(0xFF047857), // Pure Panchayagnam green
+                Color(0xFF064E3B), // Deep institutional emerald
+                Color(0xFF047857), // Forest Panchayagnam green
+                Color(0xFF059669), // Pure vibrant jade
               ],
               stops: [0.0, 0.55, 1.0],
             ),
@@ -176,7 +176,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
                         Icon(Icons.trending_up, color: Color(0xFF34D399), size: 16),
                         SizedBox(width: 6),
                         Text(
-                          'PANCHAYAGNAM · INSTITUTIONAL ALGO TRADING',
+                          'PANCHAYAGNAM · INSTITUTIONAL AUTO TRADING',
                           style: TextStyle(
                             color: Color(0xFF6EE7B7),
                             fontSize: 11,
@@ -221,7 +221,7 @@ class _LeftHeroPanelState extends State<_LeftHeroPanel>
                     children: [
                       _buildPill('• Multi-account monitoring'),
                       const SizedBox(width: 14),
-                      _buildPill('• Copy trading'),
+                      _buildPill('• Parent-Children Trading'),
                     ],
                   ),
                 ],
@@ -514,7 +514,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                             keyboardType: TextInputType.text,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF0F172A),
+                              color: Color(0xFF064E3B),
                               fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(
@@ -548,7 +548,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                             obscureText: widget.obscurePassword,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF0F172A),
+                              color: Color(0xFF064E3B),
                               fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(

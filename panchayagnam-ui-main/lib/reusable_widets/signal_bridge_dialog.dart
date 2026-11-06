@@ -189,7 +189,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                    colors: [Color(0xFF022C22), Color(0xFF064E3B)],
                   ),
                 ),
                 child: Row(
@@ -264,7 +264,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                                 const SizedBox(width: 8),
                                 InkWell(
                                   onTap: () => _copyToClipboard(_webhookUrl, 'Webhook URL'),
-                                  child: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF2563EB)),
+                                  child: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF059669)),
                                 ),
                               ],
                             ),
@@ -294,7 +294,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                                 ),
                                 InkWell(
                                   onTap: () => _copyToClipboard(_secretKey, 'Secret Key'),
-                                  child: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF2563EB)),
+                                  child: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF059669)),
                                 ),
                               ],
                             ),
@@ -312,9 +312,9 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: TabBar(
                   controller: _tabCtrl,
-                  labelColor: const Color(0xFF2563EB),
+                  labelColor: const Color(0xFF10B981),
                   unselectedLabelColor: const Color(0xFF64748B),
-                  indicatorColor: const Color(0xFF2563EB),
+                  indicatorColor: const Color(0xFF10B981),
                   indicatorWeight: 3,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   tabs: const [
@@ -387,9 +387,9 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                       onTap: () => _copyToClipboard(pineCode, 'TradingView JSON Payload'),
                       child: const Row(
                         children: [
-                          Icon(Icons.copy_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          Icon(Icons.copy_rounded, size: 14, color: Color(0xFF34D399)),
                           SizedBox(width: 4),
-                          Text('Copy JSON', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('Copy JSON', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -470,9 +470,9 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                       onTap: () => _copyToClipboard(chartinkJson, 'Chartink Payload'),
                       child: const Row(
                         children: [
-                          Icon(Icons.copy_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          Icon(Icons.copy_rounded, size: 14, color: Color(0xFF34D399)),
                           SizedBox(width: 4),
-                          Text('Copy JSON', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('Copy JSON', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -510,7 +510,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.play_circle_fill_rounded, color: Color(0xFF2563EB), size: 18),
+                    Icon(Icons.play_circle_fill_rounded, color: Color(0xFF059669), size: 18),
                     SizedBox(width: 8),
                     Text('Live Webhook Signal Simulator', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF1E293B))),
                   ],
@@ -554,7 +554,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                 ElevatedButton.icon(
                   onPressed: _isFiring ? null : _fireTestWebhook,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -616,7 +616,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                             color: const Color(0xFFEFF6FF),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(log.status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                          child: Text(log.status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF047857))),
                         ),
                         const SizedBox(height: 2),
                         Text('${log.latencyMs}ms dispatch', style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontFamily: 'monospace')),
@@ -643,7 +643,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
             height: 18,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
+              color: Color(0xFF059669),
               shape: BoxShape.circle,
             ),
             child: Text(num, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),

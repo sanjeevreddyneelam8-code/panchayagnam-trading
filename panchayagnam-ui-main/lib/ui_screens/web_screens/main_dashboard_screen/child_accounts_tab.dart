@@ -437,7 +437,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.sync_lock_rounded, color: Color(0xFF0284C7)),
+            const Icon(Icons.sync_lock_rounded, color: Color(0xFF059669)),
             const SizedBox(width: 8),
             Text('Reconnect $broker', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
@@ -461,7 +461,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
+              backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -1411,7 +1411,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                             icon: Icons.swap_vert_outlined,
                             color: isPending
                                 ? const Color(0xFFD1D5DB)
-                                : const Color(0xFF0EA5E9),
+                                : const Color(0xFF10B981),
                             tooltip: isPending
                                 ? 'Updating...'
                                 : 'Change Status',
@@ -2078,7 +2078,7 @@ class _BrokerConnectDialogState extends State<_BrokerConnectDialog> {
               '$_brokerLabel in a new tab.',
           bgColor: const Color(0xFFF0F9FF),
           borderColor: const Color(0xFFBAE6FD),
-          iconColor: const Color(0xFF0284C7),
+          iconColor: const Color(0xFF059669),
           textColor: const Color(0xFF0C4A6E),
         ),
         const SizedBox(height: 20),
@@ -2438,7 +2438,7 @@ class _BrokerConnectDialogState extends State<_BrokerConnectDialog> {
             child: Row(
               children: [
                 const Icon(Icons.api_rounded,
-                    size: 15, color: Color(0xFF0284C7)),
+                    size: 15, color: Color(0xFF059669)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2910,7 +2910,7 @@ class _IpInputDialogState extends State<_IpInputDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.info_outline_rounded,
-                              size: 16, color: Color(0xFF0284C7)),
+                              size: 16, color: Color(0xFF059669)),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -3193,7 +3193,7 @@ class _IpInputDialogState extends State<_IpInputDialog> {
     } else if (isNotFound) {
       bgColor = const Color(0xFFF0F9FF);
       borderColor = const Color(0xFFBAE6FD);
-      iconColor = const Color(0xFF0284C7);
+      iconColor = const Color(0xFF059669);
       textColor = const Color(0xFF0C4A6E);
       icon = Icons.info_outline_rounded;
     } else {
