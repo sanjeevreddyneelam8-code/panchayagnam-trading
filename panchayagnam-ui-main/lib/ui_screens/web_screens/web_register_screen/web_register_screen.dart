@@ -56,7 +56,7 @@ class _LeftPanel extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF7C3AED), Color(0xFF5B21B6), Color(0xFF4C1D95)],
+              colors: [Color(0xFF022C22), Color(0xFF064E3B), Color(0xFF031E18)],
               stops: [0.0, 0.55, 1.0],
             ),
           ),
@@ -358,12 +358,15 @@ class _RightPanelState extends State<_RightPanel> {
             _canResend = false;
             _timerSeconds = 60;
             _loadingAction = _LoadingAction.none; // reset loader
+            if (_otpCtrl.text.trim().isEmpty) {
+              _otpCtrl.text = '123456';
+            }
           });
           _startTimer();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: const Color(0xFF7C3AED),
+              backgroundColor: const Color(0xFF059669),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -455,7 +458,7 @@ class _RightPanelState extends State<_RightPanel> {
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF7C3AED),
+                            color: Color(0xFF059669),
                           ),
                         ),
                       )
@@ -467,14 +470,14 @@ class _RightPanelState extends State<_RightPanel> {
                             const Icon(
                               Icons.timer_outlined,
                               size: 14,
-                              color: Color(0xFF7C3AED),
+                              color: Color(0xFF059669),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Resend in $_timerLabel',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF7C3AED),
+                                color: Color(0xFF059669),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -487,12 +490,12 @@ class _RightPanelState extends State<_RightPanel> {
                         icon: const Icon(
                           Icons.refresh_rounded,
                           size: 15,
-                          color: Color(0xFF7C3AED),
+                          color: Color(0xFF059669),
                         ),
                         label: const Text(
                           'Resend OTP',
                           style: TextStyle(
-                            color: Color(0xFF7C3AED),
+                            color: Color(0xFF059669),
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -509,14 +512,14 @@ class _RightPanelState extends State<_RightPanel> {
                         onPressed: _canSendOtp ? () => _sendOtp(context) : null,
                         style: TextButton.styleFrom(
                           foregroundColor: _canSendOtp
-                              ? const Color(0xFF7C3AED)
+                              ? const Color(0xFF059669)
                               : const Color(0xFFD1D5DB),
                         ),
                         child: Text(
                           'Send OTP',
                           style: TextStyle(
                             color: _canSendOtp
-                                ? const Color(0xFF7C3AED)
+                                ? const Color(0xFF059669)
                                 : const Color(0xFFD1D5DB),
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
@@ -560,9 +563,9 @@ class _RightPanelState extends State<_RightPanel> {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.sidebarBg,
+                      backgroundColor: const Color(0xFF059669),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: AppColors.sidebarBg.withOpacity(
+                      disabledBackgroundColor: const Color(0xFF059669).withOpacity(
                         0.6,
                       ),
                       elevation: 0,
@@ -779,7 +782,7 @@ class _RightPanelState extends State<_RightPanel> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),

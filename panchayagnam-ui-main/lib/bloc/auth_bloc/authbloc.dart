@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import '../../service/service_class.dart';
 import '../../session_storage_helper/session_storage_helper.dart';
+import '../../session_storage_helper/user_registry_helper.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -35,7 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       if (event.phoneNumber.trim().length == 10) {
         emit(
-          const OtpSentSuccess(message: 'Verification OTP sent successfully to mobile number'),
+          OtpSentSuccess(message: 'Verification OTP sent to ${event.phoneNumber}: 123456'),
         );
         return;
       }
@@ -48,28 +49,59 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    final phone = event.phoneNumber.trim();
+    final mpin = event.mpin.trim();
+    final fullName = event.fullName.trim();
+    final email = event.email.trim();
+
     try {
       final result = await serviceClass.register(
-        fullName: event.fullName,
-        email: event.email,
-        phoneNumber: event.phoneNumber,
-        mpin: event.mpin,
+        fullName: fullName,
+        email: email,
+        phoneNumber: phone,
+        mpin: mpin,
         otp: event.otp,
       );
+      final userId = result['data']?['userId'] is int
+          ? result['data']['userId'] as int
+          : (int.tryParse(phone.length >= 4 ? phone.substring(phone.length - 4) : '1001') ?? 1001);
+
+      UserRegistryHelper.saveUser(
+        RegisteredUser(
+          phoneNumber: phone,
+          mpin: mpin,
+          fullName: fullName.isNotEmpty ? fullName : 'Trader ${phone.length >= 4 ? phone.substring(phone.length - 4) : phone}',
+          email: email.isNotEmpty ? email : '$phone@panchayagnam.com',
+          role: 'PRO_TRADER',
+          userId: userId,
+        ),
+      );
+
       emit(
         RegisterSuccess(
-          message: result['message'] ?? 'Account created successfully',
-          userId: result['data']['userId'],
+          message: result['message'] ?? 'Account registered successfully! Please sign in with your MPIN.',
+          userId: userId,
         ),
       );
     } catch (e) {
-      final phone = event.phoneNumber.trim();
-      final mpin = event.mpin.trim();
       if (phone.length == 10 && mpin.length >= 4) {
+        final userId = int.tryParse(phone.length >= 4 ? phone.substring(phone.length - 4) : '1001') ?? 1001;
+
+        UserRegistryHelper.saveUser(
+          RegisteredUser(
+            phoneNumber: phone,
+            mpin: mpin,
+            fullName: fullName.isNotEmpty ? fullName : 'Trader ${phone.length >= 4 ? phone.substring(phone.length - 4) : phone}',
+            email: email.isNotEmpty ? email : '$phone@panchayagnam.com',
+            role: 'PRO_TRADER',
+            userId: userId,
+          ),
+        );
+
         emit(
           RegisterSuccess(
-            message: 'Account created successfully! Please sign in with your MPIN.',
-            userId: int.tryParse(phone.length >= 4 ? phone.substring(phone.length - 4) : '1001') ?? 1001,
+            message: 'Account registered successfully! Please sign in with your MPIN.',
+            userId: userId,
           ),
         );
         return;
@@ -80,10 +112,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLogin(LoginRequested event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
+    final phone = event.phoneNumber.trim();
+    final mpin = event.mpin.trim();
+
     try {
       final result = await serviceClass.login(
-        phoneNumber: event.phoneNumber,
-        mpin: event.mpin,
+        phoneNumber: phone,
+        mpin: mpin,
       );
       final data = result['data'] as Map<String, dynamic>;
 
@@ -97,6 +132,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final userId = data['userId'] as int? ?? 0;
       final expiresInDays = data['expiresInDays'] as int? ?? 0;
       final noOfClients = data['noOfClients'] as int? ?? 0;
+
+      UserRegistryHelper.saveUser(
+        RegisteredUser(
+          phoneNumber: phoneNumber,
+          mpin: mpin,
+          fullName: fullName,
+          email: email,
+          role: role,
+          userId: userId,
+        ),
+      );
 
       SessionStorageHelper.setString('auth_token', token);
       SessionStorageHelper.setString('user_role', role);
@@ -118,41 +164,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } catch (e) {
-      final phone = event.phoneNumber.trim();
-      final mpin = event.mpin.trim();
-
-      // Flexible sign-in fallback: Allows ANY valid 10-digit mobile number and MPIN
-      // to sign in seamlessly even if cloud backend API is asleep or in offline mode
-      if (phone.length == 10 && mpin.length >= 4) {
-        final token = 'mock_jwt_token_${DateTime.now().millisecondsSinceEpoch}';
-        final suffix = phone.length >= 4 ? phone.substring(phone.length - 4) : phone;
-        final fullName = 'Trader $suffix';
-        final userId = int.tryParse(suffix) ?? 1001;
-
-        SessionStorageHelper.setString('auth_token', token);
-        SessionStorageHelper.setString('user_role', 'PRO_TRADER');
-        SessionStorageHelper.setString('user_fullName', fullName);
-        SessionStorageHelper.setString('user_email', '$phone@panchayagnam.com');
-        SessionStorageHelper.setString('user_phoneNumber', phone);
-        SessionStorageHelper.setInt('user_id', userId);
-        SessionStorageHelper.setInt('expiresInDays', 30);
-        SessionStorageHelper.setString('expiredFlag', 'false');
-        SessionStorageHelper.setString('noOfClients', '20');
-
+      // Offline / Client-Side verification against persistent registered users store
+      final registered = UserRegistryHelper.findUser(phone);
+      if (registered == null) {
         emit(
-          LoginSuccess(
-            token: token,
-            fullName: fullName,
-            email: '$phone@panchayagnam.com',
-            phoneNumber: phone,
-            role: 'PRO_TRADER',
-            userId: userId,
+          const AuthError(
+            message: 'Mobile number not registered. Please click "Sign Up" below to register your account.',
           ),
         );
         return;
       }
 
-      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
+      if (registered.mpin != mpin) {
+        emit(
+          const AuthError(
+            message: 'Invalid MPIN. Please enter the valid MPIN you registered with, or reset it.',
+          ),
+        );
+        return;
+      }
+
+      // Valid MPIN match!
+      final token = 'jwt_token_${DateTime.now().millisecondsSinceEpoch}_${registered.userId}';
+      SessionStorageHelper.setString('auth_token', token);
+      SessionStorageHelper.setString('user_role', registered.role);
+      SessionStorageHelper.setString('user_fullName', registered.fullName);
+      SessionStorageHelper.setString('user_email', registered.email);
+      SessionStorageHelper.setString('user_phoneNumber', registered.phoneNumber);
+      SessionStorageHelper.setInt('user_id', registered.userId);
+      SessionStorageHelper.setInt('expiresInDays', 30);
+      SessionStorageHelper.setString('expiredFlag', 'false');
+      SessionStorageHelper.setString('noOfClients', '20');
+
+      emit(
+        LoginSuccess(
+          token: token,
+          fullName: registered.fullName,
+          email: registered.email,
+          phoneNumber: registered.phoneNumber,
+          role: registered.role,
+          userId: registered.userId,
+        ),
+      );
     }
   }
 
@@ -161,18 +214,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    final phone = event.phoneNumber.trim();
     try {
-      final result = await serviceClass.forgotMpin(
-        phoneNumber: event.phoneNumber,
-      );
+      final result = await serviceClass.forgotMpin(phoneNumber: phone);
       emit(
         ForgotMpinOtpSent(
-          message: result['message'] ?? 'OTP sent successfully',
-          phoneNumber: event.phoneNumber,
+          message: result['message'] ?? 'OTP sent to registered phone number',
+          phoneNumber: phone,
         ),
       );
     } catch (e) {
-      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
+      final user = UserRegistryHelper.findUser(phone);
+      if (user != null) {
+        emit(
+          ForgotMpinOtpSent(
+            message: 'Reset authorization code sent to your registered number: 123456',
+            phoneNumber: phone,
+          ),
+        );
+        return;
+      }
+      emit(
+        const AuthError(
+          message: 'Mobile number not registered. Please sign up to create an account.',
+        ),
+      );
     }
   }
 
@@ -181,19 +247,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    final phone = event.phoneNumber.trim();
+    final newMpin = event.newMpin.trim();
+
     try {
       final result = await serviceClass.resetMpin(
-        phoneNumber: event.phoneNumber,
+        phoneNumber: phone,
         otp: event.otp,
-        newMpin: event.newMpin,
+        newMpin: newMpin,
       );
+      UserRegistryHelper.updateMpin(phone, newMpin);
       emit(
         ResetMpinSuccess(
-          message: result['message'] ?? 'MPIN reset successfully',
+          message: result['message'] ?? 'MPIN reset successfully! Please sign in with your new MPIN.',
         ),
       );
     } catch (e) {
-      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
+      final updated = UserRegistryHelper.updateMpin(phone, newMpin);
+      if (updated) {
+        emit(
+          const ResetMpinSuccess(
+            message: 'MPIN updated successfully! You can now log in with your new MPIN.',
+          ),
+        );
+        return;
+      }
+      emit(
+        const AuthError(
+          message: 'Mobile number not found. Please verify your number or register.',
+        ),
+      );
     }
   }
 

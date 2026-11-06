@@ -505,42 +505,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
-                          const SizedBox(height: 14),
-
-                          // Optional Quick Demo autofill chip
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _loginIdCtrl.text = '9390076827';
-                                _passwordCtrl.text = '1234';
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: const Color(0xFFA7F3D0)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF059669)),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Demo Account: Click to autofill test credentials (9390076827 / 1234)',
-                                    style: TextStyle(
-                                      color: Color(0xFF065F46),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 28),
 
                           // Mobile Number Input
                           TextFormField(

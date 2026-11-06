@@ -2851,7 +2851,7 @@ class _NavGroupTileState extends State<_NavGroupTile> {
   }
 }
 
-// ─── Side Submenu Flyout (Opens on the side, NOT downward) ─────────────────────
+// ─── Side Submenu Flyout (Opens on the side in sleek luxury BLACK) ────────────
 
 class _SideSubmenuFlyout extends StatelessWidget {
   final _NavItem groupItem;
@@ -2875,21 +2875,22 @@ class _SideSubmenuFlyout extends StatelessWidget {
       child: Container(
         width: 235,
         decoration: BoxDecoration(
+          color: const Color(0xFF090D16), // Deep luxury jet black
           gradient: const LinearGradient(
-            colors: [Color(0xFF022C22), Color(0xFF064E3B), Color(0xFF031E18)],
+            colors: [Color(0xFF000000), Color(0xFF0D111A), Color(0xFF05070B)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4), width: 1.2),
+          border: Border.all(color: const Color(0xFF1E293B), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.45),
-              blurRadius: 18,
-              offset: const Offset(4, 6),
+              color: Colors.black.withOpacity(0.75),
+              blurRadius: 22,
+              offset: const Offset(4, 8),
             ),
             BoxShadow(
-              color: const Color(0xFF10B981).withOpacity(0.12),
+              color: Colors.white.withOpacity(0.04),
               blurRadius: 8,
               spreadRadius: -2,
             ),
@@ -2907,9 +2908,9 @@ class _SideSubmenuFlyout extends StatelessWidget {
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.2),
+                    color: const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
+                    border: Border.all(color: const Color(0xFF334155)),
                   ),
                   child: Icon(groupItem.icon, size: 14, color: const Color(0xFF34D399)),
                 ),
@@ -2938,7 +2939,7 @@ class _SideSubmenuFlyout extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Divider(color: const Color(0xFF10B981).withOpacity(0.25), height: 1, thickness: 1),
+            Divider(color: const Color(0xFF1E293B), height: 1, thickness: 1),
             const SizedBox(height: 8),
 
             // Sub items list
@@ -2988,8 +2989,8 @@ class _FlyoutSubItemTileState extends State<_FlyoutSubItemTile> {
   Widget build(BuildContext context) {
     final active = widget.isSelected;
     final bg = active
-        ? const Color(0xFF059669)
-        : (_hovered ? const Color(0xFF10B981).withOpacity(0.15) : Colors.transparent);
+        ? const Color(0xFF1E293B)
+        : (_hovered ? Colors.white.withOpacity(0.08) : Colors.transparent);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -3004,9 +3005,9 @@ class _FlyoutSubItemTileState extends State<_FlyoutSubItemTile> {
             color: bg,
             borderRadius: BorderRadius.circular(8),
             border: active
-                ? Border.all(color: const Color(0xFF34D399).withOpacity(0.6), width: 1)
+                ? Border.all(color: const Color(0xFF059669), width: 1.2)
                 : (_hovered
-                    ? Border.all(color: const Color(0xFF10B981).withOpacity(0.3), width: 1)
+                    ? Border.all(color: const Color(0xFF334155), width: 1)
                     : Border.all(color: Colors.transparent, width: 1)),
           ),
           child: Row(
@@ -3014,7 +3015,7 @@ class _FlyoutSubItemTileState extends State<_FlyoutSubItemTile> {
               Icon(
                 widget.icon,
                 size: 15,
-                color: active ? Colors.white : (_hovered ? const Color(0xFF6EE7B7) : const Color(0xFFA7F3D0)),
+                color: active ? const Color(0xFF34D399) : (_hovered ? Colors.white : const Color(0xFF94A3B8)),
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -3023,7 +3024,7 @@ class _FlyoutSubItemTileState extends State<_FlyoutSubItemTile> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                    color: active ? Colors.white : (_hovered ? Colors.white : const Color(0xFFD1FAE5)),
+                    color: active ? Colors.white : (_hovered ? Colors.white : const Color(0xFFCBD5E1)),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
