@@ -977,20 +977,21 @@ public class TwilioOtpService {
             String formatted = formatPhoneNumber(phoneNumber);
             if (formatted == null) return false;
 
-            // Check Twilio Verify check first if Twilio is enabled
-            if (isTwilioEnabled() && checkTwilioVerifyCode(formatted, otp.trim())) {
-                logger.info("OTP verified successfully via Twilio Verify service for {}", maskPhoneNumber(formatted));
-                otpStore.remove(formatted);
-                return true;
-            }
-
             OtpEntry entry = otpStore.get(formatted);
+            // Check 2Factor session first if dispatched via 2Factor
             if (entry != null && entry.twoFactorSessionId != null && !entry.twoFactorSessionId.isEmpty()) {
                 if (verifyTwoFactorOtp(entry.twoFactorSessionId, otp.trim())) {
                     logger.info("OTP verified successfully via 2Factor session for {}", maskPhoneNumber(formatted));
                     otpStore.remove(formatted);
                     return true;
                 }
+            }
+
+            // Check Twilio Verify check if Twilio is enabled
+            if (isTwilioEnabled() && checkTwilioVerifyCode(formatted, otp.trim())) {
+                logger.info("OTP verified successfully via Twilio Verify service for {}", maskPhoneNumber(formatted));
+                otpStore.remove(formatted);
+                return true;
             }
 
             if (entry == null) {
