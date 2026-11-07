@@ -200,15 +200,18 @@ public class TwilioOtpService {
                 ? fast2SmsUrl.trim()
                 : "https://www.fast2sms.com/dev/bulkV2";
 
-        try {
-            org.json.JSONObject payload = new org.json.JSONObject();
-            payload.put("route", "otp");
-            payload.put("variables_values", otp);
-            payload.put("numbers", phone10);
+        String messageText = String.format("Panchayagnam OTP: Your verification code is %s. Valid for 5 minutes. Do not share it with anyone.", otp);
 
+        try {
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build();
+
+            // Attempt 1: Fast2SMS Quick SMS Route (route="q") via POST JSON
+            org.json.JSONObject payload = new org.json.JSONObject();
+            payload.put("route", "q");
+            payload.put("message", messageText);
+            payload.put("numbers", phone10);
 
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(targetUrl))
@@ -223,26 +226,84 @@ public class TwilioOtpService {
             int statusCode = response.statusCode();
             String responseBody = response.body();
 
-            logger.info("Fast2SMS response status: {} for phone: {}", statusCode, maskPhoneNumber(phone10));
+            logger.info("Fast2SMS Quick SMS POST response: HTTP {} for phone: {} | body: {}", statusCode, maskPhoneNumber(phone10), responseBody);
 
             if (statusCode == 200) {
                 org.json.JSONObject resJson = new org.json.JSONObject(responseBody);
-                boolean isSuccess = resJson.optBoolean("return", false);
-                if (isSuccess) {
+                if (resJson.optBoolean("return", false)) {
                     logger.info("Fast2SMS OTP successfully dispatched to {}", maskPhoneNumber(phone10));
                     return true;
-                } else {
-                    String msg = resJson.optString("message", "Fast2SMS gateway rejected the dispatch request");
-                    logger.error("Fast2SMS delivery failure for {}: {}", maskPhoneNumber(phone10), msg);
-                    throw new RuntimeException("SMS gateway delivery failure: " + msg);
                 }
-            } else if (statusCode == 401 || statusCode == 412) {
-                logger.error("Fast2SMS authorization failed (HTTP {}). Please verify FAST2SMS_API_KEY environment variable.", statusCode);
-                throw new IllegalStateException("Fast2SMS authorization failed. Please check server FAST2SMS_API_KEY.");
-            } else {
-                logger.error("Fast2SMS returned HTTP {}: {}", statusCode, responseBody);
-                throw new RuntimeException("SMS gateway temporarily unavailable (HTTP " + statusCode + "). Please try again later.");
             }
+
+            // Attempt 2: Fast2SMS Quick SMS via GET Query Parameters (fallback)
+            if (statusCode != 200) {
+                String encodedMsg = java.net.URLEncoder.encode(messageText, java.nio.charset.StandardCharsets.UTF_8);
+                String getUrl = targetUrl + "?route=q&message=" + encodedMsg + "&numbers=" + phone10;
+
+                java.net.http.HttpRequest getRequest = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(getUrl))
+                        .header("authorization", apiKey)
+                        .header("Accept", "application/json")
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
+
+                java.net.http.HttpResponse<String> getResponse = client.send(getRequest, java.net.http.HttpResponse.BodyHandlers.ofString());
+                statusCode = getResponse.statusCode();
+                responseBody = getResponse.body();
+                logger.info("Fast2SMS Quick SMS GET response: HTTP {} | body: {}", statusCode, responseBody);
+
+                if (statusCode == 200) {
+                    org.json.JSONObject resJson = new org.json.JSONObject(responseBody);
+                    if (resJson.optBoolean("return", false)) {
+                        logger.info("Fast2SMS OTP successfully dispatched via GET to {}", maskPhoneNumber(phone10));
+                        return true;
+                    }
+                }
+            }
+
+            // Attempt 3: Fast2SMS OTP Route with variables_values (URL Encoded fallback)
+            if (statusCode != 200) {
+                String otpUrl = targetUrl + "?route=otp&variables_values=" + otp + "&numbers=" + phone10;
+                java.net.http.HttpRequest otpRequest = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(otpUrl))
+                        .header("authorization", apiKey)
+                        .header("Accept", "application/json")
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
+
+                java.net.http.HttpResponse<String> otpResponse = client.send(otpRequest, java.net.http.HttpResponse.BodyHandlers.ofString());
+                statusCode = otpResponse.statusCode();
+                responseBody = otpResponse.body();
+                logger.info("Fast2SMS OTP Route fallback response: HTTP {} | body: {}", statusCode, responseBody);
+
+                if (statusCode == 200) {
+                    org.json.JSONObject resJson = new org.json.JSONObject(responseBody);
+                    if (resJson.optBoolean("return", false)) {
+                        logger.info("Fast2SMS OTP successfully dispatched via OTP route to {}", maskPhoneNumber(phone10));
+                        return true;
+                    }
+                }
+            }
+
+            // Extract error message from Fast2SMS JSON response
+            String detail = "SMS delivery failure (HTTP " + statusCode + ")";
+            try {
+                org.json.JSONObject errJson = new org.json.JSONObject(responseBody);
+                if (errJson.has("message")) {
+                    Object m = errJson.get("message");
+                    if (m instanceof org.json.JSONArray) {
+                        detail = ((org.json.JSONArray) m).optString(0, m.toString());
+                    } else {
+                        detail = m.toString();
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            logger.error("Fast2SMS dispatch failed for {}: {}", maskPhoneNumber(phone10), detail);
+            throw new RuntimeException("Fast2SMS: " + detail);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Fast2SMS HTTP request interrupted", e);
