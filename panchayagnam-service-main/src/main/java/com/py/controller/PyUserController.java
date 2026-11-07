@@ -96,6 +96,28 @@ public class PyUserController {
         return ResponseEntity.ok(PyApiResponseDto.success("Twilio configured successfully! " + status, null));
     }
 
+    @GetMapping("/2factor-check")
+    @Operation(summary = "Safe 2Factor.in Connection Check", description = "Verifies 2Factor.in API key and available SMS credits with 0 SMS sent.")
+    public ResponseEntity<PyApiResponseDto<String>> checkTwoFactorStatus() {
+        String result = twilioOtpService.checkTwoFactorBalance();
+        return ResponseEntity.ok(PyApiResponseDto.success(result, null));
+    }
+
+    @PostMapping("/admin/setup-2factor")
+    @Operation(summary = "Configure 2Factor.in Runtime Key", description = "Securely configures and persists 2Factor API key without exposing in source code")
+    public ResponseEntity<PyApiResponseDto<String>> configureTwoFactor(
+            @RequestBody java.util.Map<String, Object> payload) {
+        String setupToken = (String) payload.get("setupToken");
+        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
+        }
+        String apiKey = (String) payload.get("apiKey");
+        boolean enabled = !Boolean.FALSE.equals(payload.get("enabled"));
+        twilioOtpService.updateTwoFactorConfig(apiKey, enabled);
+        String balance = twilioOtpService.checkTwoFactorBalance();
+        return ResponseEntity.ok(PyApiResponseDto.success("2Factor configured successfully! " + balance, null));
+    }
+
     // ── ✅ NEW: SEND OTP FOR REGISTRATION ────────────────────────────────────
     @PostMapping("/send-otp")
     @Operation(

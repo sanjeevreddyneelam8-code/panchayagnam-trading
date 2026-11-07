@@ -35,6 +35,9 @@ public class TwilioOtpService {
     private static volatile String runtimeTwilioServiceSid = null;
     private static volatile Boolean runtimeTwilioEnabled = null;
 
+    private static volatile String runtimeTwoFactorApiKey = null;
+    private static volatile Boolean runtimeTwoFactorEnabled = null;
+
     @Value("${twilio.service-sid:}")
     private String serviceSid;
 
@@ -78,6 +81,7 @@ public class TwilioOtpService {
         public final String codeReqFor;
         public boolean realSmsDelivered = false;
         public String statusNote = "";
+        public String twoFactorSessionId = "";
         int failedAttempts = 0;
         public OtpEntry(String code, Instant expiresAt, String codeReqFor) {
             this.code = code;
@@ -101,6 +105,157 @@ public class TwilioOtpService {
 
     private final ConcurrentHashMap<String, OtpEntry> otpStore = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RateLimitEntry> rateLimitStore = new ConcurrentHashMap<>();
+
+    // -------------------- 2Factor.in Integration Methods --------------------
+    public boolean isTwoFactorConfigured() {
+        return !getTwoFactorApiKey().isEmpty();
+    }
+
+    public boolean isTwoFactorEnabled() {
+        if (runtimeTwoFactorEnabled != null) {
+            return runtimeTwoFactorEnabled;
+        }
+        String env = System.getenv("TWOFACTOR_ENABLED");
+        if ("true".equalsIgnoreCase(env)) {
+            return true;
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWOFACTOR_ENABLED")
+                        .map(s -> "true".equalsIgnoreCase(s.getValue()))
+                        .orElse(false);
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    public String getTwoFactorApiKey() {
+        if (runtimeTwoFactorApiKey != null && !runtimeTwoFactorApiKey.trim().isEmpty()) {
+            return runtimeTwoFactorApiKey.trim();
+        }
+        String env = System.getenv("TWOFACTOR_API_KEY");
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWOFACTOR_API_KEY")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
+    public synchronized void updateTwoFactorConfig(String apiKey, boolean enabled) {
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            runtimeTwoFactorApiKey = apiKey.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("TWOFACTOR_API_KEY", apiKey.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+        runtimeTwoFactorEnabled = enabled;
+        if (appSettingRepository != null) {
+            try {
+                appSettingRepository.save(new com.py.entity.PyAppSetting("TWOFACTOR_ENABLED", String.valueOf(enabled)));
+            } catch (Exception ignored) {}
+        }
+        logger.info("2Factor configuration updated: configured={}, enabled={}", isTwoFactorConfigured(), isTwoFactorEnabled());
+    }
+
+    public String checkTwoFactorBalance() {
+        String apiKey = getTwoFactorApiKey();
+        if (apiKey.isEmpty()) {
+            return "TWOFACTOR_API_KEY is not configured on the server.";
+        }
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("https://2factor.in/API/V1/" + apiKey + "/BAL/SMS"))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                org.json.JSONObject res = new org.json.JSONObject(response.body());
+                if ("Success".equalsIgnoreCase(res.optString("Status"))) {
+                    return "2Factor connected successfully! Available SMS balance: " + res.optString("Details");
+                }
+            }
+            return "2Factor check returned HTTP " + response.statusCode() + " | " + response.body();
+        } catch (Exception e) {
+            logger.error("2Factor balance check error", e);
+            return "2Factor check failed: " + e.getMessage();
+        }
+    }
+
+    public boolean sendTwoFactorOtp(String canonicalPhone, OtpEntry entry) {
+        String apiKey = getTwoFactorApiKey();
+        if (apiKey.isEmpty()) {
+            return false;
+        }
+        String digits = canonicalPhone.replaceAll("[^0-9]", "");
+        String phone10 = digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
+        try {
+            String url = "https://2factor.in/API/V1/" + apiKey + "/SMS/" + phone10 + "/AUTOGEN";
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            logger.info("2Factor dispatch response for {}: HTTP {} | body: {}", maskPhoneNumber(phone10), response.statusCode(), response.body());
+            if (response.statusCode() == 200) {
+                org.json.JSONObject res = new org.json.JSONObject(response.body());
+                if ("Success".equalsIgnoreCase(res.optString("Status"))) {
+                    entry.twoFactorSessionId = res.optString("Details");
+                    entry.realSmsDelivered = true;
+                    entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
+                    logger.info("2Factor OTP dispatched successfully to {} with session {}", maskPhoneNumber(phone10), entry.twoFactorSessionId);
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("2Factor dispatch exception for {}", maskPhoneNumber(phone10), e);
+            return false;
+        }
+    }
+
+    public boolean verifyTwoFactorOtp(String sessionId, String otp) {
+        String apiKey = getTwoFactorApiKey();
+        if (apiKey.isEmpty() || sessionId == null || sessionId.isEmpty() || otp == null || otp.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            String url = "https://2factor.in/API/V1/" + apiKey + "/SMS/VERIFY/" + sessionId + "/" + otp.trim();
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            logger.info("2Factor verify response for session {}: HTTP {} | body: {}", sessionId, response.statusCode(), response.body());
+            if (response.statusCode() == 200) {
+                org.json.JSONObject res = new org.json.JSONObject(response.body());
+                return "Success".equalsIgnoreCase(res.optString("Status"));
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("2Factor verify exception for session {}", sessionId, e);
+            return false;
+        }
+    }
 
     // -------------------- Fast2SMS Integration Methods --------------------
     /**
@@ -616,6 +771,15 @@ public class TwilioOtpService {
         int expiryMinutes = (otpExpiryMinutes > 0) ? otpExpiryMinutes : 5;
         Instant expiresAt = Instant.now().plus(Duration.ofMinutes(expiryMinutes));
 
+        // 2.5 SMS Channel: 2Factor.in (if enabled)
+        if (isTwoFactorEnabled()) {
+            OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
+            otpStore.put(formatted, entry);
+            if (sendTwoFactorOtp(formatted, entry)) {
+                return true;
+            }
+        }
+
         // 3. Primary SMS Channel: Fast2SMS
         if (isFast2SmsEnabled()) {
             String otp = generateOtp();
@@ -821,6 +985,14 @@ public class TwilioOtpService {
             }
 
             OtpEntry entry = otpStore.get(formatted);
+            if (entry != null && entry.twoFactorSessionId != null && !entry.twoFactorSessionId.isEmpty()) {
+                if (verifyTwoFactorOtp(entry.twoFactorSessionId, otp.trim())) {
+                    logger.info("OTP verified successfully via 2Factor session for {}", maskPhoneNumber(formatted));
+                    otpStore.remove(formatted);
+                    return true;
+                }
+            }
+
             if (entry == null) {
                 logger.warn("OTP verification failed - no OTP found for {}", maskPhoneNumber(formatted));
                 return false;
