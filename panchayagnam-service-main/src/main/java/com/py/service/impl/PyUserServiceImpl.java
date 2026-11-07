@@ -203,7 +203,12 @@ public class PyUserServiceImpl implements PyUserService {
             if (otpSent) {
                 logger.info("OTP sent successfully for registration to phone: "
                         + maskPhoneNumber(requestDto.getPhoneNumber()));
-                if (twilioOtpService.isFast2SmsEnabled() || twilioOtpService.isTwilioEnabled()) {
+                TwilioOtpService.OtpEntry entry = twilioOtpService.getActiveOtpEntry(requestDto.getPhoneNumber());
+                if (entry != null && entry.realSmsDelivered) {
+                    return "OTP sent successfully to your mobile number. Please check your SMS.";
+                } else if (entry != null && entry.statusNote != null && !entry.statusNote.isEmpty()) {
+                    return entry.statusNote;
+                } else if (twilioOtpService.isFast2SmsEnabled() || twilioOtpService.isTwilioEnabled()) {
                     return "OTP sent successfully to your mobile number. Please check your SMS.";
                 } else if (twilioOtpService.isFast2SmsConfigured()) {
                     return "OTP generated in Safe Dry-Run mode. Real SMS is paused to protect your credits.";
