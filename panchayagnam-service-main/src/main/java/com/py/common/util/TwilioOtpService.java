@@ -1072,23 +1072,6 @@ public class TwilioOtpService {
     }
 
     public boolean isTwilioEnabled() {
-        if (runtimeTwilioEnabled != null) {
-            return runtimeTwilioEnabled;
-        }
-        if (twilioEnabled) {
-            return true;
-        }
-        String env = System.getenv("TWILIO_ENABLED");
-        if ("true".equalsIgnoreCase(env)) {
-            return true;
-        }
-        if (appSettingRepository != null) {
-            try {
-                return appSettingRepository.findById("TWILIO_ENABLED")
-                        .map(s -> "true".equalsIgnoreCase(s.getValue()))
-                        .orElse(false);
-            } catch (Exception ignored) {}
-        }
         return false;
     }
 
