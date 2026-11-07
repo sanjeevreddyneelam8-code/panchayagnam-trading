@@ -355,19 +355,12 @@ class _RightPanelState extends State<_RightPanel> {
       listener: (context, state) {
         // ── OTP sent successfully ────────────────────────────────────────────
         if (state is OtpSentSuccess) {
-          final otpMatch = RegExp(r'\b\d{6}\b').firstMatch(state.message);
           setState(() {
             _otpSent = true;
             _canResend = false;
             _timerSeconds = 60;
             _loadingAction = _LoadingAction.none; // reset loader
-            if (otpMatch != null) {
-              _otpCtrl.text = otpMatch.group(0)!;
-            } else if (state.message.toLowerCase().contains('demo') || state.message.toLowerCase().contains('trial')) {
-              _otpCtrl.text = '123456';
-            } else {
-              _otpCtrl.clear();
-            }
+            _otpCtrl.clear();
           });
           _startTimer();
           ScaffoldMessenger.of(context).showSnackBar(

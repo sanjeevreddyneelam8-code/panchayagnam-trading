@@ -81,28 +81,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } catch (e) {
-      if (phone.length == 10 && mpin.length >= 4) {
-        final userId = int.tryParse(phone.length >= 4 ? phone.substring(phone.length - 4) : '1001') ?? 1001;
-
-        UserRegistryHelper.saveUser(
-          RegisteredUser(
-            phoneNumber: phone,
-            mpin: mpin,
-            fullName: fullName.isNotEmpty ? fullName : 'Trader ${phone.length >= 4 ? phone.substring(phone.length - 4) : phone}',
-            email: email.isNotEmpty ? email : '$phone@panchayagnam.com',
-            role: 'PRO_TRADER',
-            userId: userId,
-          ),
-        );
-
-        emit(
-          RegisterSuccess(
-            message: 'Account registered successfully! Please sign in with your MPIN.',
-            userId: userId,
-          ),
-        );
-        return;
-      }
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
   }

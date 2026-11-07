@@ -245,10 +245,29 @@ public class TwilioOtpService {
                     .GET()
                     .build();
             java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-            logger.info("2Factor verify response for session {}: HTTP {} | body: {}", sessionId, response.statusCode(), response.body());
+            logger.info("2Factor SMS verify response for session {}: HTTP {} | body: {}", sessionId, response.statusCode(), response.body());
             if (response.statusCode() == 200) {
                 org.json.JSONObject res = new org.json.JSONObject(response.body());
-                return "Success".equalsIgnoreCase(res.optString("Status"));
+                if ("Success".equalsIgnoreCase(res.optString("Status")) &&
+                        ("OTP Matched".equalsIgnoreCase(res.optString("Details")) || "Success".equalsIgnoreCase(res.optString("Details")))) {
+                    return true;
+                }
+            }
+            // Check VOICE/VERIFY if session was delivered via voice call fallback
+            String voiceUrl = "https://2factor.in/API/V1/" + apiKey + "/VOICE/VERIFY/" + sessionId + "/" + otp.trim();
+            java.net.http.HttpRequest voiceReq = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(voiceUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> voiceResp = client.send(voiceReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+            logger.info("2Factor VOICE verify response for session {}: HTTP {} | body: {}", sessionId, voiceResp.statusCode(), voiceResp.body());
+            if (voiceResp.statusCode() == 200) {
+                org.json.JSONObject res = new org.json.JSONObject(voiceResp.body());
+                if ("Success".equalsIgnoreCase(res.optString("Status")) &&
+                        ("OTP Matched".equalsIgnoreCase(res.optString("Details")) || "Success".equalsIgnoreCase(res.optString("Details")))) {
+                    return true;
+                }
             }
             return false;
         } catch (Exception e) {
@@ -984,6 +1003,16 @@ public class TwilioOtpService {
                     logger.info("OTP verified successfully via 2Factor session for {}", maskPhoneNumber(formatted));
                     otpStore.remove(formatted);
                     return true;
+                } else {
+                    entry.failedAttempts++;
+                    if (entry.failedAttempts >= 3) {
+                        otpStore.remove(formatted);
+                        logger.warn("2Factor OTP invalidated due to 3 failed attempts for {}", maskPhoneNumber(formatted));
+                    } else {
+                        logger.warn("2Factor OTP verification failed - incorrect code for {} (attempt {}/3)",
+                                maskPhoneNumber(formatted), entry.failedAttempts);
+                    }
+                    return false;
                 }
             }
 
