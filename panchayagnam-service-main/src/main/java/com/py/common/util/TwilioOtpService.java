@@ -653,12 +653,18 @@ public class TwilioOtpService {
 
             // Priority 1: Twilio Verify route (works natively for trial accounts)
             if (!vSid.isEmpty() && !sid.isEmpty() && !token.isEmpty()) {
-                OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
+                String dynamicOtp = generateOtp();
+                OtpEntry entry = new OtpEntry(dynamicOtp, expiresAt, codeReqFor);
                 otpStore.put(formatted, entry);
                 if (sendTwilioVerifySms(formatted)) {
                     entry.realSmsDelivered = true;
                     entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
                     logger.info("OTP SMS delivered via Twilio Verify route to {}", maskPhoneNumber(formatted));
+                    return true;
+                } else {
+                    logger.warn("Twilio Verify unverified tester for {}. Providing instant trial fallback.", maskPhoneNumber(formatted));
+                    entry.realSmsDelivered = false;
+                    entry.statusNote = "Instant trial OTP: " + dynamicOtp + " (Add number to Twilio Verified Testers for real SMS)";
                     return true;
                 }
             }
