@@ -41,6 +41,10 @@ jwt:
 smartapi:
   key: ${SMARTAPI_KEY:default_smartapi_key}
 
+twofactor:
+  api-key: ${TWOFACTOR_API_KEY:}
+  enabled: ${TWOFACTOR_ENABLED:true}
+
 fast2sms:
   api-key: ${FAST2SMS_API_KEY:}
   enabled: ${FAST2SMS_ENABLED:false}

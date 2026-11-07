@@ -17,6 +17,8 @@ services:
         value: "true"
       - key: TRADING_LIVE_TRADING_ENABLED
         value: "false"
+      - key: TWOFACTOR_ENABLED
+        value: "true"
       - key: FAST2SMS_ENABLED
         value: "true"
       - key: JWT_SECRET

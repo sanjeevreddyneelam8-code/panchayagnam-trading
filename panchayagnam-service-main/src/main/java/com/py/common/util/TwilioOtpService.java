@@ -69,6 +69,12 @@ public class TwilioOtpService {
     @Value("${fast2sms.url:${FAST2SMS_URL:https://www.fast2sms.com/dev/bulkV2}}")
     private String fast2SmsUrl;
 
+    @Value("${twofactor.api-key:${TWOFACTOR_API_KEY:}}")
+    private String twoFactorApiKeyConfig;
+
+    @Value("${twofactor.enabled:${TWOFACTOR_ENABLED:true}}")
+    private boolean twoFactorEnabledConfig;
+
     // Rate Limiting constants
     private static final int RESEND_COOLDOWN_SECONDS = 60; // 60 seconds cooldown between requests
     private static final int MAX_REQUESTS_PER_WINDOW = 5;  // Max 5 OTP requests per window
@@ -115,6 +121,9 @@ public class TwilioOtpService {
         if (runtimeTwoFactorEnabled != null) {
             return runtimeTwoFactorEnabled;
         }
+        if (twoFactorEnabledConfig) {
+            return true;
+        }
         String env = System.getenv("TWOFACTOR_ENABLED");
         if ("true".equalsIgnoreCase(env)) {
             return true;
@@ -132,6 +141,9 @@ public class TwilioOtpService {
     public String getTwoFactorApiKey() {
         if (runtimeTwoFactorApiKey != null && !runtimeTwoFactorApiKey.trim().isEmpty()) {
             return runtimeTwoFactorApiKey.trim();
+        }
+        if (twoFactorApiKeyConfig != null && !twoFactorApiKeyConfig.trim().isEmpty()) {
+            return twoFactorApiKeyConfig.trim();
         }
         String env = System.getenv("TWOFACTOR_API_KEY");
         if (env != null && !env.trim().isEmpty()) {
@@ -201,7 +213,7 @@ public class TwilioOtpService {
         String digits = canonicalPhone.replaceAll("[^0-9]", "");
         String phone10 = digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
         try {
-            String url = "https://2factor.in/API/V1/" + apiKey + "/SMS/" + phone10 + "/AUTOGEN";
+            String url = "https://2factor.in/API/V1/" + apiKey + "/SMS/" + phone10 + "/" + entry.code;
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build();
