@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import '../../service/service_class.dart';
 import '../../session_storage_helper/session_storage_helper.dart';
 import '../../session_storage_helper/user_registry_helper.dart';
+import '../../service/sms_gateway_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -25,18 +26,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    final phone = event.phoneNumber.trim();
     try {
       final result = await serviceClass.sendOtp(
-        phoneNumber: event.phoneNumber,
+        phoneNumber: phone,
         codeReqFor: event.codeReqFor,
       );
       emit(
-        OtpSentSuccess(message: result['message'] ?? 'OTP sent successfully'),
+        OtpSentSuccess(message: result['message'] ?? 'OTP sent successfully to your mobile number. Please check your SMS inbox.'),
       );
     } catch (e) {
-      if (event.phoneNumber.trim().length == 10) {
+      if (phone.length == 10) {
+        final smsRes = await SmsGatewayService.sendOtpToMobile(phone);
         emit(
-          OtpSentSuccess(message: 'Verification OTP sent to ${event.phoneNumber}: 123456'),
+          OtpSentSuccess(message: smsRes.message),
         );
         return;
       }
@@ -53,6 +56,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final mpin = event.mpin.trim();
     final fullName = event.fullName.trim();
     final email = event.email.trim();
+    final enteredOtp = event.otp.trim();
+
+    // Verify OTP code entered by user against SMS session
+    final isOtpValid = SmsGatewayService.verifyOtp(phone, enteredOtp);
+    if (!isOtpValid) {
+      emit(
+        const AuthError(
+          message: 'Invalid OTP entered. Please check the SMS sent to your mobile phone and enter the correct 6-digit code.',
+        ),
+      );
+      return;
+    }
 
     try {
       final result = await serviceClass.register(

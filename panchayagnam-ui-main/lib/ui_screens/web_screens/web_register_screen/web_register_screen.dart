@@ -358,9 +358,8 @@ class _RightPanelState extends State<_RightPanel> {
             _canResend = false;
             _timerSeconds = 60;
             _loadingAction = _LoadingAction.none; // reset loader
-            if (_otpCtrl.text.trim().isEmpty) {
-              _otpCtrl.text = '123456';
-            }
+            // Keep OTP input field clean and empty for the real SMS code from mobile
+            _otpCtrl.clear();
           });
           _startTimer();
           ScaffoldMessenger.of(context).showSnackBar(
