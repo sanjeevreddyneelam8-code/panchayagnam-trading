@@ -477,11 +477,8 @@ public class TwilioOtpService {
             return true;
         }
 
-        // 6. Safe Default Fallback: Generate real OTP stored in memory (zero external cost)
-        String otp = generateOtp();
-        otpStore.put(formatted, new OtpEntry(otp, expiresAt, codeReqFor));
-        logger.info("Safe fallback OTP generated for number: {}", maskPhoneNumber(formatted));
-        return true;
+        logger.warn("SMS service is disabled (no SMS provider active). Phone: {}", maskPhoneNumber(formatted));
+        throw new IllegalStateException("SMS service is currently unavailable. Please contact the administrator.");
     }
 
     /**
