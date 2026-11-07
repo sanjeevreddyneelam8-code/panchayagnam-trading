@@ -35,12 +35,21 @@ public class PyUserController {
     public ResponseEntity<java.util.Map<String, Object>> getDemoStatus() {
         java.util.Map<String, Object> status = new java.util.LinkedHashMap<>();
         status.put("status", "UP");
-        status.put("version", "2026-10-26-otp-clean-and-diagnostics");
+        status.put("version", "2026-11-07-fast2sms-secure-backend-integration");
+        status.put("fast2smsConfigured", twilioOtpService.isFast2SmsConfigured());
+        status.put("fast2smsEnabled", twilioOtpService.isFast2SmsEnabled());
         status.put("twilioEnabled", twilioOtpService.isTwilioEnabled());
         status.put("demoOtpEnabled", twilioOtpService.isDemoOtpEnabled());
         status.put("allowlistConfigured", !twilioOtpService.getAllowedNumbers().trim().isEmpty());
         status.put("codeConfigured", !twilioOtpService.getDemoOtpCode().trim().isEmpty());
         return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/fast2sms-check")
+    @Operation(summary = "Safe Fast2SMS Connection Check", description = "Verifies Fast2SMS authorization key using wallet balance endpoint with 0 spend and 0 SMS sent.")
+    public ResponseEntity<PyApiResponseDto<String>> checkFast2SmsStatus() {
+        String result = twilioOtpService.checkFast2SmsWalletBalance();
+        return ResponseEntity.ok(PyApiResponseDto.success(result, null));
     }
 
     // ── ✅ NEW: SEND OTP FOR REGISTRATION ────────────────────────────────────
