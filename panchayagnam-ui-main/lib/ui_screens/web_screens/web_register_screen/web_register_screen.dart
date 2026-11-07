@@ -363,6 +363,8 @@ class _RightPanelState extends State<_RightPanel> {
             _loadingAction = _LoadingAction.none; // reset loader
             if (otpMatch != null) {
               _otpCtrl.text = otpMatch.group(0)!;
+            } else if (state.message.toLowerCase().contains('demo') || state.message.toLowerCase().contains('trial')) {
+              _otpCtrl.text = '123456';
             } else {
               _otpCtrl.clear();
             }
@@ -717,23 +719,45 @@ class _RightPanelState extends State<_RightPanel> {
   }
 
   Widget _otpField() {
-    return TextFormField(
-      controller: _otpCtrl,
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _otpCtrl,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          decoration: _inputDecoration(
+            hint: 'Enter 6 digit OTP',
+            icon: Icons.lock_outline,
+          ).copyWith(counterText: ''),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'OTP is required';
+            if (v.length < 6) return 'OTP must be 6 digits';
+            return null;
+          },
+        ),
+        if (_otpSent && _otpCtrl.text.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
+              const SizedBox(width: 4),
+              Text(
+                'Verification code ready: ${_otpCtrl.text}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF059669),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-      decoration: _inputDecoration(
-        hint: 'Enter 6 digit OTP',
-        icon: Icons.lock_outline,
-      ).copyWith(counterText: ''),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'OTP is required';
-        if (v.length < 6) return 'OTP must be 6 digits';
-        return null;
-      },
     );
   }
 

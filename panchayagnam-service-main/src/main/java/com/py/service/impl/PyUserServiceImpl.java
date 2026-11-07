@@ -211,9 +211,14 @@ public class PyUserServiceImpl implements PyUserService {
                 } else if (twilioOtpService.isFast2SmsEnabled() || twilioOtpService.isTwilioEnabled()) {
                     return "OTP sent successfully to your mobile number. Please check your SMS.";
                 } else if (twilioOtpService.isFast2SmsConfigured()) {
-                    return "OTP generated in Safe Dry-Run mode. Real SMS is paused to protect your credits.";
+                    String code = (entry != null && entry.code != null) ? entry.code : "123456";
+                    return "Trial OTP: " + code + " (Auto-filled below to complete registration)";
                 } else if (twilioOtpService.isDemoOtpEnabled()) {
-                    return "Demo verification initiated. Please enter your configured demo code.";
+                    String code = (entry != null && entry.code != null) ? entry.code : twilioOtpService.getDemoOtpCode();
+                    if (code == null || !code.matches("^[0-9]{6}$")) {
+                        code = "123456";
+                    }
+                    return "Trial OTP: " + code + " (Auto-filled below to complete registration)";
                 } else {
                     return "OTP generated successfully. Verification ready.";
                 }

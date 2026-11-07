@@ -468,12 +468,13 @@ public class TwilioOtpService {
             boolean is6Digits = activeCode.matches("^[0-9]{6}$");
 
             if (!is6Digits) {
-                logger.error("Demo OTP configuration rejected: DEMO_OTP_CODE must be exactly 6 numeric digits.");
-                throw new IllegalStateException("Demo service configuration error: DEMO_OTP_CODE must be exactly 6 numeric digits.");
+                activeCode = generateOtp();
             }
 
-            otpStore.put(formatted, new OtpEntry(activeCode, expiresAt, codeReqFor));
-            logger.info("Demo verification initiated for number: {}", maskPhoneNumber(formatted));
+            OtpEntry demoEntry = new OtpEntry(activeCode, expiresAt, codeReqFor);
+            demoEntry.statusNote = "Trial OTP: " + activeCode + " (Auto-filled below to complete registration)";
+            otpStore.put(formatted, demoEntry);
+            logger.info("Demo verification initiated for number: {} code: {}", maskPhoneNumber(formatted), activeCode);
             return true;
         }
 
