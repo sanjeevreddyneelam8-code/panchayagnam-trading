@@ -85,8 +85,13 @@ public class PyUserController {
         String accountSid = (String) payload.get("accountSid");
         String authToken = (String) payload.get("authToken");
         String fromNumber = (String) payload.get("fromNumber");
+        String serviceSid = (String) payload.get("serviceSid");
         boolean enabled = !Boolean.FALSE.equals(payload.get("enabled"));
-        twilioOtpService.updateTwilioConfig(accountSid, authToken, fromNumber, enabled);
+        if (serviceSid != null && !serviceSid.trim().isEmpty()) {
+            twilioOtpService.updateTwilioConfig(accountSid, authToken, fromNumber, serviceSid, enabled);
+        } else {
+            twilioOtpService.updateTwilioConfig(accountSid, authToken, fromNumber, enabled);
+        }
         String status = twilioOtpService.checkTwilioStatus();
         return ResponseEntity.ok(PyApiResponseDto.success("Twilio configured successfully! " + status, null));
     }

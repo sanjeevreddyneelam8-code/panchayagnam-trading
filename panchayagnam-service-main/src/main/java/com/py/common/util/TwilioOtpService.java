@@ -32,6 +32,7 @@ public class TwilioOtpService {
     private static volatile String runtimeTwilioAccountSid = null;
     private static volatile String runtimeTwilioAuthToken = null;
     private static volatile String runtimeTwilioFromNumber = null;
+    private static volatile String runtimeTwilioServiceSid = null;
     private static volatile Boolean runtimeTwilioEnabled = null;
 
     @Value("${twilio.service-sid:}")
@@ -184,6 +185,18 @@ public class TwilioOtpService {
         logger.info("Fast2SMS configuration updated: configured={}, enabled={}", isFast2SmsConfigured(), isFast2SmsEnabled());
     }
 
+    public synchronized void updateTwilioConfig(String accountSid, String authToken, String fromNum, String sSid, boolean enabled) {
+        if (sSid != null && !sSid.trim().isEmpty()) {
+            runtimeTwilioServiceSid = sSid.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("TWILIO_SERVICE_SID", sSid.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+        updateTwilioConfig(accountSid, authToken, fromNum, enabled);
+    }
+
     public synchronized void updateTwilioConfig(String accountSid, String authToken, String fromNum, boolean enabled) {
         if (accountSid != null && !accountSid.trim().isEmpty()) {
             runtimeTwilioAccountSid = accountSid.trim();
@@ -269,6 +282,27 @@ public class TwilioOtpService {
         return "";
     }
 
+    public String getTwilioServiceSid() {
+        if (runtimeTwilioServiceSid != null && !runtimeTwilioServiceSid.trim().isEmpty()) {
+            return runtimeTwilioServiceSid.trim();
+        }
+        if (serviceSid != null && !serviceSid.trim().isEmpty()) {
+            return serviceSid.trim();
+        }
+        String env = System.getenv("TWILIO_SERVICE_SID");
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWILIO_SERVICE_SID")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
     public String getTwilioFromNumber() {
         if (runtimeTwilioFromNumber != null && !runtimeTwilioFromNumber.trim().isEmpty()) {
             return runtimeTwilioFromNumber.trim();
@@ -288,6 +322,77 @@ public class TwilioOtpService {
             } catch (Exception ignored) {}
         }
         return "";
+    }
+
+    public boolean sendTwilioVerifySms(String formattedPhone) {
+        String sid = getTwilioAccountSid();
+        String token = getTwilioAuthToken();
+        String vSid = getTwilioServiceSid();
+        if (sid.isEmpty() || token.isEmpty() || vSid.isEmpty()) {
+            return false;
+        }
+        try {
+            String auth = sid + ":" + token;
+            String b64Auth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String url = "https://verify.twilio.com/v2/Services/" + vSid + "/Verifications";
+            String form = "To=" + java.net.URLEncoder.encode(formattedPhone, java.nio.charset.StandardCharsets.UTF_8) + "&Channel=sms";
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Authorization", "Basic " + b64Auth)
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .timeout(Duration.ofSeconds(15))
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(form))
+                    .build();
+
+            java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
+            logger.info("Twilio Verify dispatch response for {}: HTTP {} | body: {}", maskPhoneNumber(formattedPhone), resp.statusCode(), resp.body());
+            return (resp.statusCode() == 200 || resp.statusCode() == 201);
+        } catch (Exception e) {
+            logger.error("Twilio Verify dispatch error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean checkTwilioVerifyCode(String formattedPhone, String code) {
+        String sid = getTwilioAccountSid();
+        String token = getTwilioAuthToken();
+        String vSid = getTwilioServiceSid();
+        if (sid.isEmpty() || token.isEmpty() || vSid.isEmpty()) {
+            return false;
+        }
+        try {
+            String auth = sid + ":" + token;
+            String b64Auth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String url = "https://verify.twilio.com/v2/Services/" + vSid + "/VerificationCheck";
+            String form = "To=" + java.net.URLEncoder.encode(formattedPhone, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&Code=" + java.net.URLEncoder.encode(code, java.nio.charset.StandardCharsets.UTF_8);
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Authorization", "Basic " + b64Auth)
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .timeout(Duration.ofSeconds(15))
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(form))
+                    .build();
+
+            java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
+            logger.info("Twilio VerificationCheck response for {}: HTTP {} | body: {}", maskPhoneNumber(formattedPhone), resp.statusCode(), resp.body());
+            if (resp.statusCode() == 200) {
+                org.json.JSONObject json = new org.json.JSONObject(resp.body());
+                return "approved".equalsIgnoreCase(json.optString("status"));
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("Twilio VerificationCheck error: {}", e.getMessage());
+            return false;
+        }
     }
 
     public String checkTwilioStatus() {
@@ -584,6 +689,14 @@ public class TwilioOtpService {
                     logger.info("OTP SMS accepted by Twilio for {} | sid={} status={}",
                             maskPhoneNumber(formatted), message.getSid(), message.getStatus());
                     return true;
+                } catch (Exception ex) {
+                    logger.warn("Twilio Messaging API error for {}: {}, attempting Twilio Verify route...", maskPhoneNumber(formatted), ex.getMessage());
+                    if (sendTwilioVerifySms(formatted)) {
+                        entry.realSmsDelivered = true;
+                        entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
+                        logger.info("OTP SMS delivered via Twilio Verify route to {}", maskPhoneNumber(formatted));
+                        return true;
+                    }
                 } catch (ApiException e) {
                     logger.error("Twilio API error sending OTP to {} | Code: {} Message: {}",
                             maskPhoneNumber(formatted), e.getCode(), e.getMessage(), e);
@@ -686,6 +799,13 @@ public class TwilioOtpService {
         try {
             String formatted = formatPhoneNumber(phoneNumber);
             if (formatted == null) return false;
+
+            // Check Twilio Verify check first if Twilio is enabled
+            if (isTwilioEnabled() && checkTwilioVerifyCode(formatted, otp.trim())) {
+                logger.info("OTP verified successfully via Twilio Verify service for {}", maskPhoneNumber(formatted));
+                otpStore.remove(formatted);
+                return true;
+            }
 
             OtpEntry entry = otpStore.get(formatted);
             if (entry == null) {
