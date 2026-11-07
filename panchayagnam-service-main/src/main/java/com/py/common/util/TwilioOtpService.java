@@ -29,6 +29,11 @@ public class TwilioOtpService {
     private static volatile String runtimeFast2SmsApiKey = null;
     private static volatile Boolean runtimeFast2SmsEnabled = null;
 
+    private static volatile String runtimeTwilioAccountSid = null;
+    private static volatile String runtimeTwilioAuthToken = null;
+    private static volatile String runtimeTwilioFromNumber = null;
+    private static volatile Boolean runtimeTwilioEnabled = null;
+
     @Value("${twilio.service-sid:}")
     private String serviceSid;
 
@@ -177,6 +182,128 @@ public class TwilioOtpService {
             }
         }
         logger.info("Fast2SMS configuration updated: configured={}, enabled={}", isFast2SmsConfigured(), isFast2SmsEnabled());
+    }
+
+    public synchronized void updateTwilioConfig(String accountSid, String authToken, String fromNum, boolean enabled) {
+        if (accountSid != null && !accountSid.trim().isEmpty()) {
+            runtimeTwilioAccountSid = accountSid.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("TWILIO_ACCOUNT_SID", accountSid.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+        if (authToken != null && !authToken.trim().isEmpty()) {
+            runtimeTwilioAuthToken = authToken.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("TWILIO_AUTH_TOKEN", authToken.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+        if (fromNum != null && !fromNum.trim().isEmpty()) {
+            runtimeTwilioFromNumber = fromNum.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("TWILIO_FROM_NUMBER", fromNum.trim()));
+                } catch (Exception ignored) {}
+            }
+        }
+        runtimeTwilioEnabled = enabled;
+        if (appSettingRepository != null) {
+            try {
+                appSettingRepository.save(new com.py.entity.PyAppSetting("TWILIO_ENABLED", String.valueOf(enabled)));
+            } catch (Exception ignored) {}
+        }
+        String finalSid = getTwilioAccountSid();
+        String finalToken = getTwilioAuthToken();
+        if (!finalSid.isEmpty() && !finalToken.isEmpty()) {
+            try {
+                com.twilio.Twilio.init(finalSid, finalToken);
+                logger.info("Twilio client initialized with Account SID starting with: {}",
+                        finalSid.substring(0, Math.min(finalSid.length(), 6)));
+            } catch (Exception e) {
+                logger.warn("Twilio client init warning: {}", e.getMessage());
+            }
+        }
+        logger.info("Twilio configuration updated: enabled={}, configured={}", isTwilioEnabled(), isTwilioConfigured());
+    }
+
+    public boolean isTwilioConfigured() {
+        return !getTwilioAccountSid().isEmpty() && !getTwilioAuthToken().isEmpty();
+    }
+
+    public String getTwilioAccountSid() {
+        if (runtimeTwilioAccountSid != null && !runtimeTwilioAccountSid.trim().isEmpty()) {
+            return runtimeTwilioAccountSid.trim();
+        }
+        String env = System.getenv("TWILIO_ACCOUNT_SID");
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWILIO_ACCOUNT_SID")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
+    public String getTwilioAuthToken() {
+        if (runtimeTwilioAuthToken != null && !runtimeTwilioAuthToken.trim().isEmpty()) {
+            return runtimeTwilioAuthToken.trim();
+        }
+        String env = System.getenv("TWILIO_AUTH_TOKEN");
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWILIO_AUTH_TOKEN")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
+    public String getTwilioFromNumber() {
+        if (runtimeTwilioFromNumber != null && !runtimeTwilioFromNumber.trim().isEmpty()) {
+            return runtimeTwilioFromNumber.trim();
+        }
+        if (fromNumber != null && !fromNumber.trim().isEmpty()) {
+            return fromNumber.trim();
+        }
+        String env = System.getenv("TWILIO_FROM_NUMBER");
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWILIO_FROM_NUMBER")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
+    public String checkTwilioStatus() {
+        String sid = getTwilioAccountSid();
+        String token = getTwilioAuthToken();
+        String from = getTwilioFromNumber();
+        if (sid.isEmpty() || token.isEmpty()) {
+            return "Twilio credentials are not configured on the server.";
+        }
+        try {
+            com.twilio.Twilio.init(sid, token);
+            com.twilio.rest.api.v2010.Account account = com.twilio.rest.api.v2010.Account.fetcher(sid).fetch();
+            return "Twilio connected successfully! Account: " + account.getFriendlyName() + " | Status: " + account.getStatus() + " | Sender: " + from;
+        } catch (Exception e) {
+            return "Twilio check failed: " + e.getMessage();
+        }
     }
 
     /**
@@ -413,46 +540,58 @@ public class TwilioOtpService {
             return true;
         }
 
-        // 4. Secondary SMS Channel: Twilio
-        if (twilioEnabled) {
-            String sender = (fromNumber != null && !fromNumber.trim().isEmpty()) ? fromNumber.trim() : serviceSid;
+        // 4. SMS Channel: Twilio
+        if (isTwilioEnabled()) {
+            String sid = getTwilioAccountSid();
+            String token = getTwilioAuthToken();
+            String sender = getTwilioFromNumber();
+            if (sender.isEmpty()) {
+                sender = (fromNumber != null && !fromNumber.trim().isEmpty()) ? fromNumber.trim() : serviceSid;
+            }
+
             if (sender == null || sender.isEmpty()) {
                 logger.error("Twilio sender is not configured (neither twilio.from-number nor twilio.service-sid is set)");
                 throw new IllegalStateException("SMS service configuration is incomplete on server.");
             }
 
-            try {
-                String otp = generateOtp();
-                otpStore.put(formatted, new OtpEntry(otp, expiresAt, codeReqFor));
+            if (!sid.isEmpty() && !token.isEmpty()) {
+                try {
+                    com.twilio.Twilio.init(sid, token);
+                    String otp = generateOtp();
+                    OtpEntry entry = new OtpEntry(otp, expiresAt, codeReqFor);
+                    otpStore.put(formatted, entry);
 
-                String messageBody = String.format("Panchayagnam: Your OTP is %s. Do not share it with anyone. Expires in %d minutes.",
-                        otp, expiryMinutes);
+                    String messageBody = String.format("Panchayagnam: Your OTP is %s. Do not share it with anyone. Expires in %d minutes.",
+                            otp, expiryMinutes);
 
-                Message message;
-                if (sender.startsWith("MG")) {
-                    message = Message.creator(
-                            new PhoneNumber(formatted),
-                            sender,
-                            messageBody
-                    ).create();
-                } else {
-                    message = Message.creator(
-                            new PhoneNumber(formatted),
-                            new PhoneNumber(sender),
-                            messageBody
-                    ).create();
+                    Message message;
+                    if (sender.startsWith("MG")) {
+                        message = Message.creator(
+                                new PhoneNumber(formatted),
+                                sender,
+                                messageBody
+                        ).create();
+                    } else {
+                        message = Message.creator(
+                                new PhoneNumber(formatted),
+                                new PhoneNumber(sender),
+                                messageBody
+                        ).create();
+                    }
+
+                    entry.realSmsDelivered = true;
+                    entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
+                    logger.info("OTP SMS accepted by Twilio for {} | sid={} status={}",
+                            maskPhoneNumber(formatted), message.getSid(), message.getStatus());
+                    return true;
+                } catch (ApiException e) {
+                    logger.error("Twilio API error sending OTP to {} | Code: {} Message: {}",
+                            maskPhoneNumber(formatted), e.getCode(), e.getMessage(), e);
+                    throw new RuntimeException(mapTwilioError(e.getCode(), e.getMessage()));
+                } catch (Exception e) {
+                    logger.error("Unexpected error sending custom OTP SMS to {}", maskPhoneNumber(formatted), e);
+                    throw new RuntimeException("Unable to deliver OTP at this time. Please try again later.");
                 }
-
-                logger.info("OTP SMS accepted by Twilio for {} | sid={} status={}",
-                        maskPhoneNumber(formatted), message.getSid(), message.getStatus());
-                return true;
-            } catch (ApiException e) {
-                logger.error("Twilio API error sending OTP to {} | Code: {} Message: {}",
-                        maskPhoneNumber(formatted), e.getCode(), e.getMessage(), e);
-                throw new RuntimeException(mapTwilioError(e.getCode(), e.getMessage()));
-            } catch (Exception e) {
-                logger.error("Unexpected error sending custom OTP SMS to {}", maskPhoneNumber(formatted), e);
-                throw new RuntimeException("Unable to deliver OTP at this time. Please try again later.");
             }
         }
 
@@ -586,7 +725,24 @@ public class TwilioOtpService {
     }
 
     public boolean isTwilioEnabled() {
-        return twilioEnabled;
+        if (runtimeTwilioEnabled != null) {
+            return runtimeTwilioEnabled;
+        }
+        if (twilioEnabled) {
+            return true;
+        }
+        String env = System.getenv("TWILIO_ENABLED");
+        if ("true".equalsIgnoreCase(env)) {
+            return true;
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("TWILIO_ENABLED")
+                        .map(s -> "true".equalsIgnoreCase(s.getValue()))
+                        .orElse(false);
+            } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     public boolean isDemoOtpEnabled() {

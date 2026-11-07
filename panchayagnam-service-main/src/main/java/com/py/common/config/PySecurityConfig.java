@@ -68,6 +68,8 @@ public class PySecurityConfig {
                                 "/api/v1/pyauth/demo-status",
                                 "/api/v1/pyauth/fast2sms-check",
                                 "/api/v1/pyauth/admin/setup-fast2sms",
+                                "/api/v1/pyauth/twilio-check",
+                                "/api/v1/pyauth/admin/setup-twilio",
                                 "/api/v1/pyauth/reset-mpin",
                                 "/profitmart/oauth/callback",
                                 "/api/v1/oauth/**"

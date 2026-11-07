@@ -67,6 +67,30 @@ public class PyUserController {
         return ResponseEntity.ok(PyApiResponseDto.success("Fast2SMS configured successfully! " + balance, null));
     }
 
+    @GetMapping("/twilio-check")
+    @Operation(summary = "Safe Twilio Connection Check", description = "Verifies Twilio credentials and connection status.")
+    public ResponseEntity<PyApiResponseDto<String>> checkTwilioStatus() {
+        String result = twilioOtpService.checkTwilioStatus();
+        return ResponseEntity.ok(PyApiResponseDto.success(result, null));
+    }
+
+    @PostMapping("/admin/setup-twilio")
+    @Operation(summary = "Configure Twilio Runtime Credentials", description = "Securely configures and persists Twilio credentials on the backend.")
+    public ResponseEntity<PyApiResponseDto<String>> configureTwilio(
+            @RequestBody java.util.Map<String, Object> payload) {
+        String setupToken = (String) payload.get("setupToken");
+        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
+        }
+        String accountSid = (String) payload.get("accountSid");
+        String authToken = (String) payload.get("authToken");
+        String fromNumber = (String) payload.get("fromNumber");
+        boolean enabled = !Boolean.FALSE.equals(payload.get("enabled"));
+        twilioOtpService.updateTwilioConfig(accountSid, authToken, fromNumber, enabled);
+        String status = twilioOtpService.checkTwilioStatus();
+        return ResponseEntity.ok(PyApiResponseDto.success("Twilio configured successfully! " + status, null));
+    }
+
     // ── ✅ NEW: SEND OTP FOR REGISTRATION ────────────────────────────────────
     @PostMapping("/send-otp")
     @Operation(
