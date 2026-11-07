@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/auth_state.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
+import '../../../service/sms_gateway_service.dart';
 import '../web_login_screen/web_login_screen.dart';
 
 // Tracks which button triggered the AuthLoading state
@@ -330,6 +331,121 @@ class _RightPanelState extends State<_RightPanel> {
     });
   }
 
+  void _showSmsGatewayConfigDialog(BuildContext context) {
+    final keyCtrl = TextEditingController(text: SmsGatewayService.fast2SmsApiKey);
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 500,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.sms_rounded, color: Color(0xFF059669), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Connect Free Fast2SMS Gateway',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                            ),
+                            Text(
+                              'Instant free trial credits for Indian mobile OTP delivery',
+                              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('⚡ How to get your free Fast2SMS Key in 30 seconds:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF0F172A))),
+                        SizedBox(height: 6),
+                        Text('1. Open fast2sms.com and click "Sign Up" (Free ₹50 wallet credits added instantly).', style: TextStyle(fontSize: 11.5, color: Color(0xFF475569))),
+                        Text('2. In your dashboard, click "Dev API" on the left menu.', style: TextStyle(fontSize: 11.5, color: Color(0xFF475569))),
+                        Text('3. Copy your "Authorization Key" and paste below:', style: TextStyle(fontSize: 11.5, color: Color(0xFF475569))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Fast2SMS Authorization API Key', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: keyCtrl,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Paste your Fast2SMS Authorization Key here...',
+                      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final key = keyCtrl.text.trim();
+                        SmsGatewayService.saveConfig(fast2SmsKey: key);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(key.isNotEmpty ? 'Fast2SMS Gateway connected! Real SMS OTP active.' : 'SMS Gateway reset to default.'),
+                            backgroundColor: const Color(0xFF059669),
+                          ),
+                        );
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.bolt_rounded, size: 18),
+                      label: const Text('Save & Activate Live SMS', style: TextStyle(fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   String get _timerLabel {
     final m = _timerSeconds ~/ 60;
     final s = _timerSeconds % 60;
@@ -529,6 +645,29 @@ class _RightPanelState extends State<_RightPanel> {
                 ),
 
                 _fieldLabel("OTP"),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () => _showSmsGatewayConfigDialog(context),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF059669)),
+                      const SizedBox(width: 4),
+                      Text(
+                        SmsGatewayService.fast2SmsApiKey.isNotEmpty
+                            ? 'Live SMS Gateway Connected (Fast2SMS)'
+                            : '⚡ Connect Free Fast2SMS Gateway (Click to setup free trial SMS)',
+                        style: const TextStyle(
+                          color: Color(0xFF059669),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
                 _otpField(),
                 const SizedBox(height: 20),
