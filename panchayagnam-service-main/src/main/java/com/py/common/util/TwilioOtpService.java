@@ -23,6 +23,12 @@ public class TwilioOtpService {
     @Autowired(required = false)
     private TwilioConfig twilioConfig;
 
+    @Autowired(required = false)
+    private com.py.repo.PyAppSettingRepository appSettingRepository;
+
+    private static volatile String runtimeFast2SmsApiKey = null;
+    private static volatile Boolean runtimeFast2SmsEnabled = null;
+
     @Value("${twilio.service-sid:}")
     private String serviceSid;
 
@@ -90,7 +96,7 @@ public class TwilioOtpService {
 
     // -------------------- Fast2SMS Integration Methods --------------------
     /**
-     * Checks whether Fast2SMS API key is configured either in Spring property or environment variable.
+     * Checks whether Fast2SMS API key is configured either in Spring property, environment variable, or persistent settings.
      */
     public boolean isFast2SmsConfigured() {
         return !getFast2SmsApiKey().isEmpty();
@@ -101,23 +107,74 @@ public class TwilioOtpService {
      * Defaults to false to prevent credit consumption without explicit approval.
      */
     public boolean isFast2SmsEnabled() {
+        if (runtimeFast2SmsEnabled != null) {
+            return runtimeFast2SmsEnabled;
+        }
         if (fast2SmsEnabled) {
             return true;
         }
         String env = System.getenv("FAST2SMS_ENABLED");
-        return "true".equalsIgnoreCase(env);
+        if ("true".equalsIgnoreCase(env)) {
+            return true;
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("FAST2SMS_ENABLED")
+                        .map(s -> "true".equalsIgnoreCase(s.getValue()))
+                        .orElse(false);
+            } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     /**
-     * Retrieves the Fast2SMS API key securely from environment variable or Spring property.
+     * Retrieves the Fast2SMS API key securely from runtime cache, environment variable, Spring property, or database.
      * Kept on server only, never exposed in logs or sent to clients.
      */
     public String getFast2SmsApiKey() {
+        if (runtimeFast2SmsApiKey != null && !runtimeFast2SmsApiKey.trim().isEmpty()) {
+            return runtimeFast2SmsApiKey.trim();
+        }
         if (fast2SmsApiKey != null && !fast2SmsApiKey.trim().isEmpty()) {
             return fast2SmsApiKey.trim();
         }
         String env = System.getenv("FAST2SMS_API_KEY");
-        return (env != null) ? env.trim() : "";
+        if (env != null && !env.trim().isEmpty()) {
+            return env.trim();
+        }
+        if (appSettingRepository != null) {
+            try {
+                return appSettingRepository.findById("FAST2SMS_API_KEY")
+                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
+        return "";
+    }
+
+    /**
+     * Runtime update and database persistence of Fast2SMS configuration.
+     */
+    public synchronized void updateFast2SmsConfig(String apiKey, boolean enabled) {
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            runtimeFast2SmsApiKey = apiKey.trim();
+            if (appSettingRepository != null) {
+                try {
+                    appSettingRepository.save(new com.py.entity.PyAppSetting("FAST2SMS_API_KEY", apiKey.trim()));
+                } catch (Exception e) {
+                    logger.warn("Failed to persist FAST2SMS_API_KEY to database: {}", e.getMessage());
+                }
+            }
+        }
+        runtimeFast2SmsEnabled = enabled;
+        if (appSettingRepository != null) {
+            try {
+                appSettingRepository.save(new com.py.entity.PyAppSetting("FAST2SMS_ENABLED", String.valueOf(enabled)));
+            } catch (Exception e) {
+                logger.warn("Failed to persist FAST2SMS_ENABLED to database: {}", e.getMessage());
+            }
+        }
+        logger.info("Fast2SMS configuration updated: configured={}, enabled={}", isFast2SmsConfigured(), isFast2SmsEnabled());
     }
 
     /**

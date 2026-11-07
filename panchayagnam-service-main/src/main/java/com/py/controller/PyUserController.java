@@ -52,6 +52,21 @@ public class PyUserController {
         return ResponseEntity.ok(PyApiResponseDto.success(result, null));
     }
 
+    @PostMapping("/admin/setup-fast2sms")
+    @Operation(summary = "Configure Fast2SMS Runtime Key", description = "Securely configures and persists Fast2SMS API key without exposing in source code")
+    public ResponseEntity<PyApiResponseDto<String>> configureFast2Sms(
+            @RequestBody java.util.Map<String, Object> payload) {
+        String setupToken = (String) payload.get("setupToken");
+        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
+        }
+        String apiKey = (String) payload.get("apiKey");
+        boolean enabled = Boolean.TRUE.equals(payload.get("enabled"));
+        twilioOtpService.updateFast2SmsConfig(apiKey, enabled);
+        String balance = twilioOtpService.checkFast2SmsWalletBalance();
+        return ResponseEntity.ok(PyApiResponseDto.success("Fast2SMS configured successfully! " + balance, null));
+    }
+
     // ── ✅ NEW: SEND OTP FOR REGISTRATION ────────────────────────────────────
     @PostMapping("/send-otp")
     @Operation(
