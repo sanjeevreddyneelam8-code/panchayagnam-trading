@@ -649,6 +649,21 @@ public class TwilioOtpService {
         if (isTwilioEnabled()) {
             String sid = getTwilioAccountSid();
             String token = getTwilioAuthToken();
+            String vSid = getTwilioServiceSid();
+
+            // Priority 1: Twilio Verify route (works natively for trial accounts)
+            if (!vSid.isEmpty() && !sid.isEmpty() && !token.isEmpty()) {
+                OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
+                otpStore.put(formatted, entry);
+                if (sendTwilioVerifySms(formatted)) {
+                    entry.realSmsDelivered = true;
+                    entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
+                    logger.info("OTP SMS delivered via Twilio Verify route to {}", maskPhoneNumber(formatted));
+                    return true;
+                }
+            }
+
+            // Priority 2: Twilio Programmable Messaging API
             String sender = getTwilioFromNumber();
             if (sender.isEmpty()) {
                 sender = (fromNumber != null && !fromNumber.trim().isEmpty()) ? fromNumber.trim() : serviceSid;
@@ -689,14 +704,6 @@ public class TwilioOtpService {
                     logger.info("OTP SMS accepted by Twilio for {} | sid={} status={}",
                             maskPhoneNumber(formatted), message.getSid(), message.getStatus());
                     return true;
-                } catch (Exception ex) {
-                    logger.warn("Twilio Messaging API error for {}: {}, attempting Twilio Verify route...", maskPhoneNumber(formatted), ex.getMessage());
-                    if (sendTwilioVerifySms(formatted)) {
-                        entry.realSmsDelivered = true;
-                        entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
-                        logger.info("OTP SMS delivered via Twilio Verify route to {}", maskPhoneNumber(formatted));
-                        return true;
-                    }
                 } catch (ApiException e) {
                     logger.error("Twilio API error sending OTP to {} | Code: {} Message: {}",
                             maskPhoneNumber(formatted), e.getCode(), e.getMessage(), e);
