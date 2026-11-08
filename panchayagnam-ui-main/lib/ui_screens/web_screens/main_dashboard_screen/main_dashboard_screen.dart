@@ -729,15 +729,41 @@ class _MainDashboardState extends State<MainDashboard> {
               const SizedBox(width: 8),
 
               PopupMenuButton<String>(
-                tooltip: 'User Profile & Logout',
+                tooltip: 'Account Profile & Settings',
                 offset: const Offset(0, 44),
                 color: const Color(0xFF1E293B),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: Color(0xFF334155)),
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFF334155), width: 1),
                 ),
                 onSelected: (val) {
-                  if (val == 'logout') _handleLogout();
+                  switch (val) {
+                    case 'account':
+                      _showAccountBillingDialog(context);
+                      break;
+                    case 'profile':
+                      _showUserProfileDialog(context);
+                      break;
+                    case 'password':
+                      _showChangePasswordDialog(context);
+                      break;
+                    case 'toggle_ip':
+                      if (StaticIpService.isUnlocked) {
+                        StaticIpService.lock();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Static IP reset to Locked (Unpaid) state for testing.'),
+                            backgroundColor: Color(0xFFD97706),
+                          ),
+                        );
+                      } else {
+                        StaticIpService.showPaymentOrQrDialog(context);
+                      }
+                      break;
+                    case 'logout':
+                      _handleLogout();
+                      break;
+                  }
                 },
                 itemBuilder: (ctx) {
                   final userIdStr = UserSession().userId > 0
@@ -747,250 +773,813 @@ class _MainDashboardState extends State<MainDashboard> {
                           : 'PY-10821');
 
                   return [
+                    // 1. Header Card (Matching StocksDeveloper profile popup with richer styling)
                     PopupMenuItem(
                       enabled: false,
                       child: Container(
-                        width: 250,
+                        width: 280,
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    userName,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF059669).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: const Color(0xFF10B981)),
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                                    ),
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: const Text('PRO TRADER', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                                  child: Center(
+                                    child: Text(
+                                      userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-
-                            // User ID with copy button
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: const Color(0xFF334155)),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Trading Platform Login ID / User ID', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
-                                      const SizedBox(height: 1),
-                                      Text(userIdStr, style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12.5, fontWeight: FontWeight.w800)),
-                                    ],
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(ClipboardData(text: userIdStr));
-                                      Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('User ID copied: $userIdStr'),
-                                          backgroundColor: const Color(0xFF059669),
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: const Duration(seconds: 2),
-                                        ),
-                                      );
-                                    },
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(4),
-                                      child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Dedicated Static IP Section (Visible only after payment / QR / wallet)
-                            ValueListenableBuilder<bool>(
-                              valueListenable: StaticIpService.isUnlockedNotifier,
-                              builder: (context, isUnlocked, _) {
-                                if (!isUnlocked) {
-                                  return Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0F172A),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Row(
-                                          children: [
-                                            Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFBBF24)),
-                                            SizedBox(width: 5),
-                                            Text('Dedicated Static IP', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5, fontWeight: FontWeight.w600)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        const Text('🔒 Not Visible · Locked', style: TextStyle(color: Color(0xFFFDE68A), fontSize: 12.5, fontWeight: FontWeight.w700)),
-                                        const SizedBox(height: 2),
-                                        const Text('Visible after payment, adding money to wallet or scanning QR code.', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5)),
-                                        const SizedBox(height: 8),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 30,
-                                          child: ElevatedButton.icon(
-                                            onPressed: () {
-                                              Navigator.pop(ctx);
-                                              StaticIpService.showPaymentOrQrDialog(context);
-                                            },
-                                            icon: const Icon(Icons.qr_code_2_rounded, size: 14),
-                                            label: const Text('Scan QR / Pay to Unlock', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF2563EB),
-                                              foregroundColor: Colors.white,
-                                              padding: EdgeInsets.zero,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0F172A),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.6)),
-                                  ),
+                                const SizedBox(width: 10),
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      Text(
+                                        userName,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
                                       Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF059669).withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFF10B981)),
+                                            ),
+                                            child: const Text('User', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            userIdStr,
+                                            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5, fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Balance & Plan Mini Card (Ledger summary right in the dropdown)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F172A),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF334155)),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('WALLET BALANCE', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, fontWeight: FontWeight.w700)),
+                                          SizedBox(height: 1),
+                                          Text('₹15,000.00', style: TextStyle(color: Color(0xFF34D399), fontSize: 13, fontWeight: FontWeight.w900)),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text('CURRENT PLAN', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, fontWeight: FontWeight.w700)),
+                                          SizedBox(height: 1),
+                                          Text('AUTO PRO', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.w800)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Static IP Status in popup
+                                  ValueListenableBuilder<bool>(
+                                    valueListenable: StaticIpService.isUnlockedNotifier,
+                                    builder: (context, isUnlocked, _) {
+                                      if (isUnlocked) {
+                                        return Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Row(
+                                              children: [
+                                                Icon(Icons.router_rounded, size: 12, color: Color(0xFF10B981)),
+                                                SizedBox(width: 4),
+                                                Text('Static IP: 13.235.14.89', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
+                                              ],
+                                            ),
+                                            InkWell(
+                                              onTap: () {
+                                                Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
+                                                Navigator.pop(ctx);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
+                                                );
+                                              },
+                                              child: const Padding(
+                                                padding: EdgeInsets.all(2),
+                                                child: Icon(Icons.copy_rounded, size: 13, color: Color(0xFF38BDF8)),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }
+                                      return Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                          const Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF10B981)),
-                                                  SizedBox(width: 3),
-                                                  Text('Dedicated Static IP (Active)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
-                                                ],
-                                              ),
-                                              SizedBox(height: 1),
-                                              Text('13.235.14.89', style: TextStyle(color: Color(0xFF34D399), fontSize: 12.5, fontWeight: FontWeight.w800)),
+                                              Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFBBF24)),
+                                              SizedBox(width: 4),
+                                              Text('Static IP: Locked', style: TextStyle(color: Color(0xFFFDE68A), fontSize: 11, fontWeight: FontWeight.bold)),
                                             ],
                                           ),
                                           InkWell(
                                             onTap: () {
-                                              Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
                                               Navigator.pop(ctx);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('Static IP copied: 13.235.14.89'),
-                                                  backgroundColor: Color(0xFF059669),
-                                                  behavior: SnackBarBehavior.floating,
-                                                  duration: Duration(seconds: 2),
-                                                ),
-                                              );
+                                              StaticIpService.showPaymentOrQrDialog(context);
                                             },
-                                            child: const Padding(
-                                              padding: EdgeInsets.all(4),
-                                              child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
-                                            ),
+                                            child: const Text('Pay / Scan QR', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 10.5, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
                                           ),
                                         ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      InkWell(
-                                        onTap: () {
-                                          StaticIpService.lock();
-                                          Navigator.pop(ctx);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Static IP reset to Locked (Unpaid) state for testing.'),
-                                              backgroundColor: Color(0xFFD97706),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text('🔄 Lock IP (Test Unpaid Mode)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, decoration: TextDecoration.underline)),
-                                      ),
-                                    ],
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-
-                            const Row(
-                              children: [
-                                Icon(Icons.hub_rounded, size: 12, color: Color(0xFF10B981)),
-                                SizedBox(width: 4),
-                                Text('8 Demats Connected · Pooled ₹80L', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    const PopupMenuDivider(height: 1),
+
+                    // Menu Item 1: Account (Matches StocksDeveloper 'Account' + Ledger)
+                    PopupMenuItem(
+                      value: 'account',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFF2563EB).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                            child: const Icon(Icons.credit_card_rounded, size: 16, color: Color(0xFF38BDF8)),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Account', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text('Wallet, billing plans & ledger', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF64748B)),
+                        ],
+                      ),
+                    ),
+
+                    // Menu Item 2: Profile (Matches StocksDeveloper 'Profile')
+                    PopupMenuItem(
+                      value: 'profile',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                            child: const Icon(Icons.person_outline_rounded, size: 16, color: Color(0xFF34D399)),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Profile', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text('Connected demats & details', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF64748B)),
+                        ],
+                      ),
+                    ),
+
+                    // Menu Item 3: Change Password (Matches StocksDeveloper 'Change Password')
+                    PopupMenuItem(
+                      value: 'password',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFFD97706).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                            child: const Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFFFBBF24)),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Change Password', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text('Security & credentials', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF64748B)),
+                        ],
+                      ),
+                    ),
+
+                    // Menu Item 4: Demo Mode Toggle
+                    PopupMenuItem(
+                      value: 'toggle_ip',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                            child: const Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF818CF8)),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Manager Demo Mode', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(StaticIpService.isUnlocked ? 'Switch to Locked/Unpaid' : 'Unlock IP via QR Payment', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF64748B)),
+                        ],
+                      ),
+                    ),
+
+                    const PopupMenuDivider(height: 1),
+
+                    // Menu Item 5: Logout (Matches StocksDeveloper 'Logout')
+                    PopupMenuItem(
                       value: 'logout',
                       child: Row(
                         children: [
-                          Icon(Icons.logout, size: 16, color: Color(0xFFF87171)),
-                          SizedBox(width: 8),
-                          Text('Sign Out', style: TextStyle(color: Color(0xFFF87171), fontSize: 13, fontWeight: FontWeight.w600)),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                            child: const Icon(Icons.logout_rounded, size: 16, color: Color(0xFFF87171)),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Logout', style: TextStyle(color: Color(0xFFF87171), fontSize: 13, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ];
                 },
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: const Color(0xFF10B981),
-                      child: Text(
-                        userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                // Trigger button matching the rounded pill in StocksDeveloper
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.arrow_drop_down, color: Color(0xFF94A3B8), size: 18),
-                  ],
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  // ─── 1. Account & Billing / Ledger Dialog (Matching AutoTrader Ledger from Image) ───
+  void _showAccountBillingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 820, maxHeight: 680),
+          child: Column(
+            children: [
+              // Dialog Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0F172A),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF38BDF8), size: 22),
+                        SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Account Ledger & Subscription Billing', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                            SizedBox(height: 2),
+                            Text('Live wallet balance, plan discounts, and ledger transactions', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Dialog Body
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top 3 Balance Cards (Matching AutoTrader Ledger layout)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFF16A34A)),
+                                      SizedBox(width: 4),
+                                      Text('WALLET BALANCE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('₹15,000.00', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  SizedBox(height: 4),
+                                  Text('Available for margin & API usage', style: TextStyle(fontSize: 10.5, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.hourglass_top_rounded, size: 16, color: Color(0xFFD97706)),
+                                      SizedBox(width: 4),
+                                      Text('AWAITING APPROVAL', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('₹0.00', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  SizedBox(height: 4),
+                                  Text('All transactions verified', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.hub_rounded, size: 16, color: Color(0xFF2563EB)),
+                                      SizedBox(width: 4),
+                                      Text('CONNECTED DEMATS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('8 Demats', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  SizedBox(height: 4),
+                                  Text('Avg. ₹12.50 / account / day', style: TextStyle(fontSize: 10.5, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // YOUR PLAN Section (From AutoTrader Screenshot)
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('YOUR CURRENT PLAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                                    const SizedBox(height: 4),
+                                    const Text('PANCHAYAGNAM AUTO PRO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                                    const SizedBox(height: 2),
+                                    Text('Multi-Broker Institutional · 8 Connected Accounts · Dedicated Static IP Included', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFF86EFAC)),
+                                  ),
+                                  child: const Text('ACTIVE · 30 DAYS LEFT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF166534))),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            const Divider(height: 1),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Text('Progress to Renewal:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: const LinearProgressIndicator(
+                                      value: 1.0,
+                                      minHeight: 8,
+                                      backgroundColor: Color(0xFFE2E8F0),
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text('100% Active', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Add New Payment Request & Top-Up Buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Add Funds or Pay Subscription', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                              SizedBox(height: 2),
+                              Text('Instant activation via live UPI QR or Net Banking wallet transfer', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              StaticIpService.showPaymentOrQrDialog(context);
+                            },
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                            label: const Text('Scan UPI QR / Add Funds', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF059669),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Recent Invoices & Ledger Table
+                      const Text('Recent Ledger Invoices & Receipts', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF334155))),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(2),
+                            1: FlexColumnWidth(2),
+                            2: FlexColumnWidth(4),
+                            3: FlexColumnWidth(2),
+                            4: FlexColumnWidth(2),
+                          },
+                          children: [
+                            TableRow(
+                              decoration: const BoxDecoration(color: Color(0xFFF8FAFC)),
+                              children: [
+                                _buildTableHeading('DATE'),
+                                _buildTableHeading('TXN ID'),
+                                _buildTableHeading('DESCRIPTION'),
+                                _buildTableHeading('AMOUNT'),
+                                _buildTableHeading('RECEIPT'),
+                              ],
+                            ),
+                            TableRow(
+                              children: [
+                                _buildTableCell('Today, 11:30 AM'),
+                                _buildTableCell('TXN_PY_892110'),
+                                _buildTableCell('Dedicated Static IP (13.235.14.89 · 30 Days)'),
+                                _buildTableCell('₹1,500.00', isBold: true),
+                                _buildReceiptDownloadCell('Download PDF'),
+                              ],
+                            ),
+                            TableRow(
+                              children: [
+                                _buildTableCell('01 Nov 2026'),
+                                _buildTableCell('TXN_PY_771822'),
+                                _buildTableCell('Panchayagnam Auto Pro Enterprise Plan'),
+                                _buildTableCell('₹1,495.00', isBold: true),
+                                _buildReceiptDownloadCell('Download PDF'),
+                              ],
+                            ),
+                            TableRow(
+                              children: [
+                                _buildTableCell('28 Oct 2026'),
+                                _buildTableCell('TXN_PY_654120'),
+                                _buildTableCell('Panchayagnam Wallet Deposit via UPI'),
+                                _buildTableCell('₹15,000.00', isBold: true),
+                                _buildReceiptDownloadCell('Download PDF'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── 2. User Profile Dialog ───
+  void _showUserProfileDialog(BuildContext context) {
+    final String sessionName = html.window.sessionStorage['user_fullName'] ?? '';
+    final String userName = sessionName.trim().isNotEmpty ? sessionName.trim() : 'Sanjeev@.123';
+    final userIdStr = UserSession().userId > 0 ? 'PY-${UserSession().userId}' : (html.window.sessionStorage['user_id'] != null && html.window.sessionStorage['user_id']!.isNotEmpty ? 'PY-${html.window.sessionStorage['user_id']}' : 'PY-10821');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF4F46E5)]),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : 'S', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(userName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(userIdStr, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileDetailRow('Role', 'Institutional Pro Trader (8 Demats Connected)'),
+              const Divider(height: 16),
+              _buildProfileDetailRow('Platform ID', userIdStr),
+              const Divider(height: 16),
+              _buildProfileDetailRow('Email Address', html.window.sessionStorage['user_email'] ?? 'sanjeev@panchayagnam.com'),
+              const Divider(height: 16),
+              _buildProfileDetailRow('Phone Number', html.window.sessionStorage['user_phoneNumber'] ?? '+91 98480 22338'),
+              const Divider(height: 16),
+              _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '13.235.14.89 (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
+              const Divider(height: 16),
+              _buildProfileDetailRow('Multi-Broker Status', '8 Demats Whitelisted & Connected'),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F172A), foregroundColor: Colors.white),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 3. Change Password Dialog ───
+  void _showChangePasswordDialog(BuildContext context) {
+    final oldPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_reset_rounded, color: Color(0xFF2563EB)),
+            SizedBox(width: 10),
+            Text('Change Account Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Enter your current password and choose a secure new password.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              const SizedBox(height: 14),
+              TextField(
+                controller: oldPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: newPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Password',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Password updated successfully! All API tokens refreshed.'),
+                  backgroundColor: Color(0xFF059669),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+            child: const Text('Update Password'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeading(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+    );
+  }
+
+  Widget _buildTableCell(String text, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      child: Text(text, style: TextStyle(fontSize: 11.5, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: const Color(0xFF1F2937))),
+    );
+  }
+
+  Widget _buildReceiptDownloadCell(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Receipt downloaded successfully (PDF)')),
+          );
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.download_rounded, size: 14, color: Color(0xFF2563EB)),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+        Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+      ],
     );
   }
 
