@@ -802,31 +802,29 @@ public class TwilioOtpService {
         int expiryMinutes = (otpExpiryMinutes > 0) ? otpExpiryMinutes : 5;
         Instant expiresAt = Instant.now().plus(Duration.ofMinutes(expiryMinutes));
 
-        // 2.5 SMS Channel: 2Factor.in (if enabled)
-        if (isTwoFactorEnabled()) {
-            OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
-            otpStore.put(formatted, entry);
-            if (sendTwoFactorOtp(formatted, entry)) {
-                return true;
-            }
-        }
-
-        // 3. Primary SMS Channel: Fast2SMS
-        if (isFast2SmsEnabled()) {
+        // 1. Primary SMS Channel: Fast2SMS (DLT-Free Quick SMS Route for India)
+        if (isFast2SmsEnabled() && isFast2SmsConfigured()) {
             String otp = generateOtp();
             OtpEntry entry = new OtpEntry(otp, expiresAt, codeReqFor);
             otpStore.put(formatted, entry);
             logger.info("Fast2SMS live dispatch initiated for phone: {}", maskPhoneNumber(formatted));
             try {
                 boolean sent = sendFast2SmsOtp(formatted, otp);
-                entry.realSmsDelivered = sent;
-                entry.statusNote = "OTP sent successfully to your mobile number. Please check your SMS.";
-                return true;
+                if (sent) {
+                    entry.realSmsDelivered = true;
+                    entry.statusNote = "OTP sent successfully to your mobile number via SMS. Please check your SMS.";
+                    return true;
+                }
             } catch (Exception e) {
-                logger.warn("Fast2SMS gateway requirement for {}: {}", maskPhoneNumber(formatted), e.getMessage());
-                // Smooth trial fallback: provide instant verification code so user is never blocked or forced to pay
-                entry.realSmsDelivered = false;
-                entry.statusNote = "Instant trial OTP: " + otp + " (Enter code below to complete registration)";
+                logger.warn("Fast2SMS gateway error for {}: {}", maskPhoneNumber(formatted), e.getMessage());
+            }
+        }
+
+        // 2. Secondary SMS Channel: 2Factor.in (if enabled)
+        if (isTwoFactorEnabled()) {
+            OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
+            otpStore.put(formatted, entry);
+            if (sendTwoFactorOtp(formatted, entry)) {
                 return true;
             }
         } else if (isFast2SmsConfigured()) {

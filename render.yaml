@@ -7,7 +7,7 @@ services:
     dockerContext: ./panchayagnam-service-main
     plan: free
     region: oregon
-    healthCheckPath: /actuator/health
+    healthCheckPath: /api/v1/pyauth/demo-status
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -18,11 +18,11 @@ services:
       - key: TRADING_LIVE_TRADING_ENABLED
         value: "false"
       - key: TWOFACTOR_ENABLED
-        value: "true"
+        value: "false"
       - key: TWILIO_ENABLED
         value: "false"
       - key: FAST2SMS_ENABLED
-        value: "false"
+        value: "true"
       - key: JWT_SECRET
         generateValue: true
       - key: SPRING_DATASOURCE_URL
