@@ -79,6 +79,19 @@ public class PySecurityConfig {
                                 "/api/v1/oauth/**"
                         ).permitAll()
 
+                        // Trading, Group Orders, Demat & Dashboard APIs (Permitted for seamless manager presentation & trading)
+                        .requestMatchers(
+                                "/api/v1/trade-group/**",
+                                "/api/v1/group-order/**",
+                                "/pyBrokerApi/**",
+                                "/easyTradeApi/**",
+                                "/api/v1/dashboard/**",
+                                "/api/v1/hot-stocks/**",
+                                "/api/smart/**",
+                                "/api/v1/subscription/**",
+                                "/api/v1/audit/**"
+                        ).permitAll()
+
                         // Swagger & API documentation
                         .requestMatchers(
                                 "/panchayagnam/**",

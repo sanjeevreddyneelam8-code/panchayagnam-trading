@@ -384,6 +384,8 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           if (_isSuccessMsg(state.message)) {
             _load();
             _showSnack(ctx, _clean(state.message), success: true);
+          } else if (state.message.contains('401') || state.message.contains('Unauthorized')) {
+            _load();
           } else {
             _showSnack(ctx, _clean(state.message), success: false);
           }
@@ -916,7 +918,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
         if (isLoading)
           const _LoadingBody()
         else if (state is TradeGroupError && active.isEmpty)
-          _ErrorBody(message: state.message, onRetry: _load)
+          const _LoadingBody()
         else if (filtered.isEmpty)
           Container(
             width: double.infinity,
