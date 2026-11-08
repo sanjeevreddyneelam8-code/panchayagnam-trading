@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -341,14 +342,34 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     ),
   ];
 
+  Timer? _livePnlTimer;
+  final Random _pnlRand = Random();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _startLivePnlStream();
+  }
+
+  void _startLivePnlStream() {
+    _livePnlTimer?.cancel();
+    _livePnlTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (int i = 0; i < _strategies.length; i++) {
+          if (_strategies[i].status == 'RUNNING') {
+            final tick = (_pnlRand.nextDouble() * 35.0) - 14.0;
+            _strategies[i].todayPnl = double.parse((_strategies[i].todayPnl + tick).toStringAsFixed(2));
+          }
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _livePnlTimer?.cancel();
     _tabController.dispose();
     super.dispose();
   }

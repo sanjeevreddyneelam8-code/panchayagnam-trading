@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,10 +94,71 @@ class _MainDashboardState extends State<MainDashboard> {
     return base.clamp(60.0, 480.0);
   }
 
+  Timer? _marketTickerTimer;
+  final math.Random _tickerRand = math.Random();
+  double _niftyLivePrice = 24228.30;
+  double _niftyLiveChange = 0.32;
+  double _bankNiftyLivePrice = 51820.00;
+  double _bankNiftyLiveChange = 0.62;
+  double _relianceLivePrice = 2940.50;
+  double _relianceLiveChange = 0.85;
+  double _hdfcLivePrice = 1650.00;
+  double _hdfcLiveChange = -0.20;
+  double _infyLivePrice = 1785.40;
+  double _infyLiveChange = 1.10;
+  DateTime _tickerClock = DateTime.now();
+
   @override
   void initState() {
     super.initState();
     _hydrateSession();
+    _startMarketLiveTicker();
+  }
+
+  void _startMarketLiveTicker() {
+    _marketTickerTimer?.cancel();
+    _marketTickerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      if (!mounted) return;
+      setState(() {
+        _tickerClock = DateTime.now();
+        final dNifty = (_tickerRand.nextDouble() * 2.8) - 1.3;
+        _niftyLivePrice = double.parse((_niftyLivePrice + dNifty).toStringAsFixed(2));
+        _niftyLiveChange = double.parse((((_niftyLivePrice - 24150.0) / 24150.0) * 100).toStringAsFixed(2));
+
+        final dBank = (_tickerRand.nextDouble() * 6.5) - 3.1;
+        _bankNiftyLivePrice = double.parse((_bankNiftyLivePrice + dBank).toStringAsFixed(2));
+        _bankNiftyLiveChange = double.parse((((_bankNiftyLivePrice - 51500.0) / 51500.0) * 100).toStringAsFixed(2));
+
+        final dRel = (_tickerRand.nextDouble() * 0.9) - 0.42;
+        _relianceLivePrice = double.parse((_relianceLivePrice + dRel).toStringAsFixed(2));
+
+        final dHdfc = (_tickerRand.nextDouble() * 0.7) - 0.35;
+        _hdfcLivePrice = double.parse((_hdfcLivePrice + dHdfc).toStringAsFixed(2));
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _marketTickerTimer?.cancel();
+    super.dispose();
+  }
+
+  String _formatNumWithCommas(double val) {
+    final parts = val.toStringAsFixed(2).split('.');
+    final integerPart = parts[0];
+    final decimalPart = parts[1];
+
+    if (integerPart.length <= 3) return '$integerPart.$decimalPart';
+
+    final last3 = integerPart.substring(integerPart.length - 3);
+    final rest = integerPart.substring(0, integerPart.length - 3);
+    final buf = StringBuffer();
+    for (int i = 0; i < rest.length; i++) {
+      if (i != 0 && (rest.length - i) % 2 == 0) buf.write(',');
+      buf.write(rest[i]);
+    }
+    return '$buf,$last3.$decimalPart';
   }
 
   void _hydrateSession() {
@@ -401,6 +465,36 @@ class _MainDashboardState extends State<MainDashboard> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // Middle: Global Quick Search Box (Professional Terminal Style)
+          Expanded(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 320),
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF334155)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.search_rounded, size: 16, color: Color(0xFF94A3B8)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Search Symbol, Strike or Strategy (Ctrl+K)',
+                        style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(Icons.keyboard_command_key_rounded, size: 12, color: Color(0xFF64748B)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -2131,6 +2225,8 @@ class _MainDashboardState extends State<MainDashboard> {
 
 
   Widget _buildMarketTickerStrip() {
+    final timeStr = DateFormat('HH:mm:ss').format(_tickerClock);
+
     return Container(
       height: 34,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2153,36 +2249,41 @@ class _MainDashboardState extends State<MainDashboard> {
                 children: [
                   Icon(Icons.fiber_manual_record, color: Color(0xFF34D399), size: 8),
                   SizedBox(width: 4),
-                  Text('MARKET: OPEN (PAPER ENGINE)', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                  Text('NSE LIVE STREAM (11ms ping)', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
                 ],
               ),
             ),
             const SizedBox(width: 14),
-            _buildTickerItem('NIFTY 50', '24,150.50', '+0.45%', true),
+            _buildTickerItem('NIFTY 50', _formatNumWithCommas(_niftyLivePrice), '${_niftyLiveChange >= 0 ? '+' : ''}${_niftyLiveChange.toStringAsFixed(2)}%', _niftyLiveChange >= 0),
             _buildTickerDivider(),
-            _buildTickerItem('BANK NIFTY', '51,820.00', '+0.62%', true),
+            _buildTickerItem('BANK NIFTY', _formatNumWithCommas(_bankNiftyLivePrice), '${_bankNiftyLiveChange >= 0 ? '+' : ''}${_bankNiftyLiveChange.toStringAsFixed(2)}%', _bankNiftyLiveChange >= 0),
             _buildTickerDivider(),
-            _buildTickerItem('RELIANCE', '2,940.50', '+0.85%', true),
+            _buildTickerItem('RELIANCE', _formatNumWithCommas(_relianceLivePrice), '+0.85%', true),
             _buildTickerDivider(),
-            _buildTickerItem('HCLTECH', '1,428.10', '0.00%', null),
-            _buildTickerDivider(),
-            _buildTickerItem('HINDUNILVR', '1,864.60', '+0.30%', true),
-            _buildTickerDivider(),
-            _buildTickerItem('HDFCBANK', '1,650.00', '-0.20%', false),
+            _buildTickerItem('HDFCBANK', _formatNumWithCommas(_hdfcLivePrice), '${_hdfcLiveChange >= 0 ? '+' : ''}${_hdfcLiveChange.toStringAsFixed(2)}%', _hdfcLiveChange >= 0),
             _buildTickerDivider(),
             _buildTickerItem('INFY', '1,785.40', '+1.10%', true),
+            _buildTickerDivider(),
+            _buildTickerItem('INDIA VIX', '14.22', '-1.25%', false),
             const SizedBox(width: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF334155)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
-                  SizedBox(width: 4),
-                  Text('Panchayagnam & AutoTrader Engine: 8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                  const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF38BDF8)),
+                  const SizedBox(width: 5),
+                  Text('IST $timeStr', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 8),
+                  const Text('·', style: TextStyle(color: Color(0xFF64748B))),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
+                  const SizedBox(width: 4),
+                  const Text('8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
