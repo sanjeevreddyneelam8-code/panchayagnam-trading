@@ -62,6 +62,8 @@ public class PySecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public auth & verification endpoints
                         .requestMatchers(
+                                "/health",
+                                "/api/v1/pyauth/health",
                                 "/api/v1/pyauth/login",
                                 "/api/v1/pyauth/register",
                                 "/api/v1/pyauth/send-otp",

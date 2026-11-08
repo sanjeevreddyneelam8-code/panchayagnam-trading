@@ -7,7 +7,7 @@ services:
     dockerContext: ./panchayagnam-service-main
     plan: free
     region: oregon
-    healthCheckPath: /api/v1/pyauth/demo-status
+    healthCheckPath: /api/v1/pyauth/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod

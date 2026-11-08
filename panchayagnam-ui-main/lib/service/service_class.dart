@@ -12,7 +12,7 @@ import '../models/py_user.dart';
 
 class ServiceClass {
   static const String _baseUrl = ApiUrls.baseUrl;
-  static const Duration _timeout = Duration(seconds: 30);
+  static const Duration _timeout = Duration(seconds: 75);
 
   final http.Client _client;
 

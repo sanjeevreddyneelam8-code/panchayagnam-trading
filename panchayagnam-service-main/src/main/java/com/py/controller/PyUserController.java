@@ -30,6 +30,12 @@ public class PyUserController {
     @Autowired
     private com.py.common.util.TwilioOtpService twilioOtpService;
 
+    @GetMapping("/health")
+    @Operation(summary = "Lightweight Service Health Check", description = "Instant zero-dependency HTTP 200 ping for cloud load balancers")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("OK");
+    }
+
     @GetMapping("/demo-status")
     @Operation(summary = "Check Demo OTP System Status", description = "Safe diagnostic endpoint to verify demo mode configuration")
     public ResponseEntity<java.util.Map<String, Object>> getDemoStatus() {
