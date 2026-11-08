@@ -127,8 +127,8 @@ class _MainDashboardState extends State<MainDashboard> {
         children: [
           _SubNavItem(icon: Icons.auto_awesome_rounded, label: 'Auto Strategies'),
           _SubNavItem(icon: Icons.history_toggle_off_rounded, label: 'Backtesting'),
-          _SubNavItem(icon: Icons.shield_outlined, label: 'Paper Trading'),
           _SubNavItem(icon: Icons.psychology_alt_rounded, label: 'Strategy Builder'),
+          _SubNavItem(icon: Icons.shield_outlined, label: 'Paper Trading'),
         ],
       ),
 
@@ -219,9 +219,9 @@ class _MainDashboardState extends State<MainDashboard> {
           case 1:
             return const BacktestingView();
           case 2:
-            return const PaperTradingView();
+            return const OptionsChainView(initialTabIndex: 2); // Strategy Builder
           case 3:
-            return const OptionsChainView(initialTabIndex: 2); // Strategy Builder moved to Auto Trade
+            return const PaperTradingView(); // Paper Trading
           default:
             return const AlgoStrategiesView();
         }
@@ -389,7 +389,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       border: Border.all(color: const Color(0xFF34D399).withOpacity(0.5)),
                     ),
                     child: const Text(
-                      'ALGO PRO',
+                      'AUTO PRO',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 9.5,
@@ -2646,8 +2646,7 @@ class _AnimatedSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _UserCard(collapsed: collapsed, initials: initials),
-          _SidebarDivider(),
+          const SizedBox(height: 12),
           _SectionLabel(collapsed: collapsed),
           Expanded(
             child: ListView.builder(
@@ -2817,10 +2816,8 @@ class _NavGroupTileState extends State<_NavGroupTile> {
                         maxLines: 1,
                         style: TextStyle(
                           color: iconColor,
-                          fontSize: 12,
-                          fontWeight: active
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -2896,52 +2893,11 @@ class _SideSubmenuFlyout extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Group Name + Close button
-            Row(
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF334155)),
-                  ),
-                  child: Icon(groupItem.icon, size: 14, color: const Color(0xFF34D399)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    groupItem.label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                InkWell(
-                  onTap: onClose,
-                  borderRadius: BorderRadius.circular(12),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Divider(color: const Color(0xFF1E293B), height: 1, thickness: 1),
-            const SizedBox(height: 8),
-
             // Sub items list
             ...List.generate(groupItem.children.length, (subIdx) {
               final sub = groupItem.children[subIdx];
@@ -3306,10 +3262,8 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                         maxLines: 1,
                         style: TextStyle(
                           color: _iconColor,
-                          fontSize: 12,
-                          fontWeight: widget.isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -3426,7 +3380,7 @@ class _AutoTraderSupportFloatingButton extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               const Text(
-                'AI Support & Chat',
+                'Chat',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,

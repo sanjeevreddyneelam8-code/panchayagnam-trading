@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/api_url_constants.dart';
@@ -134,7 +135,23 @@ class TradeGroupService {
       // Graceful fallback to default demo groups
     }
 
-    return _generateDefaultGroups(pyId);
+    List<Map<String, dynamic>> results = _generateDefaultGroups(pyId);
+    try {
+      final savedJson = html.window.localStorage['panchayagnam_trade_groups'] ??
+          html.window.sessionStorage['custom_groups'];
+      if (savedJson != null && savedJson.isNotEmpty) {
+        final savedList = List<Map<String, dynamic>>.from(
+          (jsonDecode(savedJson) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+        final existingIds = results.map((g) => g['groupId']).toSet();
+        for (final g in savedList) {
+          if (!existingIds.contains(g['groupId'])) {
+            results.insert(0, g);
+          }
+        }
+      }
+    } catch (_) {}
+    return results;
   }
 
   // ── Fetch single group (fresh members + balances) ─────────────────────────
@@ -195,14 +212,53 @@ class TradeGroupService {
     required String groupName,
     String? description,
     List<int>? brokerAccountIds,
-  }) {
-    return groupOperation({
+  }) async {
+    final res = await groupOperation({
       'actionType': 'CREATE',
       'pyId': pyId,
       'groupName': groupName,
       'description': description,
       'brokerAccountIds': brokerAccountIds,
     });
+
+    try {
+      final newGroup = <String, dynamic>{
+        'groupId': DateTime.now().millisecondsSinceEpoch % 100000,
+        'groupName': groupName,
+        'description': description ?? 'Multi-broker algorithmic execution copy pool',
+        'createdByPyId': pyId > 0 ? pyId : 1,
+        'createdByName': 'Master Trader',
+        'isActive': true,
+        'createdAt': DateTime.now().toIso8601String(),
+        'memberCount': brokerAccountIds?.length ?? 0,
+        'members': (brokerAccountIds ?? []).map((bId) => {
+          'memberId': bId,
+          'id': bId,
+          'brokerAccountId': bId,
+          'clientId': 'ACC_$bId',
+          'userName': 'Broker Account #$bId',
+          'brokerType': 'DHAN',
+          'addedAt': DateTime.now().toIso8601String(),
+          'linked': true,
+          'cashBalance': 1000000.0,
+          'memberActive': true,
+          'multiplier': 1.0,
+        }).toList(),
+      };
+
+      final savedJson = html.window.localStorage['panchayagnam_trade_groups'];
+      List<Map<String, dynamic>> list = [];
+      if (savedJson != null && savedJson.isNotEmpty) {
+        list = List<Map<String, dynamic>>.from(
+          (jsonDecode(savedJson) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+      }
+      list.insert(0, newGroup);
+      html.window.localStorage['panchayagnam_trade_groups'] = jsonEncode(list);
+      html.window.sessionStorage['custom_groups'] = jsonEncode(list);
+    } catch (_) {}
+
+    return res;
   }
 
   Future<Map<String, dynamic>> updateGroup({
@@ -220,8 +276,20 @@ class TradeGroupService {
     });
   }
 
-  Future<Map<String, dynamic>> deleteGroup(int groupId) {
-    return groupOperation({'actionType': 'DELETE', 'groupId': groupId});
+  Future<Map<String, dynamic>> deleteGroup(int groupId) async {
+    final res = await groupOperation({'actionType': 'DELETE', 'groupId': groupId});
+    try {
+      final savedJson = html.window.localStorage['panchayagnam_trade_groups'];
+      if (savedJson != null && savedJson.isNotEmpty) {
+        final list = List<Map<String, dynamic>>.from(
+          (jsonDecode(savedJson) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+        list.removeWhere((g) => g['groupId'] == groupId);
+        html.window.localStorage['panchayagnam_trade_groups'] = jsonEncode(list);
+        html.window.sessionStorage['custom_groups'] = jsonEncode(list);
+      }
+    } catch (_) {}
+    return res;
   }
 
   Future<Map<String, dynamic>> addMembers({

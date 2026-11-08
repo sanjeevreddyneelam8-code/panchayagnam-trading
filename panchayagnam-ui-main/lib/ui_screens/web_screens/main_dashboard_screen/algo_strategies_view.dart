@@ -124,7 +124,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
 
   final List<AlgoStrategyModel> _strategies = [
     AlgoStrategyModel(
-      id: 'ALGO-101',
+      id: 'AUTO-101',
       name: '9:20 AM Bank Nifty Short Straddle',
       instrument: 'BANKNIFTY-OPT',
       timeframe: '1m / Intraday',
@@ -141,7 +141,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       createdAt: '2026-10-28',
     ),
     AlgoStrategyModel(
-      id: 'ALGO-102',
+      id: 'AUTO-102',
       name: 'Nifty 15m Momentum Breakout',
       instrument: 'NIFTY50-INDEX',
       timeframe: '15m',
@@ -158,7 +158,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       createdAt: '2026-10-29',
     ),
     AlgoStrategyModel(
-      id: 'ALGO-103',
+      id: 'AUTO-103',
       name: 'EMA 9/21 Dynamic Trend Scalper',
       instrument: 'RELIANCE-EQ',
       timeframe: '5m',
@@ -175,7 +175,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       createdAt: '2026-10-30',
     ),
     AlgoStrategyModel(
-      id: 'ALGO-104',
+      id: 'AUTO-104',
       name: 'Weekly Nifty Iron Condor',
       instrument: 'NIFTY50-OPT',
       timeframe: 'Daily / Positional',
@@ -725,7 +725,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             ElevatedButton.icon(
               onPressed: () {
                 final newStrat = AlgoStrategyModel(
-                  id: 'ALGO-${Random().nextInt(900) + 100}',
+                  id: 'AUTO-${Random().nextInt(900) + 100}',
                   name: template.title,
                   instrument: template.instrument,
                   timeframe: template.timeframe,
@@ -1142,7 +1142,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
   }
 
   void _deployReadyMadeStrategy(String name, String instrument, String type, String rule) {
-    final id = 'ALGO-10${_strategies.length + 1}';
+    final id = 'AUTO-10${_strategies.length + 1}';
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     setState(() {
       _strategies.insert(
@@ -1608,7 +1608,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 setState(() {
                   _strategies.add(
                     AlgoStrategyModel(
-                      id: 'ALGO-10${_strategies.length + 1}',
+                      id: 'AUTO-10${_strategies.length + 1}',
                       name: nameCtrl.text.trim(),
                       instrument: instrument,
                       timeframe: timeframe,
@@ -1690,7 +1690,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                             const Row(
                               children: [
                                 Text(
-                                  'Algo Trading Station',
+                                  'Auto Trading Station',
                                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                                 ),
                                 SizedBox(width: 8),
@@ -1754,7 +1754,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 Row(
                   children: [
                     _buildMetricCard(
-                      label: 'TODAY\'S ALGO P&L',
+                      label: 'TODAY\'S AUTO P&L',
                       value: '+₹${NumberFormat('#,##,##0.00').format(totalPnl)}',
                       subtext: '+4.25% RoI Today',
                       color: const Color(0xFF059669),
@@ -2451,7 +2451,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Real-Time Algorithmic Execution Feed',
+                    'Real-Time Automated Execution Feed',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                   ),
                   const SizedBox(height: 4),

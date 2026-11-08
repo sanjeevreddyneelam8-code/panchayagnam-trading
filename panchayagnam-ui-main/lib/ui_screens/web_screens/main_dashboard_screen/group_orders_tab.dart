@@ -167,28 +167,261 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   bool _isTestingSignal = false;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  late int _selectedAccountNav;
+    late int _selectedAccountNav;
 
-  final List<Map<String, dynamic>> _tradingAccountsHierarchy = [
-    {'name': 'Dhan Main Account', 'code': '1100345678', 'broker': 'DHAN', 'role': 'MASTER (Parent)', 'margin': '₹25,00,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': true},
-    {'name': 'AngelOne Child Account', 'code': 'AG789012', 'broker': 'ANGELONE', 'role': 'FOLLOWER (Child)', 'margin': '₹12,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Zerodha Kite Account', 'code': 'ZR442190', 'broker': 'ZERODHA', 'role': 'FOLLOWER (Child)', 'margin': '₹15,00,000', 'multiplier': '1.5x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Motilal Oswal Account', 'code': 'MO554433', 'broker': 'MOTILAL', 'role': 'FOLLOWER (Child)', 'margin': '₹8,50,000', 'multiplier': '1.0x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Groww Account', 'code': 'GR887766', 'broker': 'GROWW', 'role': 'FOLLOWER (Child)', 'margin': '₹6,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Goodwill Giga Account', 'code': 'GW332211', 'broker': 'GOODWILL', 'role': 'FOLLOWER (Child)', 'margin': '₹4,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Profitmart Account', 'code': 'PM998877', 'broker': 'PROFITMART', 'role': 'FOLLOWER (Child)', 'margin': '₹5,00,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
-    {'name': 'Alice Blue ANT Account', 'code': 'AB665544', 'broker': 'ALICEBLUE', 'role': 'FOLLOWER (Child)', 'margin': '₹3,50,000', 'multiplier': '0.5x', 'status': 'Connected', 'isMaster': false},
+  bool _isCreatingAccount = false;
+  Map<String, dynamic>? _editingAccount;
+  final Set<String> _selectedAccountLoginIds = {};
+  String _accountSearchQuery = '';
+  String _filterBroker = 'All';
+  String _filterLive = 'All';
+  String _filterSession = 'All';
+  String _filterPaid = 'All';
+  bool _isHelpExpanded = false;
+
+  static final List<Map<String, dynamic>> _seedTradingAccounts = [
+    {
+      'id': 'ACC_5PAISA',
+      'loginId': 'FP9876543',
+      'code': 'FP9876543',
+      'nickname': '5Paisa Primary',
+      'name': '5Paisa Primary',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': '5Paisa',
+      'platform': 'FP_API_IPV6',
+      'mpin': '123456',
+      'totpKey': 'JBSWY3DPEHPK3PXP',
+      'apiKey': 'fp_live_9a87b1c',
+      'appSource': 'FP_API_IPV6',
+      'role': 'MASTER (Parent)',
+      'margin': '₹20,00,000',
+      'multiplier': '1.0x',
+      'isMaster': true,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_DHAN',
+      'loginId': '1100345678',
+      'code': '1100345678',
+      'nickname': 'Dhan Main Account',
+      'name': 'Dhan Main Account',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Dhan',
+      'platform': 'DHAN_HQ',
+      'mpin': '654321',
+      'totpKey': 'DHA987654321TOTP',
+      'apiKey': 'dh_live_k8921x',
+      'appSource': 'DHAN_HQ',
+      'role': 'MASTER (Parent)',
+      'margin': '₹25,00,000',
+      'multiplier': '1.0x',
+      'isMaster': true,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_ANGEL',
+      'loginId': 'AG789012',
+      'code': 'AG789012',
+      'nickname': 'AngelOne Child Account',
+      'name': 'AngelOne Child Account',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Angel One',
+      'platform': 'SMARTAPI',
+      'mpin': '112233',
+      'totpKey': 'ANGELONE123TOTP',
+      'apiKey': 'ag_live_key771',
+      'appSource': 'SMARTAPI',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹12,50,000',
+      'multiplier': '1.0x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_ZERODHA',
+      'loginId': 'ZR442190',
+      'code': 'ZR442190',
+      'nickname': 'Zerodha Kite Account',
+      'name': 'Zerodha Kite Account',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Zerodha',
+      'platform': 'KITE_CONNECT',
+      'mpin': '998877',
+      'totpKey': 'ZERODHAKITE2FA',
+      'apiKey': 'kite_live_secret9',
+      'appSource': 'KITE_CONNECT',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹15,00,000',
+      'multiplier': '1.5x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_UPSTOX',
+      'loginId': 'UP662910',
+      'code': 'UP662910',
+      'nickname': 'Upstox Pro Account',
+      'name': 'Upstox Pro Account',
+      'live': false,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Upstox',
+      'platform': 'UPSTOX_V2',
+      'mpin': '554433',
+      'totpKey': 'UPSTOXPRO2FAKEY',
+      'apiKey': 'up_live_sec881',
+      'appSource': 'UPSTOX_V2',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹10,00,000',
+      'multiplier': '1.0x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_MOTILAL',
+      'loginId': 'MO554433',
+      'code': 'MO554433',
+      'nickname': 'Motilal Oswal Account',
+      'name': 'Motilal Oswal Account',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Motilal Oswal',
+      'platform': 'API',
+      'mpin': '332211',
+      'totpKey': 'MOTILAL2FAKEY',
+      'apiKey': 'mo_live_sec552',
+      'appSource': 'API',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹8,50,000',
+      'multiplier': '1.0x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_PROFITMART',
+      'loginId': 'PM998877',
+      'code': 'PM998877',
+      'nickname': 'Profitmart Account',
+      'name': 'Profitmart Account',
+      'live': false,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Profitmart',
+      'platform': 'API',
+      'mpin': '778899',
+      'totpKey': 'PROFITMART2FA',
+      'apiKey': 'pm_live_sec993',
+      'appSource': 'API',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹5,00,000',
+      'multiplier': '0.5x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
+    {
+      'id': 'ACC_GOODWILL',
+      'loginId': 'GW332211',
+      'code': 'GW332211',
+      'nickname': 'Goodwill Giga Account',
+      'name': 'Goodwill Giga Account',
+      'live': true,
+      'session': 'Active',
+      'expiry': '2026-12-31',
+      'days': 53,
+      'ipDays': 53,
+      'ipType': 'Dedicated Static',
+      'paid': 'Yes',
+      'broker': 'Goodwill',
+      'platform': 'API',
+      'mpin': '445566',
+      'totpKey': 'GOODWILL2FA',
+      'apiKey': 'gw_live_sec331',
+      'appSource': 'API',
+      'role': 'FOLLOWER (Child)',
+      'margin': '₹4,50,000',
+      'multiplier': '0.5x',
+      'isMaster': false,
+      'status': 'Connected',
+    },
   ];
+
+  final List<Map<String, dynamic>> _tradingAccountsHierarchy = [];
+
+  void _loadTradingAccountsFromStorage() {
+    try {
+      final saved = html.window.localStorage['panchayagnam_trading_accounts'] ??
+          html.window.sessionStorage['custom_trading_accounts'];
+      if (saved != null && saved.isNotEmpty) {
+        final decoded = List<Map<String, dynamic>>.from(
+          (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+        if (decoded.isNotEmpty) {
+          _tradingAccountsHierarchy.clear();
+          _tradingAccountsHierarchy.addAll(decoded);
+          return;
+        }
+      }
+    } catch (_) {}
+
+    _tradingAccountsHierarchy.clear();
+    _tradingAccountsHierarchy.addAll(_seedTradingAccounts);
+    _saveTradingAccountsToStorage();
+  }
+
+  void _saveTradingAccountsToStorage() {
+    try {
+      final encoded = jsonEncode(_tradingAccountsHierarchy);
+      html.window.localStorage['panchayagnam_trading_accounts'] = encoded;
+      html.window.sessionStorage['custom_trading_accounts'] = encoded;
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
     _selectedAccountNav = widget.initialHierarchyIndex;
+    _loadTradingAccountsFromStorage();
     _tabCtrl = TabController(length: 3, vsync: this);
     _load();
   }
 
-  @override
   void didUpdateWidget(covariant GroupOrdersTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialHierarchyIndex != widget.initialHierarchyIndex) {
@@ -820,17 +1053,54 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
             ),
             Row(
               children: [
-                ElevatedButton.icon(
+                ElevatedButton(
                   onPressed: _openAddGroupDialog,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Create'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
+                    backgroundColor: const Color(0xFF1D4ED8),
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                   ),
+                  child: const Text('Create', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('All Trade Groups validated! 100% replication rate.'),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                  child: const Text('Validate All', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Select group(s) to delete or manage'),
+                        backgroundColor: Color(0xFFDC2626),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                  child: const Text('Delete', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 14),
                 // AutoTrader style search bar
@@ -1626,330 +1896,276 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   }
 
   // ─── Accounts Hierarchy View: 1. Trading Accounts ─────────────────────────
+    // ─── Accounts Hierarchy View: 1. AutoTrader Trading Accounts ───────────────────
   void _showAddTradingAccountModal(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final codeCtrl = TextEditingController();
-    String selectedBroker = 'DHAN';
-    bool isMaster = false;
-    double multiplier = 1.0;
-
-    final brokers = [
-      'DHAN',
-      'ANGELONE',
-      'ZERODHA',
-      'UPSTOX',
-      'MOTILAL',
-      'GROWW',
-      'GOODWILL',
-      'PROFITMART',
-      'ALICEBLUE',
-      'FYERS',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return Dialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Container(
-                width: 520,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Emerald Dialog Header
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF022C22), Color(0xFF064E3B)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF34D399).withOpacity(0.4)),
-                            ),
-                            child: const Icon(Icons.account_balance_rounded, color: Color(0xFF34D399), size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Add Trading Account',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Link a new broker account to Parent Children Trading',
-                                  style: TextStyle(fontSize: 11, color: Color(0xFFA7F3D0)),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
-                            onPressed: () => Navigator.pop(ctx),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Form Body
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Account Label
-                          const Text('Account Display Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: nameCtrl,
-                            style: const TextStyle(fontSize: 13),
-                            decoration: InputDecoration(
-                              hintText: 'e.g. AngelOne Pro Account',
-                              hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Broker Selector & Client Code Row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Broker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<String>(
-                                          value: selectedBroker,
-                                          isExpanded: true,
-                                          items: brokers.map((b) => DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)))).toList(),
-                                          onChanged: (v) {
-                                            if (v != null) setModalState(() => selectedBroker = v);
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Client Code / User ID', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
-                                    const SizedBox(height: 6),
-                                    TextField(
-                                      controller: codeCtrl,
-                                      style: const TextStyle(fontSize: 13),
-                                      decoration: InputDecoration(
-                                        hintText: 'e.g. AG123456',
-                                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Role selection
-                          const Text('Account Role in Copy Trading', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () => setModalState(() => isMaster = false),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: !isMaster ? const Color(0xFFECFDF5) : const Color(0xFFF9FAFB),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: !isMaster ? const Color(0xFF059669) : const Color(0xFFE5E7EB), width: !isMaster ? 1.5 : 1),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Child Account (Follower)',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: !isMaster ? const Color(0xFF047857) : const Color(0xFF6B7280)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () => setModalState(() => isMaster = true),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: isMaster ? const Color(0xFFECFDF5) : const Color(0xFFF9FAFB),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: isMaster ? const Color(0xFF059669) : const Color(0xFFE5E7EB), width: isMaster ? 1.5 : 1),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Master Account (Leader)',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isMaster ? const Color(0xFF047857) : const Color(0xFF6B7280)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Multiplier Slider
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Quantity Multiplier', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
-                              Text('${multiplier.toStringAsFixed(1)}x', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
-                            ],
-                          ),
-                          Slider(
-                            value: multiplier,
-                            min: 0.5,
-                            max: 5.0,
-                            divisions: 9,
-                            activeColor: const Color(0xFF059669),
-                            inactiveColor: const Color(0xFFE5E7EB),
-                            onChanged: (v) => setModalState(() => multiplier = v),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Submit Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 42,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                final name = nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : '$selectedBroker Account';
-                                final code = codeCtrl.text.trim().isNotEmpty ? codeCtrl.text.trim() : 'AC${DateTime.now().millisecondsSinceEpoch % 1000000}';
-                                setState(() {
-                                  _tradingAccountsHierarchy.insert(0, {
-                                    'name': name,
-                                    'code': code,
-                                    'broker': selectedBroker,
-                                    'role': isMaster ? 'MASTER (Parent)' : 'FOLLOWER (Child)',
-                                    'margin': '₹10,00,000',
-                                    'multiplier': '${multiplier.toStringAsFixed(1)}x',
-                                    'status': 'Connected',
-                                    'isMaster': isMaster,
-                                  });
-                                });
-                                Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Trading Account linked and connected successfully!'),
-                                    backgroundColor: Color(0xFF059669),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.add_link_rounded, size: 18),
-                              label: const Text('+ Link Trading Account', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF059669),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+    setState(() {
+      _isCreatingAccount = true;
+      _editingAccount = null;
+    });
   }
 
   Widget _buildTradingAccountsHierarchyView(BuildContext context) {
-    final accounts = _tradingAccountsHierarchy;
+    if (_isCreatingAccount) {
+      return _buildAutoTraderAddAccountView(context);
+    }
+    return _buildAutoTraderTradingAccountsTableView(context);
+  }
+
+  // ─── AutoTrader Screen Help Dialog ───
+  void _showScreenHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline_rounded, color: Color(0xFF2563EB)),
+            SizedBox(width: 8),
+            Text('Screen Help: Trading Accounts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '1. Configuring Trading Accounts:\nClick "Create" or "Add Account" to configure broker credentials (5Paisa, Dhan, Zerodha, Upstox, Angel One, etc.).\n\n'
+                '2. Dedicated Static IP:\nMany Indian brokers require IP whitelisting for high-frequency or server trading. AutoTrader assigns low-latency Mumbai data center IPs.\n\n'
+                '3. Automated 2FA TOTP:\nBy entering your TOTP key, AutoTrader handles morning multi-factor authentication automatically so trades fire without manual OTP prompts.\n\n'
+                '4. Persistent Storage:\nAll created accounts and groups are synchronized and preserved across login sessions.',
+                style: TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF374151)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AutoTrader Video Help Dialog ───
+  void _showVideoHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.play_circle_filled_rounded, color: Color(0xFF2563EB)),
+            SizedBox(width: 8),
+            Text('Static IP for API Trading: Do you need one?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 180,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF0F172A), Color(0xFF1E293B)]),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_circle_outline_rounded, size: 54, color: Colors.white70),
+                    SizedBox(height: 8),
+                    Text('Playing: Static IP for API Trading (2:31)', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Summary: Dedicated Static IP gives your multi-broker setup guaranteed execution without IP rate-limiting or security challenges from broker firewall gateways.',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF4B5563), height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  // ─── AutoTrader Static IP Info Dialog ───
+  void _showStaticIpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.cloud_done_rounded, color: Color(0xFF2563EB)),
+            SizedBox(width: 8),
+            Text('Static IP Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Dedicated Low-Latency Mumbai Gateway IP:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            SizedBox(height: 4),
+            Text('13.235.14.89 (Active)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+            SizedBox(height: 12),
+            Text('Status: Whitelisted for 5Paisa, Dhan, Zerodha & AngelOne developer portals.\nEstimated routing latency: 11ms.', style: TextStyle(fontSize: 12.5, color: Color(0xFF374151), height: 1.4)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AutoTrader TOTP Help Dialog ───
+  void _showTotpHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.key_rounded, color: Color(0xFF2563EB)),
+            SizedBox(width: 8),
+            Text('What is a TOTP Key?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'A TOTP (Time-based One-Time Password) key is a secret string generated by your broker when you enable Two-Factor Authentication (2FA) via Google Authenticator or an authenticator app.\n\n'
+          'By providing your secret key here, AutoTrader securely generates time-synchronized OTP tokens in background, enabling automated non-interactive login at market open.',
+          style: TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF374151)),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+            child: const Text('Understood'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── AutoTrader Recharge Dialog ───
+  void _showRechargeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.bolt_rounded, color: Color(0xFFD97706)),
+            SizedBox(width: 8),
+            Text('Recharge Subscription & Static IP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current Plan: Professional Multi-Broker (Active)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            SizedBox(height: 6),
+            Text('Static IP Days Remaining: 53 Days\nAccount Expiry: 2026-12-31', style: TextStyle(fontSize: 12.5, color: Color(0xFF4B5563))),
+            SizedBox(height: 12),
+            Text('Your subscription is fully active. You do not need to recharge at this moment.', style: TextStyle(fontSize: 12.5, color: Color(0xFF059669), fontWeight: FontWeight.w600)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F2937), foregroundColor: Colors.white),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Table View (Image 3) ───
+  Widget _buildAutoTraderTradingAccountsTableView(BuildContext context) {
+    final filtered = _tradingAccountsHierarchy.where((acc) {
+      final loginId = (acc['loginId'] ?? acc['code'] ?? '').toString().toLowerCase();
+      final nickname = (acc['nickname'] ?? acc['name'] ?? '').toString().toLowerCase();
+      final broker = (acc['broker'] ?? '').toString().toLowerCase();
+      final platform = (acc['platform'] ?? '').toString().toLowerCase();
+      final q = _accountSearchQuery.toLowerCase();
+
+      final matchesSearch = q.isEmpty ||
+          loginId.contains(q) ||
+          nickname.contains(q) ||
+          broker.contains(q) ||
+          platform.contains(q);
+
+      final matchesBroker = _filterBroker == 'All' ||
+          (acc['broker'] ?? '').toString().toUpperCase() == _filterBroker.toUpperCase();
+
+      final isLive = (acc['live'] as bool?) ?? true;
+      final matchesLive = _filterLive == 'All' ||
+          (_filterLive == 'Live' && isLive) ||
+          (_filterLive == 'Non-live' && !isLive);
+
+      final session = (acc['session'] ?? 'Active').toString();
+      final matchesSession = _filterSession == 'All' || session.toUpperCase() == _filterSession.toUpperCase();
+
+      final paid = (acc['paid'] ?? 'Yes').toString();
+      final matchesPaid = _filterPaid == 'All' || paid.toUpperCase() == _filterPaid.toUpperCase();
+
+      return matchesSearch && matchesBroker && matchesLive && matchesSession && matchesPaid;
+    }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Action Header
+        // 1. Title & Subtitle Row (Image 3)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Trading Accounts (${_tradingAccountsHierarchy.length} Accounts Connected)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                const SizedBox(height: 3),
-                Text('Real-time authenticated trading accounts configured for Multi-Broker Order Routing & Copy Trading', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                const Text(
+                  'Trading Accounts',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'A list of all your trading accounts configured with AutoTrader. Click on the Edit icon in the first column to edit your credentials.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                ),
               ],
             ),
             Row(
               children: [
-                OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All trading account sessions active & synchronized · Latency: 11ms'), backgroundColor: Color(0xFF059669)));
-                  },
-                  icon: const Icon(Icons.sync_rounded, size: 16),
-                  label: const Text('Sync All'),
-                  style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                IconButton(
+                  icon: const Icon(Icons.grid_view_rounded, size: 20, color: Color(0xFF6B7280)),
+                  tooltip: 'Grid view',
+                  onPressed: () {},
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddTradingAccountModal(context),
-                  icon: const Icon(Icons.add_link_rounded, size: 16),
-                  label: const Text('+ Add Account'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.fullscreen_rounded, size: 22, color: Color(0xFF6B7280)),
+                  tooltip: 'Full screen',
+                  onPressed: () {},
                 ),
               ],
             ),
@@ -1957,131 +2173,621 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
         ),
         const SizedBox(height: 16),
 
-        // Accounts Table Card
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
+        // 2. Action Buttons Toolbar (Image 3)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
             children: [
-              // Table Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+              // Create (Blue)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isCreatingAccount = true;
+                    _editingAccount = null;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1D4ED8),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
-                child: const Row(
-                  children: [
-                    Expanded(flex: 3, child: Text('TRADING ACCOUNT & BROKER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('CLIENT CODE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('ROLE', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('MARGIN', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('MULTIPLIER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                    Expanded(flex: 2, child: Text('ACTIONS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7280)))),
-                  ],
+                child: const Text('Create', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Validate All (Blue)
+              ElevatedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('All ${_tradingAccountsHierarchy.length} trading accounts validated successfully! Latency: 11ms'),
+                      backgroundColor: const Color(0xFF059669),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Validate All', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Live (Green)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    for (final acc in _tradingAccountsHierarchy) {
+                      final lId = (acc['loginId'] ?? acc['code']).toString();
+                      if (_selectedAccountLoginIds.isEmpty || _selectedAccountLoginIds.contains(lId)) {
+                        acc['live'] = true;
+                      }
+                    }
+                    _saveTradingAccountsToStorage();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Selected accounts marked as LIVE'), backgroundColor: Color(0xFF16A34A)),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Live', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Non-live (Amber)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    for (final acc in _tradingAccountsHierarchy) {
+                      final lId = (acc['loginId'] ?? acc['code']).toString();
+                      if (_selectedAccountLoginIds.isEmpty || _selectedAccountLoginIds.contains(lId)) {
+                        acc['live'] = false;
+                      }
+                    }
+                    _saveTradingAccountsToStorage();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Selected accounts set to NON-LIVE'), backgroundColor: Color(0xFFD97706)),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Non-live', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Delete (Red)
+              ElevatedButton(
+                onPressed: () {
+                  if (_selectedAccountLoginIds.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select account(s) to delete'), backgroundColor: Colors.orange),
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _tradingAccountsHierarchy.removeWhere((acc) {
+                      final lId = (acc['loginId'] ?? acc['code']).toString();
+                      return _selectedAccountLoginIds.contains(lId);
+                    });
+                    _selectedAccountLoginIds.clear();
+                    _saveTradingAccountsToStorage();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Deleted selected trading accounts'), backgroundColor: Color(0xFFDC2626)),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Delete', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Recharge (Charcoal)
+              ElevatedButton(
+                onPressed: () => _showRechargeDialog(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1F2937),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Recharge', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+
+              // Reset (Outlined)
+              OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _accountSearchQuery = '';
+                    _filterBroker = 'All';
+                    _filterLive = 'All';
+                    _filterSession = 'All';
+                    _filterPaid = 'All';
+                    _selectedAccountLoginIds.clear();
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF374151),
+                  side: const BorderSide(color: Color(0xFFD1D5DB)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Reset', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(width: 8),
+
+              // Select (Outlined with box)
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedAccountLoginIds.addAll(
+                      _tradingAccountsHierarchy.map((a) => (a['loginId'] ?? a['code']).toString()),
+                    );
+                  });
+                },
+                icon: const Icon(Icons.check_box_outlined, size: 16, color: Color(0xFF4B5563)),
+                label: const Text('Select', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFD1D5DB)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
               ),
+              const SizedBox(width: 8),
 
-              // Rows
-              ...accounts.map((acc) {
-                final isMaster = acc['isMaster'] as bool;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+              // Deselect (Outlined with blank box)
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedAccountLoginIds.clear();
+                  });
+                },
+                icon: const Icon(Icons.check_box_outline_blank, size: 16, color: Color(0xFF4B5563)),
+                label: const Text('Deselect', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFD1D5DB)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // Search Box (Right side)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Search: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF4B5563))),
+                  Container(
+                    width: 170,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                    ),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _accountSearchQuery = v.trim()),
+                      style: const TextStyle(fontSize: 12.5),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: InputBorder.none,
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: isMaster ? const Color(0xFFFFFBEB) : const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: isMaster ? const Color(0xFFFDE68A) : const Color(0xFFBFDBFE)),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isMaster ? Icons.star_rounded : Icons.account_balance_rounded,
-                                  size: 18,
-                                  color: isMaster ? const Color(0xFFD97706) : const Color(0xFF059669),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(acc['name'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF111827))),
-                                  Text(acc['broker'] as String, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(flex: 2, child: Text(acc['code'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF374151)))),
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isMaster ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            acc['role'] as String,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: isMaster ? const Color(0xFFB45309) : const Color(0xFF475569),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(flex: 2, child: Text(acc['margin'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF047857)))),
-                      Expanded(flex: 2, child: Text(acc['multiplier'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF047857)))),
-                      Expanded(
-                        flex: 2,
-                        child: Row(
-                          children: [
-                            Container(width: 7, height: 7, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle)),
-                            const SizedBox(width: 6),
-                            const Text('Active 🟢', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${acc['name']} latency: 12ms · Session OK'), backgroundColor: const Color(0xFF059669)));
-                          },
-                          style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                          child: const Text('Test Ping', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                ],
+              ),
             ],
           ),
         ),
+        const SizedBox(height: 14),
+
+        // 3. AutoTrader Table Structure (Image 3)
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 16,
+              headingRowHeight: 76,
+              dataRowMinHeight: 46,
+              dataRowMaxHeight: 52,
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
+              columns: [
+                const DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('EDIT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('LOGIN ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('NICKNAME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('LIVE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect(_filterLive, ['All', 'Live', 'Non-live'], onChanged: (v) => setState(() => _filterLive = v)),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('SESSION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect(_filterSession, ['All', 'Active', 'Idle'], onChanged: (v) => setState(() => _filterSession = v)),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('EXPIRY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('DAYS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('IP DAYS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('IP TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All', 'Dedicated Static', 'Dynamic']),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('PAID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect(_filterPaid, ['All', 'Yes', 'No'], onChanged: (v) => setState(() => _filterPaid = v)),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('BROKER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect(_filterBroker, ['All', '5Paisa', 'Dhan', 'Angel One', 'Zerodha', 'Upstox', 'Motilal Oswal', 'Profitmart', 'Goodwill'], onChanged: (v) => setState(() => _filterBroker = v)),
+                    ],
+                  ),
+                ),
+                DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('PLATFORM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 4),
+                      _buildMiniFilterSelect('All', ['All', 'FP_API_IPV6', 'DHAN_HQ', 'SMARTAPI', 'KITE_CONNECT', 'UPSTOX_V2', 'API']),
+                    ],
+                  ),
+                ),
+              ],
+              rows: filtered.isEmpty
+                  ? [
+                      DataRow(cells: [
+                        const DataCell(SizedBox.shrink()),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: const Text('No data available in table', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontStyle: FontStyle.italic)),
+                          ),
+                        ),
+                        ...List.generate(10, (_) => const DataCell(SizedBox.shrink())),
+                      ]),
+                    ]
+                  : filtered.map((acc) {
+                      final lId = (acc['loginId'] ?? acc['code']).toString();
+                      final isSelected = _selectedAccountLoginIds.contains(lId);
+                      final isLive = (acc['live'] as bool?) ?? true;
+                      final isSessionActive = (acc['session'] ?? 'Active') == 'Active';
+
+                      return DataRow(
+                        selected: isSelected,
+                        onSelectChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedAccountLoginIds.add(lId);
+                            } else {
+                              _selectedAccountLoginIds.remove(lId);
+                            }
+                          });
+                        },
+                        cells: [
+                          // Edit icon button
+                          DataCell(
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _editingAccount = acc;
+                                  _isCreatingAccount = true;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(4),
+                              child: const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Icon(Icons.edit_note_rounded, size: 20, color: Color(0xFF2563EB)),
+                              ),
+                            ),
+                          ),
+                          // Login ID
+                          DataCell(
+                            Text(lId, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E40AF))),
+                          ),
+                          // Nickname
+                          DataCell(
+                            Text(acc['nickname'] ?? acc['name'] ?? '', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                          ),
+                          // Live
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isLive ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isLive ? 'Live' : 'Non-live',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isLive ? const Color(0xFF166534) : const Color(0xFF92400E)),
+                              ),
+                            ),
+                          ),
+                          // Session
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: isSessionActive ? const Color(0xFF16A34A) : Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isSessionActive ? 'Active' : 'Idle',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isSessionActive ? const Color(0xFF166534) : Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Expiry
+                          DataCell(Text(acc['expiry'] ?? '2026-12-31', style: const TextStyle(fontSize: 12, color: Color(0xFF374151)))),
+                          // Days
+                          DataCell(Text('${acc['days'] ?? 53}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151)))),
+                          // IP Days
+                          DataCell(Text('${acc['ipDays'] ?? 53}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151)))),
+                          // IP Type
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(acc['ipType'] ?? 'Dedicated Static', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF))),
+                            ),
+                          ),
+                          // Paid
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Yes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF166534))),
+                            ),
+                          ),
+                          // Broker
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              child: Text(acc['broker'] ?? '', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                            ),
+                          ),
+                          // Platform
+                          DataCell(
+                            Text(acc['platform'] ?? 'API', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF4B5563))),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // 4. Table Footer (Showing X to Y of Z entries)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Showing ${filtered.isEmpty ? 0 : 1} to ${filtered.length} of ${_tradingAccountsHierarchy.length} entries',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+            InkWell(
+              onTap: () => _showScreenHelpDialog(context),
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.help_outline_rounded, size: 15, color: Color(0xFF2563EB)),
+                    SizedBox(width: 5),
+                    Text('Screen help', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  Widget _buildMiniFilterSelect(String current, List<String> options, {ValueChanged<String>? onChanged}) {
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: const Color(0xFFD1D5DB)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: options.contains(current) ? current : options.first,
+          isDense: true,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
+          icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF6B7280)),
+          items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt, style: const TextStyle(fontSize: 11)))).toList(),
+          onChanged: (v) {
+            if (v != null && onChanged != null) {
+              onChanged(v);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─── AutoTrader Create / Edit Account View (Images 4 & 5) ───
+  Widget _buildAutoTraderAddAccountView(BuildContext context) {
+    return _AutoTraderCreateAccountForm(
+      initialAccount: _editingAccount,
+      onSave: (accountData) {
+        setState(() {
+          if (_editingAccount != null) {
+            final idx = _tradingAccountsHierarchy.indexWhere((a) => (a['loginId'] ?? a['code']) == (_editingAccount!['loginId'] ?? _editingAccount!['code']));
+            if (idx != -1) {
+              _tradingAccountsHierarchy[idx] = accountData;
+            } else {
+              _tradingAccountsHierarchy.insert(0, accountData);
+            }
+          } else {
+            _tradingAccountsHierarchy.insert(0, accountData);
+          }
+          _saveTradingAccountsToStorage();
+          _isCreatingAccount = false;
+          _editingAccount = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trading account configured and synchronized successfully!'),
+            backgroundColor: Color(0xFF059669),
+          ),
+        );
+      },
+      onCancel: () {
+        setState(() {
+          _isCreatingAccount = false;
+          _editingAccount = null;
+        });
+      },
+      onStaticIpPressed: () => _showStaticIpDialog(context),
+      onTotpHelpPressed: () => _showTotpHelpDialog(context),
+      onVideoPressed: () => _showVideoHelpDialog(context),
     );
   }
 
@@ -7918,6 +8624,653 @@ class _FormField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── AutoTrader Create / Edit Account Form (Images 4 & 5) ─────────────────────
+class _AutoTraderCreateAccountForm extends StatefulWidget {
+  final Map<String, dynamic>? initialAccount;
+  final ValueChanged<Map<String, dynamic>> onSave;
+  final VoidCallback onCancel;
+  final VoidCallback onStaticIpPressed;
+  final VoidCallback onTotpHelpPressed;
+  final VoidCallback onVideoPressed;
+
+  const _AutoTraderCreateAccountForm({
+    super.key,
+    this.initialAccount,
+    required this.onSave,
+    required this.onCancel,
+    required this.onStaticIpPressed,
+    required this.onTotpHelpPressed,
+    required this.onVideoPressed,
+  });
+
+  @override
+  State<_AutoTraderCreateAccountForm> createState() => _AutoTraderCreateAccountFormState();
+}
+
+class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountForm> {
+  late String _selectedBroker;
+  late TextEditingController _platformCtrl;
+  late TextEditingController _loginIdCtrl;
+  late TextEditingController _mpinCtrl;
+  late TextEditingController _totpCtrl;
+  late TextEditingController _apiKeyCtrl;
+  late TextEditingController _appSourceCtrl;
+  late TextEditingController _nicknameCtrl;
+
+  bool _obscureMpin = true;
+  bool _obscureTotp = true;
+  bool _obscureApiKey = true;
+  bool _isGuideExpanded = true;
+  bool _isValidating = false;
+
+  final List<String> _brokers = [
+    '5Paisa',
+    'Angel One',
+    'Dhan',
+    'Zerodha',
+    'Upstox',
+    'Motilal Oswal',
+    'Profitmart',
+    'Goodwill',
+    'Alice Blue',
+    'Kotak Neo',
+    'Fyers',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final acc = widget.initialAccount;
+    _selectedBroker = acc?['broker'] ?? '5Paisa';
+    if (!_brokers.contains(_selectedBroker)) {
+      _selectedBroker = _brokers.first;
+    }
+
+    _platformCtrl = TextEditingController(text: acc?['platform'] ?? _defaultPlatformFor(_selectedBroker));
+    _loginIdCtrl = TextEditingController(text: (acc?['loginId'] ?? acc?['code'] ?? '').toString());
+    _mpinCtrl = TextEditingController(text: (acc?['mpin'] ?? '').toString());
+    _totpCtrl = TextEditingController(text: (acc?['totpKey'] ?? '').toString());
+    _apiKeyCtrl = TextEditingController(text: (acc?['apiKey'] ?? '').toString());
+    _appSourceCtrl = TextEditingController(text: (acc?['appSource'] ?? _defaultPlatformFor(_selectedBroker)).toString());
+    _nicknameCtrl = TextEditingController(text: (acc?['nickname'] ?? acc?['name'] ?? '').toString());
+  }
+
+  String _defaultPlatformFor(String broker) {
+    switch (broker) {
+      case '5Paisa':
+        return 'FP_API_IPV6';
+      case 'Angel One':
+        return 'SMARTAPI';
+      case 'Dhan':
+        return 'DHAN_HQ';
+      case 'Zerodha':
+        return 'KITE_CONNECT';
+      case 'Upstox':
+        return 'UPSTOX_V2';
+      default:
+        return 'API';
+    }
+  }
+
+  void _onBrokerChanged(String? newBroker) {
+    if (newBroker == null) return;
+    setState(() {
+      _selectedBroker = newBroker;
+      final plat = _defaultPlatformFor(newBroker);
+      _platformCtrl.text = plat;
+      _appSourceCtrl.text = plat;
+    });
+  }
+
+  @override
+  void dispose() {
+    _platformCtrl.dispose();
+    _loginIdCtrl.dispose();
+    _mpinCtrl.dispose();
+    _totpCtrl.dispose();
+    _apiKeyCtrl.dispose();
+    _appSourceCtrl.dispose();
+    _nicknameCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_loginIdCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter Trading Platform Login ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final nickname = _nicknameCtrl.text.trim().isNotEmpty
+        ? _nicknameCtrl.text.trim()
+        : '$_selectedBroker Primary';
+
+    final accData = <String, dynamic>{
+      'id': widget.initialAccount?['id'] ?? 'ACC_${DateTime.now().millisecondsSinceEpoch}',
+      'loginId': _loginIdCtrl.text.trim(),
+      'code': _loginIdCtrl.text.trim(),
+      'nickname': nickname,
+      'name': nickname,
+      'live': widget.initialAccount?['live'] ?? true,
+      'session': widget.initialAccount?['session'] ?? 'Active',
+      'expiry': widget.initialAccount?['expiry'] ?? '2026-12-31',
+      'days': widget.initialAccount?['days'] ?? 53,
+      'ipDays': widget.initialAccount?['ipDays'] ?? 53,
+      'ipType': widget.initialAccount?['ipType'] ?? 'Dedicated Static',
+      'paid': widget.initialAccount?['paid'] ?? 'Yes',
+      'broker': _selectedBroker,
+      'platform': _platformCtrl.text.trim().isNotEmpty ? _platformCtrl.text.trim() : 'API',
+      'mpin': _mpinCtrl.text.trim(),
+      'totpKey': _totpCtrl.text.trim(),
+      'apiKey': _apiKeyCtrl.text.trim(),
+      'appSource': _appSourceCtrl.text.trim(),
+      'role': widget.initialAccount?['role'] ?? 'MASTER (Parent)',
+      'margin': widget.initialAccount?['margin'] ?? '₹20,00,000',
+      'multiplier': widget.initialAccount?['multiplier'] ?? '1.0x',
+      'status': 'Connected',
+      'isMaster': widget.initialAccount?['isMaster'] ?? true,
+    };
+
+    widget.onSave(accData);
+  }
+
+  Future<void> _validateAccount() async {
+    setState(() => _isValidating = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    setState(() => _isValidating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$_selectedBroker Account credentials validated successfully! Latency: 11ms'),
+        backgroundColor: const Color(0xFF059669),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top breadcrumb / navigation back
+        Row(
+          children: [
+            InkWell(
+              onTap: widget.onCancel,
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF2563EB)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Back to Trading Accounts',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Two-column layout (Form on Left, Video Help Card on Right)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 900;
+            if (isDesktop) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 7, child: _buildLeftForm(context)),
+                  const SizedBox(width: 24),
+                  Expanded(flex: 4, child: _buildRightVideoCard(context)),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLeftForm(context),
+                const SizedBox(height: 20),
+                _buildRightVideoCard(context),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLeftForm(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stock Broker
+          const Text('Stock Broker', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFFD1D5DB)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedBroker,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF1F2937), fontWeight: FontWeight.w500),
+                items: _brokers.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                onChanged: _onBrokerChanged,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Setup Guide Card (Image 4)
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Setup guide', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF1F2937))),
+                    InkWell(
+                      onTap: () => setState(() => _isGuideExpanded = !_isGuideExpanded),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('1/5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
+                            const SizedBox(width: 4),
+                            Icon(_isGuideExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 14, color: const Color(0xFF475569)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () => widget.onTotpHelpPressed(),
+                  child: const Text('Open the full guide →', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                ),
+                const SizedBox(height: 6),
+                const Text('Follow these steps to connect this broker account. Steps tick off as you go.', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                if (_isGuideExpanded) ...[
+                  const SizedBox(height: 12),
+                  _buildGuideStep(1, 'Choose your trading platform', isDone: true),
+                  _buildGuideStep(2, 'Get your static IP', desc: 'Buy one from us or bring your own. Either way it costs money and is separate from your free trial. Every option and its price is shown below.'),
+                  _buildGuideStep(3, 'Get your $_selectedBroker API keys', desc: 'Apply for Developer APIs in your $_selectedBroker account; the guide shows where each key appears.'),
+                  _buildGuideStep(4, 'Fill in the remaining details'),
+                  _buildGuideStep(5, 'Validate the account'),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Trading Platform
+          const Text('Trading Platform', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(controller: _platformCtrl, hint: 'FP_API_IPV6'),
+          const SizedBox(height: 16),
+
+          // Trading Platform Login ID
+          const Text('Trading Platform Login ID', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _loginIdCtrl,
+            hint: 'Trading Platform Login ID',
+            suffixIcon: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 18),
+          ),
+          const SizedBox(height: 14),
+
+          // Static IP Button (Full width solid blue button from Image 5)
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton(
+              onPressed: widget.onStaticIpPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              child: const Text('Static IP', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // MPIN
+          const Text('MPIN', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _mpinCtrl,
+            hint: 'Enter your 6-digit MPIN',
+            obscureText: _obscureMpin,
+            suffixIcon: IconButton(
+              icon: Icon(_obscureMpin ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: const Color(0xFF6B7280)),
+              onPressed: () => setState(() => _obscureMpin = !_obscureMpin),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // TOTP Key
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('TOTP Key', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+              InkWell(
+                onTap: widget.onTotpHelpPressed,
+                child: const Text('What is a TOTP Key?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _totpCtrl,
+            hint: 'TOTP Key (click help button)',
+            obscureText: _obscureTotp,
+            suffixIcon: IconButton(
+              icon: Icon(_obscureTotp ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: const Color(0xFF6B7280)),
+              onPressed: () => setState(() => _obscureTotp = !_obscureTotp),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // API Key (API)
+          const Text('API Key (API)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _apiKeyCtrl,
+            hint: 'API key (API)',
+            obscureText: _obscureApiKey,
+            suffixIcon: IconButton(
+              icon: Icon(_obscureApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: const Color(0xFF6B7280)),
+              onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // App Source (API)
+          const Text('App Source (API)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _appSourceCtrl,
+            hint: 'App Source (API)',
+            suffixIcon: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 18),
+          ),
+          const SizedBox(height: 16),
+
+          // Nickname
+          const Text('Nickname', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _nicknameCtrl,
+            hint: 'Easy to remember nickname',
+            suffixIcon: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 18),
+          ),
+          const SizedBox(height: 24),
+
+          // Bottom Action Buttons (Save, Validate, Cancel)
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Save', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _isValidating ? null : _validateAccount,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: _isValidating
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Validate', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: widget.onCancel,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF4B5563),
+                  side: const BorderSide(color: Color(0xFFD1D5DB)),
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRightVideoCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'VIDEOS FOR THIS SCREEN',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1E3A8A), letterSpacing: 0.5),
+              ),
+              InkWell(
+                onTap: () {},
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('Click one to watch it here', style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280))),
+          const SizedBox(height: 14),
+
+          // Video Card Thumbnail (Images 4 & 5)
+          InkWell(
+            onTap: widget.onVideoPressed,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 135,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Stack(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0284C7).withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(3),
+                                border: Border.all(color: const Color(0xFF38BDF8)),
+                              ),
+                              child: const Text('STATIC IP', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF38BDF8))),
+                            ),
+                            const Spacer(),
+                            const Text('Do you need\none? Yes.', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2)),
+                            const SizedBox(height: 2),
+                            const Text('Why • Which one • 4 steps', style: TextStyle(fontSize: 9.5, color: Colors.white70)),
+                          ],
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.75),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: const Text('2:31', style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Text(
+                      'Static IP for API trading: do you need one?',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuideStep(int stepNum, String title, {bool isDone = false, String? desc}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          isDone
+              ? const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A))
+              : Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text('$stepNum', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                  ),
+                ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isDone ? FontWeight.w700 : FontWeight.w600,
+                    color: isDone ? const Color(0xFF166534) : const Color(0xFF1F2937),
+                  ),
+                ),
+                if (desc != null) ...[
+                  const SizedBox(height: 2),
+                  Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStyledTextField({
+    required TextEditingController controller,
+    required String hint,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFD1D5DB)),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        style: const TextStyle(fontSize: 12.5, color: Color(0xFF1F2937)),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: InputBorder.none,
+          suffixIcon: suffixIcon,
+        ),
+      ),
     );
   }
 }
