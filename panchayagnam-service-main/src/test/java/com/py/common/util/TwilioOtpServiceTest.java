@@ -56,6 +56,8 @@ class TwilioOtpServiceTest {
     void testSendOtp_ServiceDisabled() {
         TwilioOtpService service = new TwilioOtpService();
         ReflectionTestUtils.setField(service, "twilioEnabled", false);
+        ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", false);
+        ReflectionTestUtils.setField(service, "fast2SmsEnabled", false);
         ReflectionTestUtils.setField(service, "fromNumber", "+1234567890");
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
@@ -70,6 +72,8 @@ class TwilioOtpServiceTest {
     void testSendOtp_InvalidPhoneNumber() {
         TwilioOtpService service = new TwilioOtpService();
         ReflectionTestUtils.setField(service, "twilioEnabled", true);
+        ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", false);
+        ReflectionTestUtils.setField(service, "fast2SmsEnabled", false);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
             service.sendOtpV2("123", "Registration");
@@ -83,6 +87,8 @@ class TwilioOtpServiceTest {
     void testSendOtp_SenderNotConfigured() {
         TwilioOtpService service = new TwilioOtpService();
         ReflectionTestUtils.setField(service, "twilioEnabled", true);
+        ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", false);
+        ReflectionTestUtils.setField(service, "fast2SmsEnabled", false);
         ReflectionTestUtils.setField(service, "fromNumber", "");
         ReflectionTestUtils.setField(service, "serviceSid", "");
 
