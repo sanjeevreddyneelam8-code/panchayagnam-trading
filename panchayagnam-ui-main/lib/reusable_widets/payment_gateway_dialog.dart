@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import '../service/static_ip_service.dart';
 
 enum PaymentMethod { upi, card, netBanking, wallet }
 
@@ -139,11 +140,18 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     final now = DateTime.now().millisecondsSinceEpoch;
     final generatedTxn = 'TXN_PY_${now.toString().substring(now.toString().length - 8)}';
 
-    // Update session storage for subscription expiry if plan purchased
+    // Update session storage and local storage for static IP & subscription
     try {
       html.window.sessionStorage['expiresInDays'] = '365';
       html.window.sessionStorage['expiredFlag'] = 'false';
+      html.window.localStorage['has_paid_static_ip'] = 'true';
+      html.window.sessionStorage['has_paid_static_ip'] = 'true';
+      html.window.localStorage['static_ip_unlocked'] = 'true';
+      html.window.sessionStorage['static_ip_unlocked'] = 'true';
+      html.window.localStorage['static_ip_days'] = '30';
     } catch (_) {}
+
+    StaticIpService.unlock(plan: _selectedPlan, txnId: generatedTxn);
 
     if (!mounted) return;
     setState(() {
@@ -575,6 +583,25 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                       '$mins:$secs remaining',
                       style: const TextStyle(fontSize: 9.5, color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: _triggerPayment,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 12, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('I Have Scanned QR', style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -791,8 +818,31 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Popular Wallets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const Text('Add Money & Pay via Wallet', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        const Text('Add money to wallet via UPI or Net Banking to activate Dedicated Static IP instantly.', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
         const SizedBox(height: 12),
+        ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Color(0xFF059669), width: 1.5)),
+          tileColor: const Color(0xFFECFDF5),
+          leading: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 28),
+          title: const Text('Panchayagnam Trading Wallet (Add Money & Pay)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
+          subtitle: const Text('Add ₹1,500 to wallet via UPI / Netbanking & activate Static IP instantly', style: TextStyle(fontSize: 11, color: Color(0xFF047857))),
+          trailing: ElevatedButton(
+            onPressed: _triggerPayment,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            child: const Text('Add & Pay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          onTap: _triggerPayment,
+        ),
+        const SizedBox(height: 10),
+        const Text('Popular Wallets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
         ListTile(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Color(0xFFE2E8F0))),
           leading: const Icon(Icons.account_balance_wallet, color: Color(0xFF059669)),
@@ -878,6 +928,30 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                 _buildReceiptRow('Payment Mode', _selectedMethod == PaymentMethod.upi ? 'UPI (Verified)' : 'Card / Net Banking'),
                 const Divider(height: 16),
                 _buildReceiptRow('Status', 'CONFIRMED · ACTIVE', isHighlight: true),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.router_rounded, color: Color(0xFF059669), size: 22),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dedicated Static IP Unlocked & Visible', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF065F46))),
+                      Text('Static IP: 13.235.14.89 (Whitelisted Mumbai Gateway · 30 Days)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

@@ -10,6 +10,7 @@ import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
+import '../../../service/static_ip_service.dart';
 import '../../../reusable_widets/signal_bridge_dialog.dart';
 import 'approve_user_tab.dart';
 import 'child_accounts_tab.dart';
@@ -569,38 +570,66 @@ class _MainDashboardState extends State<MainDashboard> {
 
               const SizedBox(width: 8),
 
-              // Static IP Chip directly visible on top bar
-              InkWell(
-                onTap: () {
-                  Clipboard.setData(const ClipboardData(text: '13.235.14.89'));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Dedicated Static IP copied: 13.235.14.89'),
-                      backgroundColor: Color(0xFF059669),
-                      behavior: SnackBarBehavior.floating,
-                      duration: Duration(seconds: 2),
+              // Dedicated Static IP Chip on top bar (Locked until payment / QR scan / wallet)
+              ValueListenableBuilder<bool>(
+                valueListenable: StaticIpService.isUnlockedNotifier,
+                builder: (context, isUnlocked, _) {
+                  if (!isUnlocked) {
+                    return InkWell(
+                      onTap: () => StaticIpService.showPaymentOrQrDialog(context),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF78350F).withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.7)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock_rounded, size: 13, color: Color(0xFFFBBF24)),
+                            SizedBox(width: 6),
+                            Text('Dedicated Static IP: Locked · Pay / Scan QR ⚡', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFFFDE68A))),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return InkWell(
+                    onTap: () {
+                      Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Dedicated Static IP copied: 13.235.14.89'),
+                          backgroundColor: Color(0xFF059669),
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF064E3B).withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.7)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.router_rounded, size: 14, color: Color(0xFF34D399)),
+                          SizedBox(width: 6),
+                          Text('Static IP: 13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFFE2E8F0))),
+                          SizedBox(width: 6),
+                          Icon(Icons.copy_rounded, size: 12, color: Color(0xFF94A3B8)),
+                        ],
+                      ),
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF334155)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.router_rounded, size: 14, color: Color(0xFF38BDF8)),
-                      SizedBox(width: 6),
-                      Text('Static IP: 13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFFE2E8F0))),
-                      SizedBox(width: 6),
-                      Icon(Icons.copy_rounded, size: 12, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
               ),
 
               const SizedBox(width: 8),
@@ -670,7 +699,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('User ID / Client Code', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                                      const Text('Trading Platform Login ID / User ID', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
                                       const SizedBox(height: 1),
                                       Text(userIdStr, style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12.5, fontWeight: FontWeight.w800)),
                                     ],
@@ -698,45 +727,122 @@ class _MainDashboardState extends State<MainDashboard> {
                             ),
                             const SizedBox(height: 8),
 
-                            // Dedicated Static IP with copy button
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: const Color(0xFF334155)),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Column(
+                            // Dedicated Static IP Section (Visible only after payment / QR / wallet)
+                            ValueListenableBuilder<bool>(
+                              valueListenable: StaticIpService.isUnlockedNotifier,
+                              builder: (context, isUnlocked, _) {
+                                if (!isUnlocked) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F172A),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Row(
+                                          children: [
+                                            Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFBBF24)),
+                                            SizedBox(width: 5),
+                                            Text('Dedicated Static IP', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        const Text('🔒 Not Visible · Locked', style: TextStyle(color: Color(0xFFFDE68A), fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                        const SizedBox(height: 2),
+                                        const Text('Visible after payment, adding money to wallet or scanning QR code.', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5)),
+                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 30,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              StaticIpService.showPaymentOrQrDialog(context);
+                                            },
+                                            icon: const Icon(Icons.qr_code_2_rounded, size: 14),
+                                            label: const Text('Scan QR / Pay to Unlock', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF2563EB),
+                                              foregroundColor: Colors.white,
+                                              padding: EdgeInsets.zero,
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0F172A),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.6)),
+                                  ),
+                                  child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Dedicated Static IP', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
-                                      SizedBox(height: 1),
-                                      Text('13.235.14.89', style: TextStyle(color: Color(0xFF34D399), fontSize: 12.5, fontWeight: FontWeight.w800)),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF10B981)),
+                                                  SizedBox(width: 3),
+                                                  Text('Dedicated Static IP (Active)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                                                ],
+                                              ),
+                                              SizedBox(height: 1),
+                                              Text('13.235.14.89', style: TextStyle(color: Color(0xFF34D399), fontSize: 12.5, fontWeight: FontWeight.w800)),
+                                            ],
+                                          ),
+                                          InkWell(
+                                            onTap: () {
+                                              Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
+                                              Navigator.pop(ctx);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Static IP copied: 13.235.14.89'),
+                                                  backgroundColor: Color(0xFF059669),
+                                                  behavior: SnackBarBehavior.floating,
+                                                  duration: Duration(seconds: 2),
+                                                ),
+                                              );
+                                            },
+                                            child: const Padding(
+                                              padding: EdgeInsets.all(4),
+                                              child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      InkWell(
+                                        onTap: () {
+                                          StaticIpService.lock();
+                                          Navigator.pop(ctx);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Static IP reset to Locked (Unpaid) state for testing.'),
+                                              backgroundColor: Color(0xFFD97706),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('🔄 Lock IP (Test Unpaid Mode)', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, decoration: TextDecoration.underline)),
+                                      ),
                                     ],
                                   ),
-                                  InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(const ClipboardData(text: '13.235.14.89'));
-                                      Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Static IP copied: 13.235.14.89'),
-                                          backgroundColor: Color(0xFF059669),
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    },
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(4),
-                                      child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 8),
 

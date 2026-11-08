@@ -23,6 +23,7 @@ import '../../../bloc/group_positions_bloc/group_positions_event.dart';
 import '../../../bloc/group_positions_bloc/group_positions_state.dart';
 import '../../../constants/colors.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/static_ip_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../reusable_widets/group_order_panel.dart';
 
@@ -2000,6 +2001,47 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
 
   // ─── AutoTrader Static IP Info Dialog ───
   void _showStaticIpDialog(BuildContext context) {
+    if (!StaticIpService.isUnlocked) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_rounded, color: Color(0xFFD97706)),
+              SizedBox(width: 8),
+              Text('Dedicated Static IP: Locked', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Status: Not Visible (Locked)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+              SizedBox(height: 6),
+              Text('Dedicated Static IP is not visible upon initial login. It becomes visible after payment, adding money to wallet, or scanning the given UPI QR code.', style: TextStyle(fontSize: 12.5, color: Color(0xFF374151), height: 1.4)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                StaticIpService.showPaymentOrQrDialog(context, onSuccess: () => setState(() {}));
+              },
+              icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+              label: const Text('Pay / Scan QR Now'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2064,37 +2106,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
 
   // ─── AutoTrader Recharge Dialog ───
   void _showRechargeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Row(
-          children: [
-            Icon(Icons.bolt_rounded, color: Color(0xFFD97706)),
-            SizedBox(width: 8),
-            Text('Recharge Subscription & Static IP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Current Plan: Professional Multi-Broker (Active)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-            SizedBox(height: 6),
-            Text('Static IP Days Remaining: 53 Days\nAccount Expiry: 2026-12-31', style: TextStyle(fontSize: 12.5, color: Color(0xFF4B5563))),
-            SizedBox(height: 12),
-            Text('Your subscription is fully active. You do not need to recharge at this moment.', style: TextStyle(fontSize: 12.5, color: Color(0xFF059669), fontWeight: FontWeight.w600)),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F2937), foregroundColor: Colors.white),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    StaticIpService.showPaymentOrQrDialog(context, onSuccess: () {
+      setState(() {});
+    });
   }
 
   // ─── Table View (Image 3) ───
@@ -2650,7 +2664,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                           // Days
                           DataCell(Text('${acc['days'] ?? 53}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151)))),
                           // IP Days
-                          DataCell(Text('${acc['ipDays'] ?? 53}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151)))),
+                          DataCell(Text(StaticIpService.isUnlocked ? '${acc['ipDays'] ?? 30}' : '0 (Locked 🔒)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: StaticIpService.isUnlocked ? const Color(0xFF374151) : const Color(0xFFDC2626)))),
                           // IP Type
                           DataCell(
                             Container(
@@ -2662,16 +2676,36 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               child: Text(acc['ipType'] ?? 'Dedicated Static', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF))),
                             ),
                           ),
-                          // Paid
+                          // Paid (Visible as Yes only after payment / QR / wallet)
                           DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('Yes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF166534))),
-                            ),
+                            StaticIpService.isUnlocked
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('Yes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF166534))),
+                                  )
+                                : InkWell(
+                                    onTap: () => StaticIpService.showPaymentOrQrDialog(context, onSuccess: () => setState(() {})),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEE2E2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.lock_outline_rounded, size: 10, color: Color(0xFFDC2626)),
+                                          SizedBox(width: 3),
+                                          Text('No · Pay QR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFDC2626))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                           ),
                           // Broker
                           DataCell(
@@ -8691,7 +8725,9 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     }
 
     _platformCtrl = TextEditingController(text: acc?['platform'] ?? _defaultPlatformFor(_selectedBroker));
-    _loginIdCtrl = TextEditingController(text: (acc?['loginId'] ?? acc?['code'] ?? '').toString());
+    final defaultLoginId = (acc?['loginId'] ?? acc?['code'] ?? '').toString();
+    final uid = html.window.sessionStorage['user_id'] ?? '10821';
+    _loginIdCtrl = TextEditingController(text: defaultLoginId.isNotEmpty ? defaultLoginId : 'PY-$uid');
     _mpinCtrl = TextEditingController(text: (acc?['mpin'] ?? '').toString());
     _totpCtrl = TextEditingController(text: (acc?['totpKey'] ?? '').toString());
     _apiKeyCtrl = TextEditingController(text: (acc?['apiKey'] ?? '').toString());
@@ -8934,7 +8970,40 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                 if (_isGuideExpanded) ...[
                   const SizedBox(height: 12),
                   _buildGuideStep(1, 'Choose your trading platform', isDone: true),
-                  _buildGuideStep(2, 'Get your static IP', desc: 'Buy one from us or bring your own. Either way it costs money and is separate from your free trial. Every option and its price is shown below.'),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: StaticIpService.isUnlockedNotifier,
+                    builder: (context, isUnlocked, _) {
+                      return _buildGuideStep(
+                        2,
+                        isUnlocked ? 'Get your static IP (Active: 13.235.14.89)' : 'Get your static IP (🔒 Locked · Separate purchase)',
+                        isDone: isUnlocked,
+                        desc: isUnlocked
+                            ? 'Dedicated AWS Mumbai Static IP 13.235.14.89 is active and whitelisted for this demat.'
+                            : 'Buy one from us or bring your own. Either way it costs money and is separate from your free trial. Pay via UPI QR or Add money to wallet to activate.',
+                        trailingAction: !isUnlocked
+                            ? InkWell(
+                                onTap: () => StaticIpService.showPaymentOrQrDialog(context, onSuccess: () => setState(() {})),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.qr_code_2_rounded, size: 13, color: Color(0xFF2563EB)),
+                                      SizedBox(width: 5),
+                                      Text('Pay / Scan QR to Activate Static IP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
                   _buildGuideStep(3, 'Get your $_selectedBroker API keys', desc: 'Apply for Developer APIs in your $_selectedBroker account; the guide shows where each key appears.'),
                   _buildGuideStep(4, 'Fill in the remaining details'),
                   _buildGuideStep(5, 'Validate the account'),
@@ -8954,13 +9023,34 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Trading Platform Login ID', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+              const Row(
+                children: [
+                  Text('Trading Platform Login ID', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                  SizedBox(width: 4),
+                  Text('(Broker Client Code / Panchayagnam ID)', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                ],
+              ),
               InkWell(
                 onTap: () {
                   final uid = html.window.sessionStorage['user_id'] ?? '10821';
                   _loginIdCtrl.text = 'PY-$uid';
                 },
-                child: const Text('Use Panchayagnam User ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.badge_rounded, size: 12, color: Color(0xFF2563EB)),
+                      const SizedBox(width: 4),
+                      Text('Use Platform User ID (PY-${html.window.sessionStorage['user_id'] ?? '10821'})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -8977,49 +9067,95 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           ),
           const SizedBox(height: 14),
 
-          // Static IP Button (Full width solid blue button from Image 5)
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton.icon(
-              onPressed: widget.onStaticIpPressed,
-              icon: const Icon(Icons.router_rounded, size: 16),
-              label: const Text('Static IP (Assigned: 13.235.14.89)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Text('Assigned Static IP: ', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
-              const Text('13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {
-                  Clipboard.setData(const ClipboardData(text: '13.235.14.89'));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFBFDBFE))),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+          // Static IP Button (Locked before payment / QR scan / wallet)
+          ValueListenableBuilder<bool>(
+            valueListenable: StaticIpService.isUnlockedNotifier,
+            builder: (context, isUnlocked, _) {
+              if (!isUnlocked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: () => StaticIpService.showPaymentOrQrDialog(context, onSuccess: () => setState(() {})),
+                        icon: const Icon(Icons.lock_rounded, size: 16),
+                        label: const Text('🔒 Static IP: Not Visible (Pay / Scan QR to Unlock)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD97706),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFFD97706)),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Static IP is NOT visible upon initial login. It becomes visible after payment, scanning UPI QR code, or adding money to wallet.',
+                            style: TextStyle(fontSize: 11, color: Color(0xFFB45309), fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onStaticIpPressed,
+                      icon: const Icon(Icons.router_rounded, size: 16),
+                      label: const Text('Static IP (Assigned: 13.235.14.89)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
                     children: [
-                      Icon(Icons.copy_rounded, size: 11, color: Color(0xFF2563EB)),
-                      SizedBox(width: 3),
-                      Text('Copy IP', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                      const Text('Assigned Static IP: ', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                      const Text('13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: StaticIpService.staticIp));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFBFDBFE))),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.copy_rounded, size: 11, color: Color(0xFF2563EB)),
+                              SizedBox(width: 3),
+                              Text('Copy IP', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
 
@@ -9247,7 +9383,7 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     );
   }
 
-  Widget _buildGuideStep(int stepNum, String title, {bool isDone = false, String? desc}) {
+  Widget _buildGuideStep(int stepNum, String title, {bool isDone = false, String? desc, Widget? trailingAction}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -9282,6 +9418,10 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                 if (desc != null) ...[
                   const SizedBox(height: 2),
                   Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3)),
+                ],
+                if (trailingAction != null) ...[
+                  const SizedBox(height: 6),
+                  trailingAction,
                 ],
               ],
             ),
