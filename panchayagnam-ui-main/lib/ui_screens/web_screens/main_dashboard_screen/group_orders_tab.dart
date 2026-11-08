@@ -8951,12 +8951,29 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           const SizedBox(height: 16),
 
           // Trading Platform Login ID
-          const Text('Trading Platform Login ID', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Trading Platform Login ID', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+              InkWell(
+                onTap: () {
+                  final uid = html.window.sessionStorage['user_id'] ?? '10821';
+                  _loginIdCtrl.text = 'PY-$uid';
+                },
+                child: const Text('Use Panchayagnam User ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
           _buildStyledTextField(
             controller: _loginIdCtrl,
-            hint: 'Trading Platform Login ID',
+            hint: 'Enter your Broker Client ID (e.g. 5Paisa Client Code, AngelOne Client ID, Kite User ID)',
             suffixIcon: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 18),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '💡 This is your Broker Client Code from your broker app profile (e.g. 5Paisa Client Code, AngelOne Client ID, Kite User ID)',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
           ),
           const SizedBox(height: 14),
 
@@ -8964,16 +8981,45 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           SizedBox(
             width: double.infinity,
             height: 42,
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: widget.onStaticIpPressed,
+              icon: const Icon(Icons.router_rounded, size: 16),
+              label: const Text('Static IP (Assigned: 13.235.14.89)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
-              child: const Text('Static IP', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
             ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Text('Assigned Static IP: ', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+              const Text('13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(const ClipboardData(text: '13.235.14.89'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFBFDBFE))),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.copy_rounded, size: 11, color: Color(0xFF2563EB)),
+                      SizedBox(width: 3),
+                      Text('Copy IP', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
