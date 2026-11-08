@@ -57,7 +57,11 @@ class TwilioOtpServiceTest {
         TwilioOtpService service = new TwilioOtpService();
         ReflectionTestUtils.setField(service, "twilioEnabled", false);
         ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", false);
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorEnabled", false);
         ReflectionTestUtils.setField(service, "fast2SmsEnabled", false);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsEnabled", false);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsApiKey", "");
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorApiKey", "");
         ReflectionTestUtils.setField(service, "fromNumber", "+1234567890");
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
@@ -88,7 +92,11 @@ class TwilioOtpServiceTest {
         TwilioOtpService service = new TwilioOtpService();
         ReflectionTestUtils.setField(service, "twilioEnabled", true);
         ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", false);
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorEnabled", false);
         ReflectionTestUtils.setField(service, "fast2SmsEnabled", false);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsEnabled", false);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsApiKey", "");
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorApiKey", "");
         ReflectionTestUtils.setField(service, "fromNumber", "");
         ReflectionTestUtils.setField(service, "serviceSid", "");
 

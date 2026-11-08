@@ -326,7 +326,7 @@ public class TwilioOtpService {
      * Kept on server only, never exposed in logs or sent to clients.
      */
     public String getFast2SmsApiKey() {
-        if (runtimeFast2SmsApiKey != null && !runtimeFast2SmsApiKey.trim().isEmpty()) {
+        if (runtimeFast2SmsApiKey != null) {
             return runtimeFast2SmsApiKey.trim();
         }
         if (fast2SmsApiKey != null && !fast2SmsApiKey.trim().isEmpty()) {
