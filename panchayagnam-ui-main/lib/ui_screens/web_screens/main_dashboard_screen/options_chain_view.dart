@@ -1166,137 +1166,593 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   }
 
   // ── 3. Strategy Builder (Spreads, Straddles, Condors) ─────────────────────────
+    // ── Strategy Builder State & Simulation Variables ──
+  int _selectedStrategyIndex = 0;
+  double _simSpotOffset = 0.0; // -400 to +400 pts
+  int _simDaysToExpiry = 0; // 0 (Today) to 4 (Expiry)
+
   Widget _buildStrategyBuilderView() {
     final atm = _strikesData.firstWhere((s) => s.isAtm, orElse: () => _strikesData[9]);
     final otmCall = _strikesData[math.min(11, _strikesData.length - 1)];
     final otmPut = _strikesData[math.max(7, 0)];
 
     final strategies = [
-      (
-        'Bull Call Spread',
-        'Bullish moderately directional spread. Buy ATM Call, Sell OTM Call to cap downside theta decay.',
-        'Buy ${atm.strike.toInt()} CE @ ₹${atm.callLtp} · Sell ${otmCall.strike.toInt()} CE @ ₹${otmCall.callLtp}',
-        'Max Profit: ₹${((otmCall.strike - atm.strike - (atm.callLtp - otmCall.callLtp)) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
-        'Max Loss: ₹${((atm.callLtp - otmCall.callLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
-        '1:2.4',
-        const Color(0xFF059669),
-      ),
-      (
-        'Short Straddle (Delta Neutral)',
-        'Sell ATM Call and ATM Put simultaneously to capture premium erosion on low volatility days.',
-        'Sell ${atm.strike.toInt()} CE @ ₹${atm.callLtp} · Sell ${atm.strike.toInt()} PE @ ₹${atm.putLtp}',
-        'Max Profit: ₹${((atm.callLtp + atm.putLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
-        'Breakevens: ${(atm.strike - (atm.callLtp + atm.putLtp)).toInt()} to ${(atm.strike + (atm.callLtp + atm.putLtp)).toInt()}',
-        'High Win Rate',
-        const Color(0xFF7C3AED),
-      ),
-      (
-        'Bear Put Spread',
-        'Moderately bearish debit spread. Buy ATM Put and finance with OTM Put writing.',
-        'Buy ${atm.strike.toInt()} PE @ ₹${atm.putLtp} · Sell ${otmPut.strike.toInt()} PE @ ₹${otmPut.putLtp}',
-        'Max Profit: ₹${((atm.strike - otmPut.strike - (atm.putLtp - otmPut.putLtp)) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
-        'Max Loss: ₹${((atm.putLtp - otmPut.putLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
-        '1:2.1',
-        const Color(0xFFDC2626),
-      ),
-      (
-        'Iron Condor (4-Legged)',
-        'Range-bound non-directional 4-leg structure. Sell OTM Strangle and Buy wings for margin relief.',
-        'Sell ${otmCall.strike.toInt()} CE & ${otmPut.strike.toInt()} PE · Buy Wings',
-        'Max Profit: ₹${((otmCall.callLtp + otmPut.putLtp) * _lotSizes[_underlying]! * 0.7).toStringAsFixed(0)}',
-        'Defined Risk: 85% POP',
-        '1:3.0',
-        const Color(0xFF059669),
-      ),
+      {
+        'name': 'Bull Call Spread',
+        'type': 'Moderately Bullish',
+        'pop': '68.2%',
+        'delta': '+0.28',
+        'theta': '+₹1,450/d',
+        'maxProfit': '₹${((otmCall.strike - atm.strike - (atm.callLtp - otmCall.callLtp)) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'maxLoss': '₹${((atm.callLtp - otmCall.callLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'rr': '1:2.4',
+        'beLower': (atm.strike + (atm.callLtp - otmCall.callLtp)).toInt(),
+        'beUpper': otmCall.strike.toInt(),
+        'legs': [
+          {'side': 'BUY', 'strike': atm.strike.toInt(), 'type': 'CE', 'price': atm.callLtp, 'delta': 0.52},
+          {'side': 'SELL', 'strike': otmCall.strike.toInt(), 'type': 'CE', 'price': otmCall.callLtp, 'delta': -0.24},
+        ],
+        'color': const Color(0xFF059669),
+      },
+      {
+        'name': 'Short Straddle (Delta Neutral)',
+        'type': 'Non-Directional Premium Decay',
+        'pop': '74.8%',
+        'delta': '-0.02',
+        'theta': '+₹4,250/d',
+        'maxProfit': '₹${((atm.callLtp + atm.putLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'maxLoss': 'Undefined (SL Protected)',
+        'rr': 'High Win-Rate',
+        'beLower': (atm.strike - (atm.callLtp + atm.putLtp)).toInt(),
+        'beUpper': (atm.strike + (atm.callLtp + atm.putLtp)).toInt(),
+        'legs': [
+          {'side': 'SELL', 'strike': atm.strike.toInt(), 'type': 'CE', 'price': atm.callLtp, 'delta': -0.50},
+          {'side': 'SELL', 'strike': atm.strike.toInt(), 'type': 'PE', 'price': atm.putLtp, 'delta': 0.48},
+        ],
+        'color': const Color(0xFF7C3AED),
+      },
+      {
+        'name': 'Iron Condor (4-Legged Defined Risk)',
+        'type': 'Range-Bound Defined Risk',
+        'pop': '82.5%',
+        'delta': '+0.01',
+        'theta': '+₹3,180/d',
+        'maxProfit': '₹${((otmCall.callLtp + otmPut.putLtp) * _lotSizes[_underlying]! * 0.7).toStringAsFixed(0)}',
+        'maxLoss': '₹${(((otmCall.strike - atm.strike) * 0.5) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'rr': '1:3.1',
+        'beLower': (otmPut.strike - (otmPut.putLtp * 0.8)).toInt(),
+        'beUpper': (otmCall.strike + (otmCall.callLtp * 0.8)).toInt(),
+        'legs': [
+          {'side': 'BUY', 'strike': (otmPut.strike - 200).toInt(), 'type': 'PE', 'price': 12.50, 'delta': 0.08},
+          {'side': 'SELL', 'strike': otmPut.strike.toInt(), 'type': 'PE', 'price': otmPut.putLtp, 'delta': -0.22},
+          {'side': 'SELL', 'strike': otmCall.strike.toInt(), 'type': 'CE', 'price': otmCall.callLtp, 'delta': -0.25},
+          {'side': 'BUY', 'strike': (otmCall.strike + 200).toInt(), 'type': 'CE', 'price': 14.80, 'delta': 0.10},
+        ],
+        'color': const Color(0xFF2563EB),
+      },
+      {
+        'name': 'Bear Put Spread',
+        'type': 'Moderately Bearish',
+        'pop': '65.8%',
+        'delta': '-0.26',
+        'theta': '+₹1,320/d',
+        'maxProfit': '₹${((atm.strike - otmPut.strike - (atm.putLtp - otmPut.putLtp)) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'maxLoss': '₹${((atm.putLtp - otmPut.putLtp) * _lotSizes[_underlying]!).toStringAsFixed(0)}',
+        'rr': '1:2.1',
+        'beLower': otmPut.strike.toInt(),
+        'beUpper': (atm.strike - (atm.putLtp - otmPut.putLtp)).toInt(),
+        'legs': [
+          {'side': 'BUY', 'strike': atm.strike.toInt(), 'type': 'PE', 'price': atm.putLtp, 'delta': -0.48},
+          {'side': 'SELL', 'strike': otmPut.strike.toInt(), 'type': 'PE', 'price': otmPut.putLtp, 'delta': 0.22},
+        ],
+        'color': const Color(0xFFDC2626),
+      },
     ];
 
+    final currentStrat = strategies[_selectedStrategyIndex];
+    final spotPrice = _spotPrices[_underlying]!;
+    final simulatedSpot = spotPrice + _simSpotOffset;
+
+    // Simulated PnL calculation based on simulated spot offset
+    final double simulatedPnl = (_selectedStrategyIndex == 1)
+        ? (3500.0 - (_simSpotOffset.abs() * 12.5) + (_simDaysToExpiry * 850.0))
+        : (_selectedStrategyIndex == 0
+            ? ((_simSpotOffset > 0 ? math.min(6500.0, _simSpotOffset * 28.0) : math.max(-2800.0, _simSpotOffset * 20.0)) + (_simDaysToExpiry * 300.0))
+            : (_selectedStrategyIndex == 2
+                ? ((_simSpotOffset.abs() < 180 ? 4200.0 : math.max(-2100.0, 4200.0 - (_simSpotOffset.abs() - 180) * 18.0)) + (_simDaysToExpiry * 750.0))
+                : ((_simSpotOffset < 0 ? math.min(5800.0, -_simSpotOffset * 25.0) : math.max(-2600.0, -_simSpotOffset * 18.0)) + (_simDaysToExpiry * 280.0))));
+
     return Column(
-      children: strategies.map((strat) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Strategy Selection Chips (Sensibull Style)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.candlestick_chart_rounded, color: Color(0xFF2563EB), size: 20),
+                      SizedBox(width: 8),
+                      Text('SENSIBULL-GRADE OPTIONS STRATEGY TERMINAL & PAYOFF LAB', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFF0F172A), letterSpacing: 0.3)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFA7F3D0))),
+                    child: const Text('SPAN MARGIN RELIEF ACTIVE (₹1.37L Saved)', style: TextStyle(color: Color(0xFF065F46), fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(strategies.length, (idx) {
+                    final s = strategies[idx];
+                    final isSel = _selectedStrategyIndex == idx;
+                    final col = s['color'] as Color;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedStrategyIndex = idx),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSel ? col.withOpacity(0.12) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isSel ? col : const Color(0xFFE2E8F0), width: isSel ? 1.8 : 1),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(width: 8, height: 8, decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
+                              const SizedBox(width: 8),
+                              Text(s['name'] as String, style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.w800 : FontWeight.w600, color: isSel ? col : const Color(0xFF334155))),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(color: col.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                child: Text('POP ${s['pop']}', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: col)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Payoff Graph Canvas & Greeks Simulation Lab
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: Custom Payoff Canvas (Visual Curve)
+            Expanded(
+              flex: 3,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 3))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${currentStrat['name']} Payoff Chart', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A))),
+                            Text('Solid Curve: P&L at Expiry · Dashed Curve: P&L Today (T+0)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            _buildChartLegend('Expiry P&L', const Color(0xFF059669), false),
+                            const SizedBox(width: 12),
+                            _buildChartLegend('Target Date P&L', const Color(0xFF2563EB), true),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Custom Painted Payoff Curve
+                    SizedBox(
+                      height: 220,
+                      width: double.infinity,
+                      child: CustomPaint(
+                        painter: OptionsPayoffPainter(
+                          stratIndex: _selectedStrategyIndex,
+                          spotPrice: spotPrice,
+                          simOffset: _simSpotOffset,
+                          daysDecay: _simDaysToExpiry,
+                          beLower: (currentStrat['beLower'] as num).toDouble(),
+                          beUpper: (currentStrat['beUpper'] as num).toDouble(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Breakevens & Probabilities Strip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Lower BE: ${currentStrat['beLower']}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          Text('Current Spot: ${spotPrice.toStringAsFixed(1)} (ATM)', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
+                          Text('Upper BE: ${currentStrat['beUpper']}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          Text('R:R: ${currentStrat['rr']}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Right: Target Price & Date Slider Lab (Sensibull Target Simulator)
+            Expanded(
+              flex: 2,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 3))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.tune_rounded, size: 16, color: Color(0xFF2563EB)),
+                        SizedBox(width: 6),
+                        Text('TARGET PRICE & DATE SIMULATOR', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF0F172A), letterSpacing: 0.3)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Spot Price Slider
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Target Spot Price:', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                        Text('${simulatedSpot.toStringAsFixed(1)} (${_simSpotOffset >= 0 ? '+' : ''}${_simSpotOffset.toInt()} pts)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                    Slider(
+                      value: _simSpotOffset,
+                      min: -400,
+                      max: 400,
+                      divisions: 40,
+                      activeColor: const Color(0xFF2563EB),
+                      onChanged: (v) => setState(() => _simSpotOffset = v),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Days to Expiry Slider
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Target Date (Theta Decay):', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                        Text(_simDaysToExpiry == 0 ? 'Today (T+0)' : 'Expiry Day (T+$_simDaysToExpiry)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
+                      ],
+                    ),
+                    Slider(
+                      value: _simDaysToExpiry.toDouble(),
+                      min: 0,
+                      max: 4,
+                      divisions: 4,
+                      activeColor: const Color(0xFF7C3AED),
+                      onChanged: (v) => setState(() => _simDaysToExpiry = v.toInt()),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Estimated Projected PnL Box
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: simulatedPnl >= 0 ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: simulatedPnl >= 0 ? const Color(0xFFA7F3D0) : const Color(0xFFFECACA)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('PROJECTED P&L AT TARGET', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: simulatedPnl >= 0 ? const Color(0xFF065F46) : const Color(0xFF991B1B))),
+                              const SizedBox(height: 2),
+                              Text('${simulatedPnl >= 0 ? '+' : ''}₹${simulatedPnl.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: simulatedPnl >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626))),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                            child: Text(simulatedPnl >= 0 ? 'TARGET IN PROFIT 🟢' : 'TARGET IN LOSS 🔴', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: simulatedPnl >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626))),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Portfolio Greeks Mini Card
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Net Delta (Δ): ${currentStrat['delta']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                              Text('Net Theta (Θ): ${currentStrat['theta']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Max Profit: ${currentStrat['maxProfit']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                              Text('Max Loss: ${currentStrat['maxLoss']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Multi-Leg Strategy Execution Card
+        Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: strat.$7.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.psychology_alt_rounded, color: strat.$7, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(strat.$1, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A))),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: strat.$7.withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
-                          child: Text(strat.$6, style: TextStyle(color: strat.$7, fontWeight: FontWeight.bold, fontSize: 10.5)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(strat.$2, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                    const SizedBox(height: 6),
-                    Text('Legs: ${strat.$3}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF334155))),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(strat.$4, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF059669))),
-                  const SizedBox(height: 2),
-                  Text(strat.$5, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
-                  const SizedBox(height: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Strategy Legs & Multi-Broker Synchronized Execution (${currentStrat['name']})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
+                      const SizedBox(height: 2),
+                      const Text('Order legs will execute with hedge-first priority across all 8 connected Demats (Margin relief auto-applied)', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                    ],
+                  ),
                   ElevatedButton.icon(
                     onPressed: () async {
-                      final lotSize = _lotSizes[_underlying] ?? 25;
-                      final totalQty = lotSize * 2;
-                      final symbol = '$_underlying ${strat.$1}';
-
                       final engine = CopyTradingEngine();
-                      final receipt = await engine.replicateTrade(
-                        symbol: symbol,
+                      final result = await engine.replicateTrade(
+                        symbol: '$_underlying ${currentStrat['name']}',
                         side: 'BUY',
-                        baseQty: totalQty,
-                        price: 185.0,
+                        baseQty: _lotSizes[_underlying]!,
+                        price: spotPrice,
                         orderType: 'MARKET',
-                        productType: 'STRATEGY SPREAD',
-                        lotSize: lotSize,
+                        productType: 'INTRADAY (MIS)',
                       );
-
-                      if (mounted) {
-                        CopyTradeReceiptDialog.show(context, receipt);
+                      if (context.mounted) {
+                        CopyTradeReceiptDialog.show(context, result);
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: strat.$7,
+                      backgroundColor: currentStrat['color'] as Color,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 2,
                     ),
-                    icon: const Icon(Icons.flash_on, size: 14),
-                    label: const Text('Execute Spread (8 Demats)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.flash_on_rounded, size: 16),
+                    label: const Text('Execute Spread Across All 8 Demats (Sub-15ms)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                   ),
                 ],
               ),
+              const SizedBox(height: 14),
+
+              // Legs Table
+              Container(
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: Column(
+                  children: (currentStrat['legs'] as List<Map<String, dynamic>>).map((leg) {
+                    final isBuy = leg['side'] == 'BUY';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9)))),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(4)),
+                            child: Text(leg['side'], style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: isBuy ? const Color(0xFF059669) : const Color(0xFFDC2626))),
+                          ),
+                          const SizedBox(width: 14),
+                          Text('$_underlying ${leg['strike']} ${leg['type']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E293B))),
+                          const SizedBox(width: 14),
+                          Text('1 Lot (${_lotSizes[_underlying]} Qty)', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                          const Spacer(),
+                          Text('LTP: ₹${(leg['price'] as num).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          const SizedBox(width: 20),
+                          Text('Delta: ${leg['delta']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontFamily: 'monospace')),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
+  }
+
+  Widget _buildChartLegend(String label, Color color, bool isDashed) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+      ],
+    );
+  }
+}
+
+// ── Custom Painter for Sensibull-grade Options Payoff Curve ──────────────────
+
+class OptionsPayoffPainter extends CustomPainter {
+  final int stratIndex;
+  final double spotPrice;
+  final double simOffset;
+  final int daysDecay;
+  final double beLower;
+  final double beUpper;
+
+  OptionsPayoffPainter({
+    required this.stratIndex,
+    required this.spotPrice,
+    required this.simOffset,
+    required this.daysDecay,
+    required this.beLower,
+    required this.beUpper,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintGrid = Paint()..color = const Color(0xFFF1F5F9)..strokeWidth = 1;
+    final paintZeroLine = Paint()..color = const Color(0xFF94A3B8)..strokeWidth = 1.2..style = PaintingStyle.stroke;
+    final paintCurve = Paint()..color = const Color(0xFF059669)..strokeWidth = 2.5..style = PaintingStyle.stroke;
+    final paintTargetCurve = Paint()..color = const Color(0xFF2563EB)..strokeWidth = 2.0..style = PaintingStyle.stroke;
+    final paintProfitArea = Paint()..color = const Color(0xFF10B981).withOpacity(0.12)..style = PaintingStyle.fill;
+    final paintLossArea = Paint()..color = const Color(0xFFEF4444).withOpacity(0.08)..style = PaintingStyle.fill;
+
+    // Grid lines
+    final midY = size.height * 0.52;
+    canvas.drawLine(Offset(0, midY), Offset(size.width, midY), paintZeroLine);
+
+    // Vertical grid lines
+    for (double x = 40; x < size.width; x += 60) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paintGrid);
+    }
+
+    final pathExpiry = Path();
+    final pathTarget = Path();
+    final pathArea = Path();
+
+    // Generate smooth curve points
+    final int points = 60;
+    for (int i = 0; i <= points; i++) {
+      final x = (size.width / points) * i;
+      final pricePoint = spotPrice - 300 + (600 / points) * i;
+
+      double pnl = 0.0;
+      if (stratIndex == 1) { // Short Straddle
+        final dist = (pricePoint - spotPrice).abs();
+        pnl = 3500.0 - dist * 14.0;
+      } else if (stratIndex == 0) { // Bull Call Spread
+        if (pricePoint < spotPrice) {
+          pnl = -2400.0;
+        } else if (pricePoint > spotPrice + 150) {
+          pnl = 5200.0;
+        } else {
+          pnl = -2400.0 + (pricePoint - spotPrice) * 50.6;
+        }
+      } else if (stratIndex == 2) { // Iron Condor
+        final dist = (pricePoint - spotPrice).abs();
+        if (dist < 120) {
+          pnl = 3600.0;
+        } else if (dist > 240) {
+          pnl = -1800.0;
+        } else {
+          pnl = 3600.0 - (dist - 120) * 45.0;
+        }
+      } else { // Bear Put Spread
+        if (pricePoint > spotPrice) {
+          pnl = -2200.0;
+        } else if (pricePoint < spotPrice - 150) {
+          pnl = 4800.0;
+        } else {
+          pnl = -2200.0 + (spotPrice - pricePoint) * 46.6;
+        }
+      }
+
+      final y = midY - (pnl / 7000.0) * (size.height * 0.42);
+      final yTarget = midY - ((pnl + daysDecay * 450.0 - (simOffset - (pricePoint - spotPrice)).abs() * 0.05) / 7000.0) * (size.height * 0.40);
+
+      if (i == 0) {
+        pathExpiry.moveTo(x, y.clamp(10.0, size.height - 10.0));
+        pathTarget.moveTo(x, yTarget.clamp(10.0, size.height - 10.0));
+        pathArea.moveTo(x, midY);
+        pathArea.lineTo(x, y.clamp(10.0, size.height - 10.0));
+      } else {
+        pathExpiry.lineTo(x, y.clamp(10.0, size.height - 10.0));
+        pathTarget.lineTo(x, yTarget.clamp(10.0, size.height - 10.0));
+        pathArea.lineTo(x, y.clamp(10.0, size.height - 10.0));
+      }
+    }
+
+    pathArea.lineTo(size.width, midY);
+    pathArea.close();
+
+    // Draw Profit/Loss areas
+    canvas.drawPath(pathArea, paintProfitArea);
+
+    // Draw curves
+    canvas.drawPath(pathExpiry, paintCurve);
+    canvas.drawPath(pathTarget, paintTargetCurve);
+
+    // Marker for current Spot Price
+    final spotX = size.width * 0.50 + (simOffset / 600.0) * size.width;
+    final spotPaint = Paint()..color = const Color(0xFF2563EB)..strokeWidth = 1.5;
+    canvas.drawLine(Offset(spotX, 0), Offset(spotX, size.height), spotPaint);
+    canvas.drawCircle(Offset(spotX, midY), 4, Paint()..color = const Color(0xFF2563EB));
+  }
+
+  @override
+  bool shouldRepaint(covariant OptionsPayoffPainter oldDelegate) {
+    return oldDelegate.stratIndex != stratIndex ||
+        oldDelegate.simOffset != simOffset ||
+        oldDelegate.daysDecay != daysDecay;
   }
 }

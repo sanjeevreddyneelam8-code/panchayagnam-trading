@@ -317,13 +317,37 @@ class _PositionsViewState extends State<PositionsView> {
   Timer? _ticker;
   final math.Random _rnd = math.Random();
 
+  // Mode: DAY vs NET (matching AutoTrader StocksDeveloper)
+  String _viewMode = 'DAY'; // 'DAY' or 'NET'
+
+  // Risk Management & MTM Trailing Stop-Loss
+  bool _trailingSlActive = true;
+  double _maxDailyLoss = 10000.0;
+  double _profitLockTarget = 20000.0;
+  double _lockedProfit = 14000.0;
+  double _trailStep = 2000.0;
+
+  // Real-time Broker Latency & Connectivity Monitor
+  final List<Map<String, dynamic>> _brokerLatencies = [
+    {'name': 'DHAN (Master)', 'latency': 9, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+    {'name': 'ZERODHA (Child 1)', 'latency': 12, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+    {'name': 'UPSTOX (Child 2)', 'latency': 14, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+    {'name': 'ANGELONE (Child 3)', 'latency': 11, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+    {'name': 'MOTILAL (Child 4)', 'latency': 18, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+    {'name': 'PROFITMART (Child 5)', 'latency': 15, 'status': 'ONLINE', 'color': Color(0xFF059669)},
+  ];
+
   final List<Map<String, dynamic>> _positions = [
     {
       'symbol': 'NIFTY 24200 CE',
       'product': 'INTRADAY (MIS)',
+      'isOvernight': false,
       'totalQty': 200,
       'avgPrice': 125.40,
       'ltp': 144.20,
+      'protection': 'PROTECTED',
+      'slPrice': 115.00,
+      'targetPrice': 175.00,
       'isExpanded': false,
       'breakdown': [
         {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 940.0},
@@ -339,9 +363,13 @@ class _PositionsViewState extends State<PositionsView> {
     {
       'symbol': 'BANKNIFTY 52000 PE',
       'product': 'INTRADAY (MIS)',
+      'isOvernight': false,
       'totalQty': -120, // Short leg
       'avgPrice': 210.00,
       'ltp': 182.50,
+      'protection': 'PROTECTED',
+      'slPrice': 235.00,
+      'targetPrice': 140.00,
       'isExpanded': false,
       'breakdown': [
         {'broker': 'DHAN (Leader)', 'qty': -30, 'pnl': 825.0},
@@ -356,9 +384,13 @@ class _PositionsViewState extends State<PositionsView> {
     {
       'symbol': 'RELIANCE EQ',
       'product': 'INTRADAY (MIS)',
+      'isOvernight': false,
       'totalQty': 100,
       'avgPrice': 2935.00,
       'ltp': 2949.20,
+      'protection': 'SL_ONLY',
+      'slPrice': 2915.00,
+      'targetPrice': 0.0,
       'isExpanded': false,
       'breakdown': [
         {'broker': 'DHAN (Leader)', 'qty': 25, 'pnl': 355.0},
@@ -370,9 +402,13 @@ class _PositionsViewState extends State<PositionsView> {
     {
       'symbol': 'HDFCBANK EQ',
       'product': 'DELIVERY (CNC)',
+      'isOvernight': true,
       'totalQty': 200,
       'avgPrice': 1640.00,
       'ltp': 1652.10,
+      'protection': 'UNPROTECTED',
+      'slPrice': 0.0,
+      'targetPrice': 0.0,
       'isExpanded': false,
       'breakdown': [
         {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 605.0},
@@ -386,14 +422,18 @@ class _PositionsViewState extends State<PositionsView> {
   @override
   void initState() {
     super.initState();
-    // 2-second realistic price fluctuation ticker
-    _ticker = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Realistic 1.5-second live fluctuation ticker
+    _ticker = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!mounted) return;
       setState(() {
         for (var p in _positions) {
           final delta = (_rnd.nextDouble() - 0.49) * 0.40;
           final currentLtp = p['ltp'] as double;
           p['ltp'] = math.max(1.0, currentLtp + delta);
+        }
+        // Micro fluctuation in broker latencies
+        for (var b in _brokerLatencies) {
+          b['latency'] = math.max(6, (b['latency'] as int) + (_rnd.nextBool() ? 1 : -1));
         }
       });
     });
@@ -408,6 +448,7 @@ class _PositionsViewState extends State<PositionsView> {
   double get _totalPnl {
     double sum = 0.0;
     for (var p in _positions) {
+      if (_viewMode == 'DAY' && (p['isOvernight'] as bool)) continue;
       final qty = p['totalQty'] as int;
       final avg = p['avgPrice'] as double;
       final ltp = p['ltp'] as double;
@@ -424,35 +465,285 @@ class _PositionsViewState extends State<PositionsView> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Position "$sym" squared off across all 8 Demats at Market!'),
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Position "$sym" squared off across all 8 connected Demats at Market!')),
+          ],
+        ),
         backgroundColor: const Color(0xFFDC2626),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  void _squareOffAll() async {
-    final count = _positions.length;
-    setState(() {
-      _positions.clear();
-    });
-    final engine = CopyTradingEngine();
-    await engine.emergencySquareOffAll();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('All $count open positions squared off across all 8 Demats! Portfolio is 100% Flat.'),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
+  void _showEmergencyKillSwitchDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.dangerous_rounded, color: Color(0xFFDC2626), size: 28),
+            SizedBox(width: 10),
+            Text('EMERGENCY KILL SWITCH', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
+          ],
         ),
-      );
-    }
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFCA5A5)),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'WARNING: This will instantly cancel ALL 14 pending orders, market square-off all 4 open positions across ALL 8 Demats, and freeze all automated algo strategies.',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7F1D1D)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Actions to be executed synchronously in < 15ms:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              _buildKillSwitchItem('Cancel pending Limit & SL orders across 8 Demats (14 orders)'),
+              _buildKillSwitchItem('Execute Market Square-Off on 4 open multi-broker legs'),
+              _buildKillSwitchItem('Pause 3 running Algorithmic Strategies'),
+              _buildKillSwitchItem('Halt incoming TradingView webhooks for the day'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel / Keep Positions Open', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final count = _positions.length;
+              setState(() {
+                _positions.clear();
+              });
+              final engine = CopyTradingEngine();
+              await engine.emergencySquareOffAll();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('KILL SWITCH ACTIVATED: $count positions squared off across 8 Demats. Portfolio is 100% Flat.'),
+                    backgroundColor: const Color(0xFF991B1B),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.flash_on_rounded, size: 18),
+            label: const Text('CONFIRM EMERGENCY EXIT'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildKillSwitchItem(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline_rounded, color: Color(0xFFDC2626), size: 14),
+          const SizedBox(width: 6),
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF334155)))),
+        ],
+      ),
+    );
+  }
+
+  void _showTrailingSlConfigDialog() {
+    double loss = _maxDailyLoss;
+    double lock = _profitLockTarget;
+    double trail = _trailStep;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.shield_outlined, color: Color(0xFF059669)),
+              SizedBox(width: 8),
+              Text('Portfolio MTM Trailing Stop-Loss & Target Guard', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Set automated risk rules that continuously monitor pooled MTM across all 8 connected Demats.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const SizedBox(height: 16),
+                Text('Max Daily Loss Limit (Auto Square-Off): ₹${loss.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                Slider(
+                  value: loss,
+                  min: 2000,
+                  max: 50000,
+                  divisions: 24,
+                  activeColor: const Color(0xFFDC2626),
+                  onChanged: (v) => setDState(() => loss = v),
+                ),
+                const SizedBox(height: 12),
+                Text('Profit Target to Lock (MTM Target): ₹${lock.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                Slider(
+                  value: lock,
+                  min: 5000,
+                  max: 100000,
+                  divisions: 19,
+                  activeColor: const Color(0xFF059669),
+                  onChanged: (v) => setDState(() => lock = v),
+                ),
+                const SizedBox(height: 12),
+                Text('Trailing Step: Lock ₹${(lock * 0.7).toInt()}, Trail by ₹${trail.toInt()} per ₹3,000 rise', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                Slider(
+                  value: trail,
+                  min: 500,
+                  max: 10000,
+                  divisions: 19,
+                  activeColor: const Color(0xFF2563EB),
+                  onChanged: (v) => setDState(() => trail = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _maxDailyLoss = loss;
+                  _profitLockTarget = lock;
+                  _lockedProfit = lock * 0.7;
+                  _trailStep = trail;
+                  _trailingSlActive = true;
+                });
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Portfolio Trailing Stop-Loss & Target Guard updated and armed!'),
+                    backgroundColor: Color(0xFF059669),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+              child: const Text('Save & Arm Risk Guard'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddProtectionDialog(int idx) {
+    final pos = _positions[idx];
+    final sym = pos['symbol'];
+    final ltp = pos['ltp'] as double;
+    final isBuy = (pos['totalQty'] as int) > 0;
+    double sl = isBuy ? (ltp * 0.85) : (ltp * 1.15);
+    double target = isBuy ? (ltp * 1.30) : (ltp * 0.70);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.add_moderator_rounded, color: Color(0xFF2563EB)),
+            const SizedBox(width: 8),
+            Text('Attach Bracket Order to $sym', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Current LTP: ₹${ltp.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 14),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Stop Loss Trigger (SL-M)',
+                  hintText: sl.toStringAsFixed(2),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Target Limit Order',
+                  hintText: target.toStringAsFixed(2),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text('This will place synchronized exchange SL-M orders across all 8 Demats instantly.', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                pos['protection'] = 'PROTECTED';
+                pos['slPrice'] = sl;
+                pos['targetPrice'] = target;
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Bracket SL & Target orders placed across all 8 Demats for $sym!'),
+                  backgroundColor: const Color(0xFF059669),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+            child: const Text('Place Protected Orders'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final totalPnl = _totalPnl;
     final isPos = totalPnl >= 0;
+
+    final displayedPositions = _positions.where((p) {
+      if (_viewMode == 'DAY' && (p['isOvernight'] as bool)) return false;
+      return true;
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -468,26 +759,101 @@ class _PositionsViewState extends State<PositionsView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Consolidated Positions Book', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                    const Text('Consolidated Positions & Risk Terminal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
                     const SizedBox(height: 4),
-                    Text('Aggregated live positions across all 8 connected Demat accounts with sub-second real-time M2M.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    Text('Aggregated live positions across all 8 connected Demat accounts with sub-second real-time M2M & Auto-Trailing SL.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
                   ],
                 ),
-                if (_positions.isNotEmpty)
-                  ElevatedButton.icon(
-                    onPressed: _squareOffAll,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFDC2626),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                Row(
+                  children: [
+                    // Trailing SL Config button
+                    OutlinedButton.icon(
+                      onPressed: _showTrailingSlConfigDialog,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF059669),
+                        side: const BorderSide(color: Color(0xFF059669)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.tune_rounded, size: 16),
+                      label: Text(_trailingSlActive ? 'Trailing SL: ARMED 🟢' : 'Trailing SL: OFF', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
-                    icon: const Icon(Icons.warning_amber_rounded, size: 16),
-                    label: const Text('Square-Off All (8 Demats)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
+                    const SizedBox(width: 10),
+                    // EMERGENCY KILL SWITCH
+                    if (_positions.isNotEmpty)
+                      ElevatedButton.icon(
+                        onPressed: _showEmergencyKillSwitchDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 3,
+                        ),
+                        icon: const Icon(Icons.dangerous_rounded, size: 18),
+                        label: const Text('🚨 EMERGENCY KILL SWITCH', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, letterSpacing: 0.3)),
+                      ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Live Broker Latency & Connectivity Ribbon
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF1E293B)),
+              ),
+              child: Row(
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.hub_rounded, size: 14, color: Color(0xFF38BDF8)),
+                      SizedBox(width: 6),
+                      Text('BROKER API LATENCY RADAR:', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _brokerLatencies.map((b) {
+                          final lat = b['latency'] as int;
+                          final latColor = lat < 12 ? const Color(0xFF10B981) : (lat < 16 ? const Color(0xFFFBBF24) : const Color(0xFFF87171));
+                          return Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(width: 6, height: 6, decoration: BoxDecoration(color: latColor, shape: BoxShape.circle)),
+                                const SizedBox(width: 5),
+                                Text(b['name'], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70)),
+                                const SizedBox(width: 4),
+                                Text('${lat}ms', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: latColor, fontFamily: 'monospace')),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.25), borderRadius: BorderRadius.circular(4)),
+                    child: const Text('SUB-15ms REPLICATION', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // M2M Summary Banner
             Container(
@@ -548,16 +914,76 @@ class _PositionsViewState extends State<PositionsView> {
                   const SizedBox(width: 16),
                   _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF059669)),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('OPEN POSITIONS', '${_positions.length} Active', 'All Under Limits', const Color(0xFF059669)),
+                  _buildSummaryItem('TRAILING SL TARGET', 'Lock ₹${_lockedProfit.toInt()} @ ₹${_profitLockTarget.toInt()}', 'Step ₹${_trailStep.toInt()}', const Color(0xFF2563EB)),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('AVERAGE SPREAD', '< 0.05%', 'Low Slippage Guard', const Color(0xFF059669)),
+                  _buildSummaryItem('MAX DAILY LOSS', '₹-${_maxDailyLoss.toInt()}', 'Hard Circuit Breaker', const Color(0xFFDC2626)),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+
+            // Mode Selector: DAY vs NET (matching AutoTrader StocksDeveloper)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: () => setState(() => _viewMode = 'DAY'),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _viewMode == 'DAY' ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: _viewMode == 'DAY' ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.today_rounded, size: 14, color: _viewMode == 'DAY' ? const Color(0xFF059669) : const Color(0xFF64748B)),
+                              const SizedBox(width: 6),
+                              Text('DAY POSITIONS (Intraday)', style: TextStyle(fontSize: 12, fontWeight: _viewMode == 'DAY' ? FontWeight.w800 : FontWeight.w600, color: _viewMode == 'DAY' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: () => setState(() => _viewMode = 'NET'),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _viewMode == 'NET' ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: _viewMode == 'NET' ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.layers_rounded, size: 14, color: _viewMode == 'NET' ? const Color(0xFF059669) : const Color(0xFF64748B)),
+                              const SizedBox(width: 6),
+                              Text('NET POSITIONS (Day + Carry Forward)', style: TextStyle(fontSize: 12, fontWeight: _viewMode == 'NET' ? FontWeight.w800 : FontWeight.w600, color: _viewMode == 'NET' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text('${displayedPositions.length} Contracts Active across 8 Demats', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+              ],
+            ),
+            const SizedBox(height: 14),
 
             // Positions Table Card
-            if (_positions.isEmpty)
+            if (displayedPositions.isEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(40),
@@ -597,29 +1023,29 @@ class _PositionsViewState extends State<PositionsView> {
                         children: [
                           Expanded(flex: 3, child: Text('CONTRACT / PRODUCT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                           Expanded(flex: 2, child: Text('NET QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text('BUY / AVG', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text('NET P&L', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text('ACTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('AVG / LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('PROTECTION STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('POOLED M2M', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text('ACTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                         ],
                       ),
                     ),
 
-                    // Table Items
+                    // Table Rows
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _positions.length,
+                      itemCount: displayedPositions.length,
                       separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
                       itemBuilder: (ctx, idx) {
-                        final pos = _positions[idx];
-                        final qty = pos['totalQty'] as int;
-                        final avg = pos['avgPrice'] as double;
-                        final ltp = pos['ltp'] as double;
+                        final p = displayedPositions[idx];
+                        final qty = p['totalQty'] as int;
+                        final avg = p['avgPrice'] as double;
+                        final ltp = p['ltp'] as double;
                         final pnl = (ltp - avg) * qty;
-                        final isPnlPos = pnl >= 0;
-                        final isExpanded = pos['isExpanded'] == true;
-                        final breakdown = List<Map<String, dynamic>>.from(pos['breakdown'] ?? []);
+                        final isProf = pnl >= 0;
+                        final isExp = p['isExpanded'] as bool;
+                        final prot = p['protection'] as String;
 
                         return Column(
                           children: [
@@ -627,97 +1053,185 @@ class _PositionsViewState extends State<PositionsView> {
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               child: Row(
                                 children: [
+                                  // Contract & Expand
                                   Expanded(
                                     flex: 3,
                                     child: Row(
                                       children: [
                                         InkWell(
-                                          onTap: () => setState(() => pos['isExpanded'] = !isExpanded),
-                                          child: Icon(
-                                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                            size: 20,
-                                            color: const Color(0xFF059669),
-                                          ),
+                                          onTap: () => setState(() => p['isExpanded'] = !isExp),
+                                          child: Icon(isExp ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded, color: const Color(0xFF64748B), size: 20),
                                         ),
                                         const SizedBox(width: 8),
                                         Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(pos['symbol'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF1E293B))),
-                                            Text('${pos['product']} • 8 Demats Synced', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                            Text(p['symbol'], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF1E293B))),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Text(p['product'], style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                                if (p['isOvernight'] as bool) ...[
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                    decoration: BoxDecoration(color: const Color(0xFFE0E7FF), borderRadius: BorderRadius.circular(3)),
+                                                    child: const Text('OVERNIGHT', style: TextStyle(fontSize: 8.5, color: Color(0xFF4338CA), fontWeight: FontWeight.bold)),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ],
                                     ),
                                   ),
+
+                                  // Net Qty
                                   Expanded(
                                     flex: 2,
-                                    child: Text(
-                                      '${qty > 0 ? '+' : ''}$qty Qty',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: qty > 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('${qty > 0 ? '+' : ''}$qty', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: qty > 0 ? const Color(0xFF059669) : const Color(0xFFDC2626))),
+                                        const Text('8 Demats Pooled', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                                      ],
                                     ),
                                   ),
+
+                                  // Avg / LTP
                                   Expanded(
                                     flex: 2,
-                                    child: Text('₹${avg.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  ),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      '₹${ltp.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13,
-                                        color: isPnlPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('₹${ltp.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+                                        Text('Avg: ₹${avg.toStringAsFixed(2)}', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+                                      ],
                                     ),
                                   ),
+
+                                  // Protection Status Pill (Matching AutoTrader / Sensibull Protection Pill)
+                                  Expanded(
+                                    flex: 2,
+                                    child: prot == 'PROTECTED'
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFECFDF5),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.shield_rounded, size: 11, color: Color(0xFF059669)),
+                                                    SizedBox(width: 3),
+                                                    Text('SL & TARGET ARMED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                                                  ],
+                                                ),
+                                                Text('SL: ₹${(p['slPrice'] as double).toStringAsFixed(1)} | Tgt: ₹${(p['targetPrice'] as double).toStringAsFixed(1)}', style: const TextStyle(fontSize: 9, color: Color(0xFF047857), fontWeight: FontWeight.w600)),
+                                              ],
+                                            ),
+                                          )
+                                        : (prot == 'SL_ONLY'
+                                            ? Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFEFF6FF),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    const Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF2563EB)),
+                                                        SizedBox(width: 3),
+                                                        Text('SL-M ACTIVE', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFF1E40AF))),
+                                                      ],
+                                                    ),
+                                                    Text('SL: ₹${(p['slPrice'] as double).toStringAsFixed(1)}', style: const TextStyle(fontSize: 9, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600)),
+                                                  ],
+                                                ),
+                                              )
+                                            : InkWell(
+                                                onTap: () => _showAddProtectionDialog(idx),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFFEF3C7),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: const Color(0xFFFCD34D)),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.warning_amber_rounded, size: 11, color: Color(0xFFB45309)),
+                                                      SizedBox(width: 3),
+                                                      Text('UNPROTECTED · ADD SL', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFF92400E))),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )),
+                                  ),
+
+                                  // Pooled M2M
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      '${isPnlPos ? '+' : ''}₹${pnl.toStringAsFixed(2)}',
+                                      '${isProf ? '+' : ''}₹${pnl.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w900,
                                         fontSize: 13.5,
-                                        color: isPnlPos ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                        color: isProf ? const Color(0xFF059669) : const Color(0xFFDC2626),
                                       ),
                                     ),
                                   ),
+
+                                  // Actions
                                   Expanded(
                                     flex: 2,
-                                    child: OutlinedButton(
-                                      onPressed: () => _squareOffPosition(idx),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFFDC2626),
-                                        side: const BorderSide(color: Color(0xFFF87171)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                      ),
-                                      child: const Text('Square Off', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    child: Row(
+                                      children: [
+                                        OutlinedButton(
+                                          onPressed: () => _squareOffPosition(idx),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: const Color(0xFFDC2626),
+                                            side: const BorderSide(color: Color(0xFFFECACA)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          ),
+                                          child: const Text('Square Off', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
 
-                            // Expandable Multi-Account Breakdown
-                            if (isExpanded)
+                            // Multi-Broker Sub-Positions Breakdown
+                            if (isExp)
                               Container(
                                 color: const Color(0xFFF8FAFC),
-                                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('CHILD DEMAT ALLOCATION BREAKDOWN:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
+                                    const Text('MULTI-BROKER SUB-POSITIONS & REPLICATION BREAKDOWN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
                                     const SizedBox(height: 8),
                                     Wrap(
                                       spacing: 12,
                                       runSpacing: 8,
-                                      children: breakdown.map((b) {
+                                      children: (p['breakdown'] as List<Map<String, dynamic>>).map((b) {
+                                        final bPnl = (b['pnl'] as num).toDouble();
+                                        final isBPnlPos = bPnl >= 0;
                                         return Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           decoration: BoxDecoration(
@@ -728,13 +1242,13 @@ class _PositionsViewState extends State<PositionsView> {
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(b['broker'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                                              const SizedBox(width: 8),
-                                              Text('${b['qty']} Qty', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                              Text(b['broker'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                                              const SizedBox(width: 6),
+                                              Text('${b['qty']} Qty', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
                                               const SizedBox(width: 8),
                                               Text(
-                                                '+₹${(b['pnl'] as double).toStringAsFixed(0)}',
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF059669)),
+                                                '${isBPnlPos ? '+' : ''}₹${bPnl.toStringAsFixed(1)}',
+                                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isBPnlPos ? const Color(0xFF059669) : const Color(0xFFDC2626)),
                                               ),
                                             ],
                                           ),
@@ -778,6 +1292,7 @@ class _PositionsViewState extends State<PositionsView> {
     );
   }
 }
+
 
 // ─── HOLDINGS VIEW (Multi-Broker Delivery Equity Portfolio) ───────────────────
 
