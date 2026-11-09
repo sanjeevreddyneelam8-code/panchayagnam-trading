@@ -1129,292 +1129,643 @@ class _MainDashboardState extends State<MainDashboard> {
     );
   }
 
-  // ─── Quick Search Dialog (Interactive Symbol & Strike Finder with 1-Click Buy/Sell) ───
+  // ─── Pro Universal Search & AI Discovery Terminal (StockGro + TradingView + Webull) ───
   void _showQuickSearchDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) {
         String query = '';
-        int activeTab = 0; // 0: All, 1: Equities, 2: Options, 3: Indices
-        final allInstruments = [
-          {'symbol': 'NIFTY 24200 CE', 'type': 'Options (NFO)', 'price': 214.65, 'chg': '+4.8%', 'isUp': true, 'category': 2, 'lot': 25},
-          {'symbol': 'NIFTY 24200 PE', 'type': 'Options (NFO)', 'price': 186.20, 'chg': '-3.2%', 'isUp': false, 'category': 2, 'lot': 25},
-          {'symbol': 'BANKNIFTY 51800 CE', 'type': 'Options (NFO)', 'price': 412.50, 'chg': '+6.1%', 'isUp': true, 'category': 2, 'lot': 15},
-          {'symbol': 'BANKNIFTY 51800 PE', 'type': 'Options (NFO)', 'price': 378.10, 'chg': '-5.4%', 'isUp': false, 'category': 2, 'lot': 15},
-          {'symbol': 'TATASTEEL', 'type': 'Equity (NSE)', 'price': 190.20, 'chg': '+2.09%', 'isUp': true, 'category': 1, 'lot': 1},
-          {'symbol': 'RELIANCE', 'type': 'Equity (NSE)', 'price': 2940.50, 'chg': '+0.85%', 'isUp': true, 'category': 1, 'lot': 1},
-          {'symbol': 'HDFCBANK', 'type': 'Equity (NSE)', 'price': 1542.10, 'chg': '-0.45%', 'isUp': false, 'category': 1, 'lot': 1},
-          {'symbol': 'INFY', 'type': 'Equity (NSE)', 'price': 1785.40, 'chg': '+1.10%', 'isUp': true, 'category': 1, 'lot': 1},
-          {'symbol': 'NIFTY 50', 'type': 'Index (NSE)', 'price': 24228.31, 'chg': '+0.32%', 'isUp': true, 'category': 3, 'lot': 25},
-          {'symbol': 'BANK NIFTY', 'type': 'Index (NSE)', 'price': 51820.00, 'chg': '+0.62%', 'isUp': true, 'category': 3, 'lot': 15},
+        int activeTab = 0; // 0: All, 1: Equities, 2: Options, 3: Indices, 4: Star Traders, 5: Leagues, 6: Algos
+        final searchInputCtrl = TextEditingController();
+
+        final allItems = [
+          // 1. Options F&O
+          {'symbol': 'NIFTY 24200 CE', 'type': 'Options (NFO)', 'price': 214.65, 'chg': '+4.8%', 'isUp': true, 'category': 2, 'tag': 'High Call OI · Bullish', 'lot': 25, 'kind': 'instrument'},
+          {'symbol': 'NIFTY 24200 PE', 'type': 'Options (NFO)', 'price': 186.20, 'chg': '-3.2%', 'isUp': false, 'category': 2, 'tag': 'Put Protection · ATM', 'lot': 25, 'kind': 'instrument'},
+          {'symbol': 'BANKNIFTY 51800 CE', 'type': 'Options (NFO)', 'price': 412.50, 'chg': '+6.1%', 'isUp': true, 'category': 2, 'tag': 'Breakout Momentum', 'lot': 15, 'kind': 'instrument'},
+          {'symbol': 'BANKNIFTY 51800 PE', 'type': 'Options (NFO)', 'price': 378.10, 'chg': '-5.4%', 'isUp': false, 'category': 2, 'tag': 'High IV Strike', 'lot': 15, 'kind': 'instrument'},
+
+          // 2. Equities (NSE Cash)
+          {'symbol': 'TATASTEEL', 'type': 'Equity (NSE)', 'price': 190.20, 'chg': '+2.09%', 'isUp': true, 'category': 1, 'tag': 'Top Gainer · Metal Surge', 'lot': 1, 'kind': 'instrument'},
+          {'symbol': 'ZOMATO', 'type': 'Equity (NSE)', 'price': 264.50, 'chg': '+4.15%', 'isUp': true, 'category': 1, 'tag': 'High Volume Breakout', 'lot': 1, 'kind': 'instrument'},
+          {'symbol': 'RELIANCE', 'type': 'Equity (NSE)', 'price': 2940.50, 'chg': '+0.85%', 'isUp': true, 'category': 1, 'tag': 'Index Heavyweight', 'lot': 1, 'kind': 'instrument'},
+          {'symbol': 'HDFCBANK', 'type': 'Equity (NSE)', 'price': 1542.10, 'chg': '-0.45%', 'isUp': false, 'category': 1, 'tag': 'Banking Pivot Point', 'lot': 1, 'kind': 'instrument'},
+          {'symbol': 'INFY', 'type': 'Equity (NSE)', 'price': 1785.40, 'chg': '+1.10%', 'isUp': true, 'category': 1, 'tag': 'Tech Rally', 'lot': 1, 'kind': 'instrument'},
+
+          // 3. Indices
+          {'symbol': 'NIFTY 50', 'type': 'Index (NSE)', 'price': 24228.31, 'chg': '+0.32%', 'isUp': true, 'category': 3, 'tag': 'Benchmark Index', 'lot': 25, 'kind': 'instrument'},
+          {'symbol': 'BANK NIFTY', 'type': 'Index (NSE)', 'price': 51820.00, 'chg': '+0.62%', 'isUp': true, 'category': 3, 'tag': 'Banking Sector Index', 'lot': 15, 'kind': 'instrument'},
+
+          // 4. StockGro Star Traders (Social Discovery)
+          {'symbol': 'Rohan_AlphaQuant', 'type': 'Star Trader (StockGro)', 'return': '+164.2%', 'winRate': '81.4%', 'copiers': '1,420 Demats', 'category': 4, 'tag': 'SEBI Pro · Quant Algo Master', 'kind': 'trader'},
+          {'symbol': 'Priya_OptionsQueen', 'type': 'Star Trader (StockGro)', 'return': '+128.5%', 'winRate': '76.8%', 'copiers': '980 Demats', 'category': 4, 'tag': 'Weekly F&O Expiry Specialist', 'kind': 'trader'},
+
+          // 5. StockGro Trading Leagues (Arena Discovery)
+          {'symbol': 'Nifty Bull Mega League', 'type': 'Trading Arena (StockGro)', 'prize': '₹5,00,000 Pool', 'participants': '3,420 Joined', 'category': 5, 'tag': '● LIVE NOW · Free Pass', 'kind': 'league'},
+          {'symbol': 'Options Champions Arena', 'type': 'Trading Arena (StockGro)', 'prize': '₹2,50,000 Pool', 'participants': '1,890 Joined', 'category': 5, 'tag': 'Weekly Derivatives Trophy', 'kind': 'league'},
+
+          // 6. Algo Strategies (Sensibull / Tradetron Discovery)
+          {'symbol': '9:20 AM Short Straddle', 'type': 'Algo Quant Model', 'return': '+44.2% ROI', 'category': 6, 'tag': 'Non-Directional Delta Hedged', 'kind': 'algo'},
+          {'symbol': 'Supertrend 3x Momentum', 'type': 'Algo Quant Model', 'return': '+58.1% ROI', 'category': 6, 'tag': 'Trend Following Multi-Demat', 'kind': 'algo'},
+        ];
+
+        final quickChips = [
+          '🔥 NIFTY 24200 CE',
+          '🔥 TATASTEEL',
+          '🔥 ZOMATO',
+          '🌟 Rohan_AlphaQuant',
+          '🏆 Mega League',
+          '⚡ 9:20 Straddle',
         ];
 
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) {
-            final filtered = allInstruments.where((inst) {
-              final cat = inst['category'] as int;
+            final q = query.toLowerCase().trim();
+            final filtered = allItems.where((item) {
+              final cat = item['category'] as int;
               if (activeTab != 0 && cat != activeTab) return false;
-              if (query.trim().isEmpty) return true;
-              final sym = (inst['symbol'] as String).toLowerCase();
-              final typ = (inst['type'] as String).toLowerCase();
-              final q = query.toLowerCase().trim();
-              return sym.contains(q) || typ.contains(q);
+              if (q.isEmpty) return true;
+              final sym = (item['symbol'] as String).toLowerCase();
+              final typ = (item['type'] as String).toLowerCase();
+              final tag = (item['tag'] as String? ?? '').toLowerCase();
+              return sym.contains(q) || typ.contains(q) || tag.contains(q);
             }).toList();
 
-            return Dialog(
-              backgroundColor: const Color(0xFF0F172A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: Color(0xFF334155), width: 1.2),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620, maxHeight: 580),
-                child: Column(
-                  children: [
-                    // Top Search Input Bar
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              autofocus: true,
-                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                              decoration: const InputDecoration(
-                                hintText: 'Search NIFTY, BANKNIFTY, TATASTEEL, Options...',
-                                hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
-                                border: InputBorder.none,
-                                isDense: true,
+            return ValueListenableBuilder<bool>(
+              valueListenable: ThemeModeService.isDarkModeNotifier,
+              builder: (context, isDark, _) {
+                final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+                final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+                final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+                final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+                final headerBg = isDark ? const Color(0xFF141E33) : const Color(0xFFF8FAFC);
+
+                return Dialog(
+                  backgroundColor: cardBg,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: borderCol, width: 1.2),
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720, maxHeight: 680),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top Market Breadth Strip (StockGro + Webull Pro Feature)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0B1120) : const Color(0xFFF1F5F9),
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            border: Border(bottom: BorderSide(color: borderCol)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.show_chart_rounded, size: 14, color: Color(0xFF10B981)),
+                              const SizedBox(width: 6),
+                              const Text('NSE BREADTH:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF64748B))),
+                              const SizedBox(width: 6),
+                              const Text('1,420 Advances 🟢', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                              const SizedBox(width: 6),
+                              const Text('·', style: TextStyle(color: Color(0xFF64748B))),
+                              const SizedBox(width: 6),
+                              const Text('850 Declines 🔴', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFEF4444))),
+                              const Spacer(),
+                              const Text('INDIA VIX: 14.22 (-1.25%)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B))),
+                              const SizedBox(width: 10),
+                              const Text('·', style: TextStyle(color: Color(0xFF64748B))),
+                              const SizedBox(width: 10),
+                              const Text('FII NET: +₹1,240 Cr 🟢', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                            ],
+                          ),
+                        ),
+
+                        // Search Input Bar (StockGro Natural Language + TradingView Command Bar)
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF38BDF8).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 20),
                               ),
-                              onChanged: (val) {
-                                setDialogState(() {
-                                  query = val;
-                                });
-                              },
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFF334155)),
-                            ),
-                            child: const Text('ESC to Close', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 20),
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            splashRadius: 18,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Filter Tabs (All, Equities, Options, Indices)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: const Color(0xFF141E33),
-                      child: Row(
-                        children: [
-                          _buildSearchFilterChip('All (${allInstruments.length})', 0, activeTab, (i) => setDialogState(() => activeTab = i)),
-                          const SizedBox(width: 8),
-                          _buildSearchFilterChip('Equities', 1, activeTab, (i) => setDialogState(() => activeTab = i)),
-                          const SizedBox(width: 8),
-                          _buildSearchFilterChip('Options F&O', 2, activeTab, (i) => setDialogState(() => activeTab = i)),
-                          const SizedBox(width: 8),
-                          _buildSearchFilterChip('Indices', 3, activeTab, (i) => setDialogState(() => activeTab = i)),
-                        ],
-                      ),
-                    ),
-
-                    // List of matching instruments
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.search_off_rounded, size: 48, color: Colors.grey.shade600),
-                                  const SizedBox(height: 8),
-                                  Text('No symbols found matching "$query"', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
-                                ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: searchInputCtrl,
+                                  autofocus: true,
+                                  style: TextStyle(color: textMain, fontSize: 14.5, fontWeight: FontWeight.w700),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search Symbol, Option Strike, Star Trader (Rohan), League or AI prompt...',
+                                    hintStyle: TextStyle(color: textSub, fontSize: 13),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                  ),
+                                  onChanged: (val) {
+                                    setDialogState(() {
+                                      query = val;
+                                    });
+                                  },
+                                ),
                               ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) => const Divider(color: Color(0xFF1E293B), height: 1),
-                              itemBuilder: (c, idx) {
-                                final item = filtered[idx];
-                                final sym = item['symbol'] as String;
-                                final typ = item['type'] as String;
-                                final price = (item['price'] as num).toDouble();
-                                final chg = item['chg'] as String;
-                                final isUp = item['isUp'] as bool;
-                                final isOpt = item['category'] == 2;
+                              if (query.isNotEmpty)
+                                IconButton(
+                                  icon: Icon(Icons.cancel_rounded, color: textSub, size: 18),
+                                  onPressed: () {
+                                    searchInputCtrl.clear();
+                                    setDialogState(() {
+                                      query = '';
+                                    });
+                                  },
+                                  splashRadius: 16,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(color: borderCol),
+                                ),
+                                child: Text('ESC', style: TextStyle(color: textSub, fontSize: 10, fontWeight: FontWeight.w900)),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.close_rounded, color: textSub, size: 20),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                splashRadius: 18,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
 
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  child: Row(
-                                    children: [
-                                      // Symbol Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        // Trending Quick Suggestion Chips (StockGro Discovery Feature)
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                Text('TRENDING:', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: textSub)),
+                                const SizedBox(width: 8),
+                                ...quickChips.map((chip) {
+                                  final cleanText = chip.replaceAll(RegExp(r'[🔥🌟🏆⚡]'), '').trim();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: InkWell(
+                                      onTap: () {
+                                        searchInputCtrl.text = cleanText;
+                                        setDialogState(() {
+                                          query = cleanText;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                                         decoration: BoxDecoration(
-                                          color: isOpt ? const Color(0xFF0F766E).withOpacity(0.2) : const Color(0xFF1D4ED8).withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(
-                                            color: isOpt ? const Color(0xFF14B8A6) : const Color(0xFF3B82F6),
-                                            width: 0.8,
-                                          ),
+                                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: borderCol),
                                         ),
                                         child: Text(
-                                          isOpt ? 'F&O' : (typ.contains('Index') ? 'IDX' : 'NSE'),
-                                          style: TextStyle(
-                                            color: isOpt ? const Color(0xFF2DD4BF) : const Color(0xFF60A5FA),
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          chip,
+                                          style: TextStyle(color: textMain, fontSize: 11, fontWeight: FontWeight.bold),
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                        ),
 
-                                      // Symbol Title & Subtitle
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Multi-Asset Category Filter Tabs
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                          color: headerBg,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildSearchFilterChip('All (${allItems.length})', 0, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('⚡ Options F&O', 2, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('📊 Equities', 1, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('📈 Indices', 3, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('🌟 Star Traders', 4, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('🏆 Leagues', 5, activeTab, (i) => setDialogState(() => activeTab = i)),
+                                const SizedBox(width: 6),
+                                _buildSearchFilterChip('🤖 Algos', 6, activeTab, (i) => setDialogState(() => activeTab = i)),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Matching Items Result List
+                        Expanded(
+                          child: filtered.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.search_off_rounded, size: 48, color: textSub.withOpacity(0.5)),
+                                      const SizedBox(height: 10),
+                                      Text('No results found for "$query"', style: TextStyle(color: textSub, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                                      const SizedBox(height: 4),
+                                      Text('Try searching for "Nifty", "Tata", "Rohan", "League" or "Straddle"', style: TextStyle(color: textSub.withOpacity(0.7), fontSize: 11.5)),
+                                    ],
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, __) => Divider(color: borderCol, height: 1),
+                                  itemBuilder: (c, idx) {
+                                    final item = filtered[idx];
+                                    final kind = item['kind'] as String;
+                                    final sym = item['symbol'] as String;
+                                    final typ = item['type'] as String;
+                                    final tag = item['tag'] as String? ?? '';
+
+                                    if (kind == 'trader') {
+                                      // Star Trader Card (StockGro Social Discovery)
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              sym,
-                                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                            Container(
+                                              width: 38,
+                                              height: 38,
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF4F46E5)]),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                sym.substring(0, 2).toUpperCase(),
+                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                                              ),
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              typ,
-                                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(sym, style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                                                      const SizedBox(width: 6),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                        decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                                        child: const Text('SEBI VERIFIED', style: TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(tag, style: TextStyle(color: textSub, fontSize: 11)),
+                                                ],
+                                              ),
+                                            ),
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(item['return'] as String, style: const TextStyle(color: Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.w900)),
+                                                Text('${item['copiers']} · ${item['winRate']} Win', style: TextStyle(color: textSub, fontSize: 10.5)),
+                                              ],
+                                            ),
+                                            const SizedBox(width: 12),
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                CopyTradingEngine().replicateTrade(symbol: 'NIFTY 24200 CE', side: 'BUY', baseQty: 25, price: 214.65);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Auto Copy Active! Synchronized with $sym across 8 demat accounts.'), backgroundColor: const Color(0xFF059669)),
+                                                );
+                                              },
+                                              icon: const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
+                                              label: const Text('1-Click Copy', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF059669),
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                      );
+                                    } else if (kind == 'league') {
+                                      // Trading League Card (StockGro Arena Discovery)
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.15), shape: BoxShape.circle),
+                                              child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFF59E0B), size: 18),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(sym, style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                                                  const SizedBox(height: 2),
+                                                  Text('${item['participants']} · $tag', style: TextStyle(color: textSub, fontSize: 11)),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(item['prize'] as String, style: const TextStyle(color: Color(0xFF10B981), fontSize: 13.5, fontWeight: FontWeight.w900)),
+                                            const SizedBox(width: 12),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                setState(() {
+                                                  _currentSelection = const _NavSelection(2, 0); // Trade Market Leagues
+                                                  _bodyKey = UniqueKey();
+                                                });
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF2563EB),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              ),
+                                              child: const Text('Enter Arena', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } else if (kind == 'algo') {
+                                      // Quant Algo Strategy Card
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withOpacity(0.15), shape: BoxShape.circle),
+                                              child: const Icon(Icons.smart_toy_rounded, color: Color(0xFF8B5CF6), size: 18),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(sym, style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                                                  const SizedBox(height: 2),
+                                                  Text(tag, style: TextStyle(color: textSub, fontSize: 11)),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(item['return'] as String, style: const TextStyle(color: Color(0xFF10B981), fontSize: 13, fontWeight: FontWeight.w900)),
+                                            const SizedBox(width: 12),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                setState(() {
+                                                  _currentSelection = const _NavSelection(0, 0); // Auto Trading
+                                                  _bodyKey = UniqueKey();
+                                                });
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF059669),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              ),
+                                              child: const Text('Deploy Algo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
 
-                                      // LTP & Change
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                    // Default: Stock or Option Instrument
+                                    final price = (item['price'] as num).toDouble();
+                                    final chg = item['chg'] as String;
+                                    final isUp = item['isUp'] as bool;
+                                    final isOpt = item['category'] == 2;
+                                    final isIdx = item['category'] == 3;
+
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                                      child: Row(
                                         children: [
-                                          Text(
-                                            '₹${price.toStringAsFixed(2)}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                          // Badge
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: isOpt
+                                                  ? const Color(0xFF0F766E).withOpacity(0.2)
+                                                  : (isIdx ? const Color(0xFF059669).withOpacity(0.2) : const Color(0xFF1D4ED8).withOpacity(0.2)),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: isOpt ? const Color(0xFF14B8A6) : (isIdx ? const Color(0xFF10B981) : const Color(0xFF3B82F6)),
+                                                width: 0.8,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              isOpt ? 'F&O' : (isIdx ? 'INDEX' : 'NSE'),
+                                              style: TextStyle(
+                                                color: isOpt ? const Color(0xFF2DD4BF) : (isIdx ? const Color(0xFF10B981) : const Color(0xFF60A5FA)),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            chg,
-                                            style: TextStyle(
-                                              color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
+                                          const SizedBox(width: 10),
+
+                                          // Symbol Title & Subtitle
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(sym, style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                                                const SizedBox(height: 2),
+                                                Text('$typ · $tag', style: TextStyle(color: textSub, fontSize: 11)),
+                                              ],
+                                            ),
+                                          ),
+
+                                          // Price & Change
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text('₹${price.toStringAsFixed(2)}', style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                chg,
+                                                style: TextStyle(
+                                                  color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 14),
+
+                                          // Chart Shortcut Button
+                                          IconButton(
+                                            icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+                                            color: const Color(0xFF38BDF8),
+                                            tooltip: 'Open Interactive Chart',
+                                            onPressed: () {
+                                              Navigator.of(ctx).pop();
+                                              setState(() {
+                                                _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+                                                _bodyKey = UniqueKey();
+                                              });
+                                            },
+                                            splashRadius: 16,
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                          const SizedBox(width: 10),
+
+                                          // Option Chain Shortcut (for F&O and Index)
+                                          if (isOpt || isIdx) ...[
+                                            IconButton(
+                                              icon: const Icon(Icons.table_chart_rounded, size: 18),
+                                              color: const Color(0xFF10B981),
+                                              tooltip: 'Open Option Chain (F&O)',
+                                              onPressed: () {
+                                                Navigator.of(ctx).pop();
+                                                setState(() {
+                                                  _currentSelection = const _NavSelection(4, 0); // Option chain
+                                                  _bodyKey = UniqueKey();
+                                                });
+                                              },
+                                              splashRadius: 16,
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                            const SizedBox(width: 10),
+                                          ],
+
+                                          // Direct [B] Buy Action Button (AngelOne Order Pad)
+                                          InkWell(
+                                            onTap: () {
+                                              Navigator.of(ctx).pop();
+                                              OrderPlacementTicketDialog.show(
+                                                context,
+                                                symbol: sym,
+                                                side: 'BUY',
+                                                ltp: price,
+                                                lotSize: (item['lot'] as num?)?.toInt() ?? 1,
+                                                category: isOpt ? 'OPTIONS' : (isIdx ? 'INDEX' : 'EQUITY'),
+                                              );
+                                            },
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: Container(
+                                              width: 28,
+                                              height: 28,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF059669),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const Text('B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+
+                                          // Direct [S] Sell Action Button (AngelOne Order Pad)
+                                          InkWell(
+                                            onTap: () {
+                                              Navigator.of(ctx).pop();
+                                              OrderPlacementTicketDialog.show(
+                                                context,
+                                                symbol: sym,
+                                                side: 'SELL',
+                                                ltp: price,
+                                                lotSize: (item['lot'] as num?)?.toInt() ?? 1,
+                                                category: isOpt ? 'OPTIONS' : (isIdx ? 'INDEX' : 'EQUITY'),
+                                              );
+                                            },
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: Container(
+                                              width: 28,
+                                              height: 28,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEF4444),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const Text('S', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(width: 14),
+                                    );
+                                  },
+                                ),
+                        ),
 
-                                      // Direct B (Buy) Action Button -> Opens AngelOne Order Pad!
-                                      InkWell(
-                                        onTap: () {
-                                          Navigator.of(ctx).pop();
-                                          OrderPlacementTicketDialog.show(
-                                            context,
-                                            symbol: sym,
-                                            side: 'BUY',
-                                            ltp: price,
-                                            lotSize: (item['lot'] as num?)?.toInt() ?? 1,
-                                            category: isOpt ? 'OPTIONS' : 'EQUITY',
-                                          );
-                                        },
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF059669),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: const Text('B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-
-                                      // Direct S (Sell) Action Button -> Opens AngelOne Order Pad!
-                                      InkWell(
-                                        onTap: () {
-                                          Navigator.of(ctx).pop();
-                                          OrderPlacementTicketDialog.show(
-                                            context,
-                                            symbol: sym,
-                                            side: 'SELL',
-                                            ltp: price,
-                                            lotSize: (item['lot'] as num?)?.toInt() ?? 1,
-                                            category: isOpt ? 'OPTIONS' : 'EQUITY',
-                                          );
-                                        },
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFEF4444),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: const Text('S', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-
-                    // Quick Footer with hints
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0B1120),
-                        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Click [B] or [S] to open AngelOne Interactive Order Pad with 8-Demat Replication',
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5, fontWeight: FontWeight.w500)),
-                          InkWell(
-                            onTap: () {
-                              Navigator.of(ctx).pop();
-                              setState(() {
-                                _currentSelection = const _NavSelection(4, 0); // Option chain
-                                _bodyKey = UniqueKey();
-                              });
-                            },
-                            child: const Text('Go to Live Option Chain →',
-                                style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+                        // Quick Footer with shortcuts
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0B1120) : const Color(0xFFF1F5F9),
+                            border: Border(top: BorderSide(color: borderCol)),
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFF59E0B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Click [B]/[S] for AngelOne Order Pad · 1-Click Multi-Demat Copy Replication',
+                                    style: TextStyle(color: textSub, fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.of(ctx).pop();
+                                      setState(() {
+                                        _currentSelection = const _NavSelection(2, 0); // Trade Market Leagues
+                                        _bodyKey = UniqueKey();
+                                      });
+                                    },
+                                    child: const Text('StockGro Arena →', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.of(ctx).pop();
+                                      setState(() {
+                                        _currentSelection = const _NavSelection(4, 0); // Option chain
+                                        _bodyKey = UniqueKey();
+                                      });
+                                    },
+                                    child: const Text('Option Chain →', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -1428,9 +1779,9 @@ class _MainDashboardState extends State<MainDashboard> {
       onTap: () => onTap(index),
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF1E293B),
+          color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: isSelected ? const Color(0xFF60A5FA) : const Color(0xFF334155)),
         ),
@@ -1439,7 +1790,7 @@ class _MainDashboardState extends State<MainDashboard> {
           style: TextStyle(
             color: isSelected ? Colors.white : const Color(0xFF94A3B8),
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
           ),
         ),
       ),
