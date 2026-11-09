@@ -221,10 +221,12 @@ class _MainDashboardState extends State<MainDashboard> {
         label: 'Trade Market',
         type: _NavItemType.group,
         children: [
+          _SubNavItem(icon: Icons.apps_rounded, label: 'More Tools (StockGro)'),
+          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Trade Ideas (SEBI)'),
+          _SubNavItem(icon: Icons.smart_toy_rounded, label: 'STOXO AI Research'),
           _SubNavItem(icon: Icons.emoji_events_rounded, label: 'Trading Leagues (Arena)'),
           _SubNavItem(icon: Icons.military_tech_rounded, label: 'Star Traders Leaderboard'),
           _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Virtual Practice Arena'),
-          _SubNavItem(icon: Icons.forum_rounded, label: 'Community Sentiment & Buzz'),
         ],
       ),
 
