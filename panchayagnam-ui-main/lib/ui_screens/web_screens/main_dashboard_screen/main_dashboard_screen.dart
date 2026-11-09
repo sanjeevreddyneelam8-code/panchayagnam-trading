@@ -1,6 +1,7 @@
 import '../../../service/theme_mode_service.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 import 'strategy_builder_hub_view.dart';
+import 'trade_market_stockgro_view.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:intl/intl.dart';
@@ -214,14 +215,27 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 3. Trading Workspace (3rd side heading)
+      // 3. Trade Market (StockGro Social Trading & Arena)
+      const _NavItem(
+        icon: Icons.local_fire_department_rounded,
+        label: 'Trade Market',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.emoji_events_rounded, label: 'Trading Leagues (Arena)'),
+          _SubNavItem(icon: Icons.military_tech_rounded, label: 'Star Traders Leaderboard'),
+          _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Virtual Practice Arena'),
+          _SubNavItem(icon: Icons.forum_rounded, label: 'Community Sentiment & Buzz'),
+        ],
+      ),
+
+      // 4. Trade Dashboard (was Trading Workspace)
       const _NavItem(
         icon: Icons.trending_up_rounded,
-        label: 'Trading Workspace',
+        label: 'Trade Dashboard',
         type: _NavItemType.group,
         children: [
           _SubNavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
-          _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Market Watch'),
+          _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Option Markets'),
           _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
           _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
           _SubNavItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions'),
@@ -229,7 +243,7 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 4. Option Chain (4th side heading)
+      // 5. Option Chain (4th side heading)
       const _NavItem(
         icon: Icons.table_chart_rounded,
         label: 'Option Chain',
@@ -240,7 +254,7 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 5. Tools and Accounts (5th side heading)
+      // 6. Tools and Accounts (5th side heading)
       _NavItem(
         icon: Icons.construction_rounded,
         label: 'Tools & Accounts',
@@ -262,7 +276,7 @@ class _MainDashboardState extends State<MainDashboard> {
 
   void _navigateToBrokers() {
     setState(() {
-      _currentSelection = const _NavSelection(4, 0);
+      _currentSelection = const _NavSelection(5, 0);
       _bodyKey = UniqueKey();
     });
   }
@@ -309,7 +323,10 @@ class _MainDashboardState extends State<MainDashboard> {
             return const GroupOrdersTab(initialHierarchyIndex: 0);
         }
 
-      case 2: // 3. Trading Workspace
+      case 2: // 3. Trade Market (StockGro Social Trading & Arena)
+        return TradeMarketStockGroView(initialTabIndex: subIdx);
+
+      case 3: // 4. Trade Dashboard (was Trading Workspace)
         switch (subIdx) {
           case 0:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
@@ -327,7 +344,7 @@ class _MainDashboardState extends State<MainDashboard> {
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
         }
 
-      case 3: // 4. Option Chain
+      case 4: // 5. Option Chain
         switch (subIdx) {
           case 0:
             return const OptionsChainView(initialTabIndex: 0);
@@ -337,7 +354,7 @@ class _MainDashboardState extends State<MainDashboard> {
             return const OptionsChainView(initialTabIndex: 0);
         }
 
-      case 4: // 5. Tools & Accounts
+      case 5: // 6. Tools & Accounts
         switch (subIdx) {
           case 0:
             return const ChildAccountsTab();
@@ -1385,7 +1402,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onTap: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(3, 0); // Option chain
+                                _currentSelection = const _NavSelection(4, 0); // Option chain
                                 _bodyKey = UniqueKey();
                               });
                             },
@@ -3220,14 +3237,390 @@ class _MainDashboardState extends State<MainDashboard> {
             ? const Color(0xFFF87171)
             : const Color(0xFF94A3B8);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return InkWell(
+      onTap: () => _showTickerDetailsModal(context, symbol, price, change, isPositive),
+      borderRadius: BorderRadius.circular(4),
+      hoverColor: const Color(0xFF334155).withOpacity(0.5),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(symbol, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
+            const SizedBox(width: 4),
+            Text('₹$price', style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 4),
+            Text(change, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Ticker Detail & Quick Action Modal (NIFTY 50, BANK NIFTY, Stocks, VIX) ───
+  void _showTickerDetailsModal(BuildContext context, String symbol, String price, String change, bool? isPositive) {
+    final isNifty = symbol.contains('NIFTY 50');
+    final isBankNifty = symbol.contains('BANK NIFTY');
+    final isVix = symbol.contains('INDIA VIX');
+    final isIndex = isNifty || isBankNifty;
+    final numPrice = double.tryParse(price.replaceAll(',', '')) ?? 24200.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: ThemeModeService.isDarkModeNotifier,
+          builder: (context, isDark, _) {
+            final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+            final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+            final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+            final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+            final statBg = isDark ? const Color(0xFF1E293B).withOpacity(0.5) : const Color(0xFFF8FAFC);
+
+            return Dialog(
+              backgroundColor: cardBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: borderCol, width: 1.2),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isVix
+                                  ? const Color(0xFFF59E0B).withOpacity(0.15)
+                                  : (isIndex ? const Color(0xFF059669).withOpacity(0.15) : const Color(0xFF2563EB).withOpacity(0.15)),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isVix ? 'VOLATILITY' : (isIndex ? 'NSE INDEX' : 'NSE EQUITIES'),
+                              style: TextStyle(
+                                color: isVix ? const Color(0xFFF59E0B) : (isIndex ? const Color(0xFF10B981) : const Color(0xFF38BDF8)),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(symbol, style: TextStyle(color: textMain, fontSize: 18, fontWeight: FontWeight.w900)),
+                                Text(
+                                  isIndex ? 'National Stock Exchange Benchmark' : (isVix ? 'India Volatility Index' : 'NSE Listed Top Equities'),
+                                  style: TextStyle(color: textSub, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, color: textSub, size: 20),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Price Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('₹$price', style: TextStyle(color: textMain, fontSize: 28, fontWeight: FontWeight.w900)),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isPositive == true ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isPositive == true ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                  size: 14,
+                                  color: isPositive == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  change,
+                                  style: TextStyle(
+                                    color: isPositive == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          const Text('Market: LIVE STREAM', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Divider(color: borderCol, height: 1),
+                      const SizedBox(height: 16),
+
+                      // Key Statistics Grid
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: statBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: borderCol),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildStatCol('TODAY HIGH', isNifty ? '24,275.10' : (isBankNifty ? '51,950.00' : '2,955.00'), textMain, textSub),
+                                _buildStatCol('TODAY LOW', isNifty ? '24,110.80' : (isBankNifty ? '51,480.00' : '2,912.40'), textMain, textSub),
+                                _buildStatCol('52W HIGH', isNifty ? '26,277.35' : (isBankNifty ? '54,467.35' : '3,217.90'), textMain, textSub),
+                                _buildStatCol('52W LOW', isNifty ? '21,281.45' : (isBankNifty ? '43,230.15' : '2,220.00'), textMain, textSub),
+                              ],
+                            ),
+                            if (isIndex) ...[
+                              const SizedBox(height: 12),
+                              Divider(color: borderCol, height: 1),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildStatCol('PUT-CALL RATIO (PCR)', isNifty ? '0.92 (Neutral)' : '1.05 (Bullish)', const Color(0xFF10B981), textSub),
+                                  _buildStatCol('MAX PAIN STRIKE', isNifty ? '24,150' : '51,500', const Color(0xFF38BDF8), textSub),
+                                  _buildStatCol('INDIA VIX', '14.22 (-1.25%)', const Color(0xFFF59E0B), textSub),
+                                  _buildStatCol('LOT SIZE', isNifty ? '25 Qty' : '15 Qty', textMain, textSub),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Interactive Quick Action Buttons
+                      if (isIndex) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: isNifty ? 'NIFTY 24200 CE' : 'BANKNIFTY 51800 CE',
+                                    side: 'BUY',
+                                    ltp: isNifty ? 214.65 : 412.50,
+                                    lotSize: isNifty ? 25 : 15,
+                                    category: 'OPTIONS',
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_upward_rounded, size: 16, color: Colors.white),
+                                label: const Text('Buy ATM Call (CE)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: isNifty ? 'NIFTY 24200 PE' : 'BANKNIFTY 51800 PE',
+                                    side: 'BUY',
+                                    ltp: isNifty ? 186.20 : 378.10,
+                                    lotSize: isNifty ? 25 : 15,
+                                    category: 'OPTIONS',
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_downward_rounded, size: 16, color: Colors.white),
+                                label: const Text('Buy ATM Put (PE)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFDC2626),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  setState(() {
+                                    _currentSelection = const _NavSelection(4, 0); // Option chain
+                                    _bodyKey = UniqueKey();
+                                  });
+                                },
+                                icon: const Icon(Icons.table_chart_rounded, size: 16, color: Color(0xFF38BDF8)),
+                                label: const Text('Open Option Chain (F&O)', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF38BDF8)),
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  setState(() {
+                                    _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+                                    _bodyKey = UniqueKey();
+                                  });
+                                },
+                                icon: const Icon(Icons.candlestick_chart_rounded, size: 16),
+                                label: Text('Interactive Chart', style: TextStyle(color: textMain, fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: borderCol),
+                                  padding: const EdgeInsets.symmetric(vertical: 11),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (isVix) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 18),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'India VIX is below 15 (Calm Regime). Option premiums are low with moderate implied volatility, favoring directional buyers and tight straddles.',
+                                  style: TextStyle(color: Color(0xFFD97706), fontSize: 11.5, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              setState(() {
+                                _currentSelection = const _NavSelection(4, 0); // Option Chain
+                                _bodyKey = UniqueKey();
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), padding: const EdgeInsets.symmetric(vertical: 12)),
+                            child: const Text('View Implied Volatility (IV) on Option Chain', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ] else ...[
+                        // Equity stock (RELIANCE, HDFCBANK, INFY)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: symbol,
+                                    side: 'BUY',
+                                    ltp: numPrice,
+                                    lotSize: 1,
+                                    category: 'EQUITY',
+                                  );
+                                },
+                                icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 16, color: Colors.white),
+                                label: Text('Buy $symbol (8 Demats)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: symbol,
+                                    side: 'SELL',
+                                    ltp: numPrice,
+                                    lotSize: 1,
+                                    category: 'EQUITY',
+                                  );
+                                },
+                                icon: const Icon(Icons.sell_rounded, size: 16, color: Colors.white),
+                                label: Text('Sell $symbol (8 Demats)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFDC2626),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              setState(() {
+                                _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+                                _bodyKey = UniqueKey();
+                              });
+                            },
+                            icon: const Icon(Icons.candlestick_chart_rounded, size: 16),
+                            label: Text('Open $symbol Technical Chart', style: TextStyle(color: textMain, fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: borderCol),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCol(String label, String value, Color valColor, Color labelColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(symbol, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
-        const SizedBox(width: 4),
-        Text('₹$price', style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
-        const SizedBox(width: 4),
-        Text(change, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(color: labelColor, fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 3),
+        Text(value, style: TextStyle(color: valColor, fontSize: 12.5, fontWeight: FontWeight.w800)),
       ],
     );
   }

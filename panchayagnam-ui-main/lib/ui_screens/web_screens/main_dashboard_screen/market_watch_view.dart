@@ -658,7 +658,7 @@ class _MarketWatchViewState extends State<MarketWatchView> {
                     Row(
                       children: [
                         const Text(
-                          'Panchayagnam Market Watch',
+                          'Panchayagnam Option Markets',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
