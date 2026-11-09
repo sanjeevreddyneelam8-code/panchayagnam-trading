@@ -1,3 +1,6 @@
+import '../../../service/theme_mode_service.dart';
+import '../../../reusable_widets/order_placement_ticket_dialog.dart';
+import 'strategy_builder_hub_view.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:intl/intl.dart';
@@ -285,7 +288,7 @@ class _MainDashboardState extends State<MainDashboard> {
           case 1:
             return const BacktestingView();
           case 2:
-            return const OptionsChainView(initialTabIndex: 2); // Strategy Builder
+            return const StrategyBuilderHubView(); // Strategy Builder Hub
           case 3:
             return const PaperTradingView(); // Paper Trading
           default:
@@ -469,31 +472,42 @@ class _MainDashboardState extends State<MainDashboard> {
             ),
           ),
 
-          // Middle: Global Quick Search Box (Professional Terminal Style)
+          // Middle: Global Quick Search Box (Professional Interactive Terminal)
           Expanded(
             child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 320),
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF334155)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search_rounded, size: 16, color: Color(0xFF94A3B8)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Search Symbol, Strike or Strategy (Ctrl+K)',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
-                        overflow: TextOverflow.ellipsis,
+              child: InkWell(
+                onTap: () => _showQuickSearchDialog(context),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  height: 34,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.4)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 1)),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded, size: 16, color: Color(0xFF38BDF8)),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Search Symbol, Strike or Strategy (Ctrl+K)',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    Icon(Icons.keyboard_command_key_rounded, size: 12, color: Color(0xFF64748B)),
-                  ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: const BoxDecoration(color: Color(0xFF334155), borderRadius: BorderRadius.all(Radius.circular(4))),
+                        child: const Text('Ctrl+K', style: TextStyle(color: Colors.white70, fontSize: 9.5, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -636,7 +650,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 onPressed: () {
                   setState(() {
                     _isDarkMode = !_isDarkMode;
-                    html.window.sessionStorage['is_dark_mode'] = _isDarkMode ? 'true' : 'false';
+                    ThemeModeService.setDark(_isDarkMode);
                     _bodyKey = UniqueKey();
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -786,7 +800,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               children: [
                                 Container(
                                   width: 40,
-                                  height: 40,
+                                  height: 46,
                                   decoration: const BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
@@ -1094,6 +1108,323 @@ class _MainDashboardState extends State<MainDashboard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── Quick Search Dialog (Interactive Symbol & Strike Finder with 1-Click Buy/Sell) ───
+  void _showQuickSearchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        String query = '';
+        int activeTab = 0; // 0: All, 1: Equities, 2: Options, 3: Indices
+        final allInstruments = [
+          {'symbol': 'NIFTY 24200 CE', 'type': 'Options (NFO)', 'price': 214.65, 'chg': '+4.8%', 'isUp': true, 'category': 2, 'lot': 25},
+          {'symbol': 'NIFTY 24200 PE', 'type': 'Options (NFO)', 'price': 186.20, 'chg': '-3.2%', 'isUp': false, 'category': 2, 'lot': 25},
+          {'symbol': 'BANKNIFTY 51800 CE', 'type': 'Options (NFO)', 'price': 412.50, 'chg': '+6.1%', 'isUp': true, 'category': 2, 'lot': 15},
+          {'symbol': 'BANKNIFTY 51800 PE', 'type': 'Options (NFO)', 'price': 378.10, 'chg': '-5.4%', 'isUp': false, 'category': 2, 'lot': 15},
+          {'symbol': 'TATASTEEL', 'type': 'Equity (NSE)', 'price': 190.20, 'chg': '+2.09%', 'isUp': true, 'category': 1, 'lot': 1},
+          {'symbol': 'RELIANCE', 'type': 'Equity (NSE)', 'price': 2940.50, 'chg': '+0.85%', 'isUp': true, 'category': 1, 'lot': 1},
+          {'symbol': 'HDFCBANK', 'type': 'Equity (NSE)', 'price': 1542.10, 'chg': '-0.45%', 'isUp': false, 'category': 1, 'lot': 1},
+          {'symbol': 'INFY', 'type': 'Equity (NSE)', 'price': 1785.40, 'chg': '+1.10%', 'isUp': true, 'category': 1, 'lot': 1},
+          {'symbol': 'NIFTY 50', 'type': 'Index (NSE)', 'price': 24228.31, 'chg': '+0.32%', 'isUp': true, 'category': 3, 'lot': 25},
+          {'symbol': 'BANK NIFTY', 'type': 'Index (NSE)', 'price': 51820.00, 'chg': '+0.62%', 'isUp': true, 'category': 3, 'lot': 15},
+        ];
+
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            final filtered = allInstruments.where((inst) {
+              final cat = inst['category'] as int;
+              if (activeTab != 0 && cat != activeTab) return false;
+              if (query.trim().isEmpty) return true;
+              final sym = (inst['symbol'] as String).toLowerCase();
+              final typ = (inst['type'] as String).toLowerCase();
+              final q = query.toLowerCase().trim();
+              return sym.contains(q) || typ.contains(q);
+            }).toList();
+
+            return Dialog(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: Color(0xFF334155), width: 1.2),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620, maxHeight: 580),
+                child: Column(
+                  children: [
+                    // Top Search Input Bar
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              autofocus: true,
+                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                              decoration: const InputDecoration(
+                                hintText: 'Search NIFTY, BANKNIFTY, TATASTEEL, Options...',
+                                hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              onChanged: (val) {
+                                setDialogState(() {
+                                  query = val;
+                                });
+                              },
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFF334155)),
+                            ),
+                            child: const Text('ESC to Close', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 20),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            splashRadius: 18,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Filter Tabs (All, Equities, Options, Indices)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      color: const Color(0xFF141E33),
+                      child: Row(
+                        children: [
+                          _buildSearchFilterChip('All (${allInstruments.length})', 0, activeTab, (i) => setDialogState(() => activeTab = i)),
+                          const SizedBox(width: 8),
+                          _buildSearchFilterChip('Equities', 1, activeTab, (i) => setDialogState(() => activeTab = i)),
+                          const SizedBox(width: 8),
+                          _buildSearchFilterChip('Options F&O', 2, activeTab, (i) => setDialogState(() => activeTab = i)),
+                          const SizedBox(width: 8),
+                          _buildSearchFilterChip('Indices', 3, activeTab, (i) => setDialogState(() => activeTab = i)),
+                        ],
+                      ),
+                    ),
+
+                    // List of matching instruments
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.search_off_rounded, size: 48, color: Colors.grey.shade600),
+                                  const SizedBox(height: 8),
+                                  Text('No symbols found matching "$query"', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) => const Divider(color: Color(0xFF1E293B), height: 1),
+                              itemBuilder: (c, idx) {
+                                final item = filtered[idx];
+                                final sym = item['symbol'] as String;
+                                final typ = item['type'] as String;
+                                final price = (item['price'] as num).toDouble();
+                                final chg = item['chg'] as String;
+                                final isUp = item['isUp'] as bool;
+                                final isOpt = item['category'] == 2;
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  child: Row(
+                                    children: [
+                                      // Symbol Badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: isOpt ? const Color(0xFF0F766E).withOpacity(0.2) : const Color(0xFF1D4ED8).withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: isOpt ? const Color(0xFF14B8A6) : const Color(0xFF3B82F6),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isOpt ? 'F&O' : (typ.contains('Index') ? 'IDX' : 'NSE'),
+                                          style: TextStyle(
+                                            color: isOpt ? const Color(0xFF2DD4BF) : const Color(0xFF60A5FA),
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+
+                                      // Symbol Title & Subtitle
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              sym,
+                                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              typ,
+                                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // LTP & Change
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '₹${price.toStringAsFixed(2)}',
+                                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            chg,
+                                            style: TextStyle(
+                                              color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 14),
+
+                                      // Direct B (Buy) Action Button -> Opens AngelOne Order Pad!
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.of(ctx).pop();
+                                          OrderPlacementTicketDialog.show(
+                                            context,
+                                            symbol: sym,
+                                            side: 'BUY',
+                                            ltp: price,
+                                            lotSize: (item['lot'] as num?)?.toInt() ?? 1,
+                                            category: isOpt ? 'OPTIONS' : 'EQUITY',
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF059669),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text('B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+
+                                      // Direct S (Sell) Action Button -> Opens AngelOne Order Pad!
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.of(ctx).pop();
+                                          OrderPlacementTicketDialog.show(
+                                            context,
+                                            symbol: sym,
+                                            side: 'SELL',
+                                            ltp: price,
+                                            lotSize: (item['lot'] as num?)?.toInt() ?? 1,
+                                            category: isOpt ? 'OPTIONS' : 'EQUITY',
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text('S', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+
+                    // Quick Footer with hints
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF0B1120),
+                        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Click [B] or [S] to open AngelOne Interactive Order Pad with 8-Demat Replication',
+                              style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5, fontWeight: FontWeight.w500)),
+                          InkWell(
+                            onTap: () {
+                              Navigator.of(ctx).pop();
+                              setState(() {
+                                _currentSelection = const _NavSelection(3, 0); // Option chain
+                                _bodyKey = UniqueKey();
+                              });
+                            },
+                            child: const Text('Go to Live Option Chain →',
+                                style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchFilterChip(String label, int index, int activeIndex, Function(int) onTap) {
+    final isSelected = index == activeIndex;
+    return InkWell(
+      onTap: () => onTap(index),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isSelected ? const Color(0xFF60A5FA) : const Color(0xFF334155)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
@@ -3773,8 +4104,9 @@ class _NavGroupTileState extends State<_NavGroupTile> {
                         maxLines: 1,
                         style: TextStyle(
                           color: iconColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),

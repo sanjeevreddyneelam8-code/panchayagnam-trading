@@ -1,3 +1,5 @@
+import '../../../reusable_widets/order_placement_ticket_dialog.dart';
+import '../../../service/theme_mode_service.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -312,25 +314,18 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     required String optType,
     required double strike,
     required double premium,
-  }) async {
+  }) {
     final lotSize = _lotSizes[_underlying] ?? 25;
-    final totalQty = lotSize * _tradeLots;
     final symbol = '$_underlying ${strike.toInt()} $optType';
 
-    final engine = CopyTradingEngine();
-    final receipt = await engine.replicateTrade(
+    OrderPlacementTicketDialog.show(
+      context,
       symbol: symbol,
       side: side,
-      baseQty: totalQty,
-      price: premium,
-      orderType: 'MARKET',
-      productType: 'OPTIONS (NRML)',
+      ltp: premium,
       lotSize: lotSize,
+      category: 'F&O',
     );
-
-    if (mounted) {
-      CopyTradeReceiptDialog.show(context, receipt);
-    }
   }
 
   @override
@@ -339,8 +334,10 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     final spotColor = isPos ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final lotSize = _lotSizes[_underlying] ?? 25;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeModeService.isDarkModeNotifier,
+      builder: (context, isDark, _) => Scaffold(
+        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -643,6 +640,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
           ],
         ),
       ),
+    ),
     );
   }
 

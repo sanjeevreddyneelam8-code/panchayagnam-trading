@@ -1,3 +1,5 @@
+import '../../../reusable_widets/order_placement_ticket_dialog.dart';
+import '../../../service/theme_mode_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
@@ -497,25 +499,19 @@ class _MarketWatchViewState extends State<MarketWatchView> {
     );
   }
 
-  void _executeQuickTrade(ScripInfo scrip, String side) async {
+  void _executeQuickTrade(ScripInfo scrip, String side) {
     final q = _quotes[scrip.symbolToken] ?? _defaultMarketQuotes[scrip.symbolToken];
     final ltp = q?.ltp ?? 1000.0;
-    final qty = scrip.lotSize > 0 ? scrip.lotSize : 25;
+    final lotSize = scrip.lotSize > 0 ? scrip.lotSize : 1;
 
-    final engine = CopyTradingEngine();
-    final receipt = await engine.replicateTrade(
+    OrderPlacementTicketDialog.show(
+      context,
       symbol: scrip.name,
       side: side,
-      baseQty: qty,
-      price: ltp,
-      orderType: 'MARKET',
-      productType: 'INTRADAY (MIS)',
-      lotSize: scrip.lotSize > 0 ? scrip.lotSize : 1,
+      ltp: ltp,
+      lotSize: lotSize,
+      category: scrip.instrumentType == 'OPTIDX' || scrip.instrumentType == 'FUTIDX' ? 'F&O' : 'EQUITY',
     );
-
-    if (mounted) {
-      CopyTradeReceiptDialog.show(context, receipt);
-    }
   }
 
   void _showScripChartModal(ScripInfo scrip) {
