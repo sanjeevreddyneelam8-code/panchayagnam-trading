@@ -1,5 +1,6 @@
 import '../../../service/theme_mode_service.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
+import '../../../reusable_widets/client_knowledge_center_dialog.dart';
 import 'strategy_builder_hub_view.dart';
 import 'trade_market_stockgro_view.dart';
 import 'dart:async';
@@ -694,6 +695,60 @@ class _MainDashboardState extends State<MainDashboard> {
                     ),
                   );
                 },
+              ),
+
+              const SizedBox(width: 8),
+
+              // Client Knowledge Center & Interactive Tour Button (High Clarity for Clients)
+              InkWell(
+                onTap: () {
+                  ClientKnowledgeCenterDialog.show(
+                    context,
+                    onNavigateToBrokers: _navigateToBrokers,
+                    onNavigateToParentChild: () {
+                      setState(() {
+                        _currentSelection = const _NavSelection(1, 0);
+                        _bodyKey = UniqueKey();
+                      });
+                    },
+                    onNavigateToAutoTrading: () {
+                      setState(() {
+                        _currentSelection = const _NavSelection(0, 0);
+                        _bodyKey = UniqueKey();
+                      });
+                    },
+                    onNavigateToVirtualPractice: () {
+                      setState(() {
+                        _currentSelection = const _NavSelection(2, 6);
+                        _bodyKey = UniqueKey();
+                      });
+                    },
+                  );
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.6)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.menu_book_rounded, size: 14, color: Color(0xFF10B981)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Client Guide & Tour 📖',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(width: 8),
