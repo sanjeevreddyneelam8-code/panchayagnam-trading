@@ -753,6 +753,54 @@ class _MainDashboardState extends State<MainDashboard> {
 
               const SizedBox(width: 8),
 
+              // Refer & Earn 30% Button (Client Acquisition Magnet)
+              InkWell(
+                onTap: () => _showReferAndEarnDialog(context),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.6)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.card_giftcard_rounded, size: 14, color: Color(0xFFF59E0B)),
+                      SizedBox(width: 5),
+                      Text('Refer & Earn 30% 🎁', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFFF59E0B))),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // VIP Telegram Community Button (Client Acquisition Funnel)
+              InkWell(
+                onTap: () => _showTelegramCommunityDialog(context),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF0284C7).withOpacity(0.6)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.send_rounded, size: 13, color: Color(0xFF38BDF8)),
+                      SizedBox(width: 5),
+                      Text('VIP Telegram (14.2k) 💬', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF38BDF8))),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
               // Dedicated Static IP Chip on top bar (Locked until payment / QR scan / wallet)
               ValueListenableBuilder<bool>(
                 valueListenable: StaticIpService.isUnlockedNotifier,
@@ -1851,6 +1899,243 @@ class _MainDashboardState extends State<MainDashboard> {
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
           ),
         ),
+      ),
+    );
+  }
+
+  // ─── Refer & Earn (30% Lifetime Recurring Commission) Dialog ───────────────
+  void _showReferAndEarnDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final userId = UserSession().userId > 0 ? 'PY-' : 'PY-10821';
+        final refLink = 'https://sanjeevreddyneelam8-code.github.io/panchayagnam-trading/?ref=';
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: const Color(0xFF0F172A),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.card_giftcard_rounded, color: Color(0xFFF59E0B), size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Panchayagnam Partner & Affiliate Program',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Earn 30% Lifetime Recurring Commission on Every Referred Trader',
+                              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('YOUR UNIQUE REFERRAL LINK', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                refLink,
+                                style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12.5, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: refLink));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Referral link copied to clipboard!'), backgroundColor: Color(0xFF059669)),
+                                );
+                              },
+                              icon: const Icon(Icons.copy_rounded, size: 14, color: Colors.white),
+                              label: const Text('Copy Link', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('COMMISSION RATE', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
+                              SizedBox(height: 3),
+                              Text('30% RECURRING', style: TextStyle(color: Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('₹450/mo per trader', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('ACTIVE REFERRALS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
+                              SizedBox(height: 3),
+                              Text('12 TRADERS', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('96 demats synced', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('TOTAL EARNINGS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
+                              SizedBox(height: 3),
+                              Text('₹5,400.00', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('Direct Bank / UPI', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Text('HOW TO ATTRACT CLIENTS & EARN:', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '1. Share your link with trading groups, WhatsApp friends, or your YouTube/Instagram followers.\n2. When they register, they receive 7 days free trial + ₹10,00,000 paper trading funds.\n3. Every time they renew their subscription, 30% commission is credited directly to your UPI/Bank.',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: 'Hey, checkout Panchayagnam — India\'s 1st 8-Demat Copy Trading & Algo Platform! Sign up here for 7 days free trial: ' + refLink));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('WhatsApp invitation message copied to clipboard! Share it in your trading groups.'), backgroundColor: Color(0xFF059669)),
+                          );
+                        },
+                        icon: const Icon(Icons.share_rounded, size: 15, color: Colors.white),
+                        label: const Text('Copy WhatsApp Invitation Message', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── VIP Telegram Community Dialog ─────────────────────────────────────────
+  void _showTelegramCommunityDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Color(0xFF1E293B))),
+        title: const Row(
+          children: [
+            Icon(Icons.send_rounded, color: Color(0xFF38BDF8), size: 24),
+            SizedBox(width: 10),
+            Text('Join Panchayagnam VIP Telegram', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Connect with over 14,200+ Active Algo Traders across India:', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5)),
+            SizedBox(height: 12),
+            Text('• Daily Pre-Market Nifty/Bank Nifty Levels & Max Pain Strikes', style: TextStyle(color: Colors.white, fontSize: 12)),
+            SizedBox(height: 6),
+            Text('• Real-Time SEBI Analyst Trade Calls & Gamma Blast Alerts', style: TextStyle(color: Colors.white, fontSize: 12)),
+            SizedBox(height: 6),
+            Text('• 24/7 Community Support for Broker API setup & Copy Trading', style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+        actions: [
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Joining Panchayagnam Official Telegram: @PanchayagnamTradingOfficial'), backgroundColor: Color(0xFF0284C7)),
+              );
+            },
+            icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
+            label: const Text('Open Telegram Channel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7)),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close', style: TextStyle(color: Color(0xFF94A3B8)))),
+        ],
       ),
     );
   }
