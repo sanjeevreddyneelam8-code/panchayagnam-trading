@@ -215,18 +215,19 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 3. Trade Market (StockGro Social Trading & Arena)
+      // 3. Trade Market (Institutional Alpha Hub & Market Terminal)
       const _NavItem(
         icon: Icons.local_fire_department_rounded,
         label: 'Trade Market',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.apps_rounded, label: 'More Tools (StockGro)'),
-          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Trade Ideas (SEBI)'),
-          _SubNavItem(icon: Icons.smart_toy_rounded, label: 'STOXO AI Research'),
-          _SubNavItem(icon: Icons.emoji_events_rounded, label: 'Trading Leagues (Arena)'),
-          _SubNavItem(icon: Icons.military_tech_rounded, label: 'Star Traders Leaderboard'),
-          _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Virtual Practice Arena'),
+          _SubNavItem(icon: Icons.dashboard_customize_rounded, label: 'Market Overview & Radar'),
+          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trade Ideas (SEBI)'),
+          _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
+          _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant & F&O Scanners'),
+          _SubNavItem(icon: Icons.smart_toy_rounded, label: 'Panchayagnam AI Copilot'),
+          _SubNavItem(icon: Icons.emoji_events_rounded, label: 'Alpha Leagues & Star Traders'),
+          _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Virtual Practice (₹10L)'),
         ],
       ),
 
@@ -1158,13 +1159,13 @@ class _MainDashboardState extends State<MainDashboard> {
           {'symbol': 'NIFTY 50', 'type': 'Index (NSE)', 'price': 24228.31, 'chg': '+0.32%', 'isUp': true, 'category': 3, 'tag': 'Benchmark Index', 'lot': 25, 'kind': 'instrument'},
           {'symbol': 'BANK NIFTY', 'type': 'Index (NSE)', 'price': 51820.00, 'chg': '+0.62%', 'isUp': true, 'category': 3, 'tag': 'Banking Sector Index', 'lot': 15, 'kind': 'instrument'},
 
-          // 4. StockGro Star Traders (Social Discovery)
-          {'symbol': 'Rohan_AlphaQuant', 'type': 'Star Trader (StockGro)', 'return': '+164.2%', 'winRate': '81.4%', 'copiers': '1,420 Demats', 'category': 4, 'tag': 'SEBI Pro · Quant Algo Master', 'kind': 'trader'},
-          {'symbol': 'Priya_OptionsQueen', 'type': 'Star Trader (StockGro)', 'return': '+128.5%', 'winRate': '76.8%', 'copiers': '980 Demats', 'category': 4, 'tag': 'Weekly F&O Expiry Specialist', 'kind': 'trader'},
+          // 4. Panchayagnam Star Traders (Social Alpha Discovery)
+          {'symbol': 'Rohan_AlphaQuant', 'type': 'Star Trader (SEBI Pro)', 'return': '+164.2%', 'winRate': '81.4%', 'copiers': '1,420 Demats', 'category': 4, 'tag': 'Quant Algo Master · 1-Click Copy', 'kind': 'trader'},
+          {'symbol': 'Priya_OptionsQueen', 'type': 'Star Trader (SEBI Pro)', 'return': '+128.5%', 'winRate': '76.8%', 'copiers': '980 Demats', 'category': 4, 'tag': 'Weekly F&O Expiry Specialist', 'kind': 'trader'},
 
-          // 5. StockGro Trading Leagues (Arena Discovery)
-          {'symbol': 'Nifty Bull Mega League', 'type': 'Trading Arena (StockGro)', 'prize': '₹5,00,000 Pool', 'participants': '3,420 Joined', 'category': 5, 'tag': '● LIVE NOW · Free Pass', 'kind': 'league'},
-          {'symbol': 'Options Champions Arena', 'type': 'Trading Arena (StockGro)', 'prize': '₹2,50,000 Pool', 'participants': '1,890 Joined', 'category': 5, 'tag': 'Weekly Derivatives Trophy', 'kind': 'league'},
+          // 5. Panchayagnam Trading Leagues (Arena Discovery)
+          {'symbol': 'Nifty Bull Mega League', 'type': 'Trading Arena (₹5L Pool)', 'prize': '₹5,00,000 Pool', 'participants': '3,420 Joined', 'category': 5, 'tag': '● LIVE NOW · Free Pass', 'kind': 'league'},
+          {'symbol': 'Options Champions Arena', 'type': 'Trading Arena (₹2.5L Pool)', 'prize': '₹2,50,000 Pool', 'participants': '1,890 Joined', 'category': 5, 'tag': 'Weekly Derivatives Trophy', 'kind': 'league'},
 
           // 6. Algo Strategies (Sensibull / Tradetron Discovery)
           {'symbol': '9:20 AM Short Straddle', 'type': 'Algo Quant Model', 'return': '+44.2% ROI', 'category': 6, 'tag': 'Non-Directional Delta Hedged', 'kind': 'algo'},
@@ -1745,7 +1746,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                         _bodyKey = UniqueKey();
                                       });
                                     },
-                                    child: const Text('StockGro Arena →', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                                    child: const Text('Alpha Arena →', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 14),
                                   InkWell(
