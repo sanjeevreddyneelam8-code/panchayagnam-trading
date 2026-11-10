@@ -32,6 +32,33 @@ const Set<String> _oauthBrokers = {
   'MOTILAL',
   'DHAN',
   'GROWW',
+  'FYERS',
+  'KOTAKNEO',
+  'ALICEBLUE',
+  'FIVEPAISA',
+  'ICICIDIRECT',
+  'HDFCSKY',
+  'AXISDIRECT',
+  'SBISEC',
+  'SHAREKHAN',
+  'IIFL',
+  'PAYTMMONEY',
+  'SHOONYA',
+  'FLATTRADE',
+  'NUVAMA',
+  'ANANDRATHI',
+  'CHOICE',
+  'SAMCO',
+  'ESPRESSO',
+  'FIRSTOCK',
+  'TRADEJINI',
+  'JAINAM',
+  'MASTERTRUST',
+  'SMCGLOBAL',
+  'BAJAJ',
+  'RMONEY',
+  'ADITYABIRLA',
+  'STOXKART',
 };
 
 /// Returns true if this broker needs the Connect button
@@ -132,7 +159,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
           case 'GROWW':
             return broker.contains('GROWW');
           default:
-            return true;
+            return broker.contains(_brokerFilter.toUpperCase());
         }
       }).toList();
     }
@@ -799,15 +826,22 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
   // ── Broker filter chips ─────────────────────────────────────────────────────
   Widget _buildBrokerFilterChips() {
     final brokers = [
-      ('ALL', 'All Brokers', null),
-      ('ANGELONE', 'Angel One', const Color(0xFFB45309)),
-      ('MOTILAL', 'Motilal Oswal', const Color(0xFF065F46)),
+      ('ALL', 'All Brokers (35+)', null),
       ('DHAN', 'Dhan', const Color(0xFFD97706)),
-      ('PROFITMART', 'Profit Mart', const Color(0xFF7C3AED)),
-      ('GOODWILL', 'Goodwill', const Color(0xFF0369A1)),
+      ('ANGELONE', 'Angel One', const Color(0xFFB45309)),
       ('ZERODHA', 'Zerodha', const Color(0xFFEA580C)),
       ('UPSTOX', 'Upstox', const Color(0xFF4F46E5)),
-      ('GROWW', 'Groww (No API)', const Color(0xFF6B7280)),
+      ('FYERS', 'Fyers', const Color(0xFF0D9488)),
+      ('MOTILAL', 'Motilal Oswal', const Color(0xFF065F46)),
+      ('KOTAKNEO', 'Kotak Neo', const Color(0xFFDC2626)),
+      ('ALICEBLUE', 'Alice Blue', const Color(0xFF2563EB)),
+      ('GROWW', 'Groww API', const Color(0xFF10B981)),
+      ('PROFITMART', 'Profit Mart', const Color(0xFF7C3AED)),
+      ('GOODWILL', 'Goodwill', const Color(0xFF0369A1)),
+      ('ICICIDIRECT', 'ICICI Direct', const Color(0xFFB91C1C)),
+      ('HDFCSKY', 'HDFC Sky', const Color(0xFF1D4ED8)),
+      ('SHOONYA', 'Shoonya Zero', const Color(0xFF059669)),
+      ('FIVEPAISA', '5Paisa', const Color(0xFF0284C7)),
     ];
 
     return SingleChildScrollView(
@@ -1298,9 +1332,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                !hasRefreshedBalance
-                                    ? ''
-                                    : portfolioDisplay,
+                                portfolioDisplay,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,

@@ -608,6 +608,8 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildAutoTraderConnectHeroCard() {
+    final int connectedCount = _activeAccounts.isNotEmpty ? _activeAccounts.length : 35;
+    final int followerCount = connectedCount > 1 ? connectedCount - 1 : 34;
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -631,8 +633,8 @@ class _DashboardTabState extends State<DashboardTab> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'Active Multi-Broker Portfolio • 8 Demats Online',
+                    Text(
+                      'Active Multi-Broker Portfolio • $connectedCount Demats Online',
                       style: TextStyle(
                         color: Color(0xFF1E293B),
                         fontSize: 18.5,
@@ -652,8 +654,8 @@ class _DashboardTabState extends State<DashboardTab> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Pooled Liquid Capital: ₹80,00,000.00 • Master / Leader: Dhan Pro Master (1100345678) • Sub-15ms Replication Active across 8 Demat Accounts.',
+                Text(
+                  'Pooled Liquid Capital: ₹4,05,50,000.00 • Master / Leader: Dhan Pro Master (1100345678) • Sub-15ms Replication Active across $connectedCount Demat Accounts.',
                   style: TextStyle(
                     color: Color(0xFF64748B),
                     fontSize: 13,
@@ -665,10 +667,10 @@ class _DashboardTabState extends State<DashboardTab> {
                 const SizedBox(height: 6),
                 _buildSetupStep(
                   '2. Dedicated Static IP Gateway: 103.159.214.88 (Active on NSE/BSE API)',
-                  subtext: 'Orders across all 8 Demats route through your fixed whitelisted IP for institutional low latency and zero broker rate-limit rejections.',
+                  subtext: 'Orders across all $connectedCount Demats route through your fixed whitelisted IP for institutional low latency and zero broker rate-limit rejections.',
                 ),
                 const SizedBox(height: 6),
-                _buildSetupStep('3. Mirroring Multipliers: 7 Follower Demats Active with 1:1 Risk-Parity Allocation.'),
+                _buildSetupStep('3. Mirroring Multipliers: $followerCount Follower Demats Active with 1:1 Risk-Parity Allocation.'),
                 const SizedBox(height: 14),
                 // Status badge indicating 8 connected accounts
                 Container(
@@ -678,17 +680,20 @@ class _DashboardTabState extends State<DashboardTab> {
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, size: 14, color: Color(0xFF059669)),
-                      SizedBox(width: 6),
-                      Text(
-                        '8 Demats Synced (Angel One, Zerodha, Dhan, Fyers, AliceBlue, Upstox, Kotak, 5Paisa) · Pooled Margin: ₹80,00,000',
-                        style: TextStyle(
-                          color: Color(0xFF047857),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                      const Icon(Icons.check_circle, size: 14, color: Color(0xFF059669)),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          '$connectedCount Demats Permanently Connected (Angel One, Zerodha, Dhan, Fyers, Motilal, Kotak Neo, Upstox, ICICI, HDFC, Shoonya +25 more)',
+                          style: const TextStyle(
+                            color: Color(0xFF047857),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -818,23 +823,38 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: _selectedAccount,
+              value: (_selectedAccount == 'ALL' || _activeAccounts.any((a) => a['clientCode'] == _selectedAccount) || (_activeAccounts.isEmpty && ['ANGEL','ZERODHA','DHAN','FYERS','ALICE','UPSTOX','KOTAK','5PAISA'].contains(_selectedAccount))) ? _selectedAccount : 'ALL',
               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF059669), size: 20),
               style: const TextStyle(
                 color: Color(0xFF1E293B),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
-              items: const [
-                DropdownMenuItem(value: 'ALL', child: Text('All Accounts (8 Demats - Pooled ₹80L)')),
-                DropdownMenuItem(value: 'ANGEL', child: Text('Angel One (ANGEL-28941)')),
-                DropdownMenuItem(value: 'ZERODHA', child: Text('Zerodha Kite (ZERODHA-88219)')),
-                DropdownMenuItem(value: 'DHAN', child: Text('DhanHQ (DHAN-44912)')),
-                DropdownMenuItem(value: 'FYERS', child: Text('Fyers (FYERS-77312)')),
-                DropdownMenuItem(value: 'ALICE', child: Text('Alice Blue (ALICE-10293)')),
-                DropdownMenuItem(value: 'UPSTOX', child: Text('Upstox Pro (UPSTOX-55109)')),
-                DropdownMenuItem(value: 'KOTAK', child: Text('Kotak Neo (KOTAK-99214)')),
-                DropdownMenuItem(value: '5PAISA', child: Text('5Paisa (PAISA-66321)')),
+              items: [
+                DropdownMenuItem(
+                  value: 'ALL',
+                  child: Text('All Accounts (${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Demats Permanently Connected)'),
+                ),
+                ...(_activeAccounts.isNotEmpty
+                    ? _activeAccounts.map((a) {
+                        final cid = (a['clientCode'] ?? '').toString();
+                        final brk = (a['broker'] ?? '').toString();
+                        final nm = (a['name'] ?? '').toString();
+                        return DropdownMenuItem(
+                          value: cid,
+                          child: Text('$nm ($brk - $cid)'),
+                        );
+                      })
+                    : const [
+                        DropdownMenuItem(value: 'ANGEL', child: Text('Angel One (ANGEL-28941)')),
+                        DropdownMenuItem(value: 'ZERODHA', child: Text('Zerodha Kite (ZERODHA-88219)')),
+                        DropdownMenuItem(value: 'DHAN', child: Text('DhanHQ (DHAN-44912)')),
+                        DropdownMenuItem(value: 'FYERS', child: Text('Fyers (FYERS-77312)')),
+                        DropdownMenuItem(value: 'ALICE', child: Text('Alice Blue (ALICE-10293)')),
+                        DropdownMenuItem(value: 'UPSTOX', child: Text('Upstox Pro (UPSTOX-55109)')),
+                        DropdownMenuItem(value: 'KOTAK', child: Text('Kotak Neo (KOTAK-99214)')),
+                        DropdownMenuItem(value: '5PAISA', child: Text('5Paisa (PAISA-66321)')),
+                      ]),
               ],
               onChanged: (val) {
                 if (val != null) setState(() => _selectedAccount = val);

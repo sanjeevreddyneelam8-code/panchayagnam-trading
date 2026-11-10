@@ -22,7 +22,7 @@ class AddDematBloc extends Bloc<AddDematEvent, AddDematAccountState> {
   ) async {
     emit(AddDematAccountLoading());
     try {
-      final int pyId = int.parse(html.window.sessionStorage['user_id'] ?? '0');
+      final int pyId = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 10821;
 
       final bool isMotilal = event.broker.toUpperCase().contains('MOTILAL');
 

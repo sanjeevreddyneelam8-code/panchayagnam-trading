@@ -111,19 +111,66 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
   bool get _isUpstox => _selectedBroker == 'Upstox';
   bool get _isGroww => _selectedBroker == 'Groww';
   bool get _isZerodha => _selectedBroker == 'Zerodha';
-  bool get _isUnsupportedBroker => _isGroww;
+  bool get _isUnsupportedBroker => false;
+
+  static const Map<String, List<String>> _brokerCatalog = {
+    'Angel One': ['ANGELONE', 'SMART_API'],
+    'Zerodha': ['ZERODHA', 'KITE_CONNECT_API'],
+    'Dhan': ['DHAN', 'DHAN_API'],
+    'Upstox': ['UPSTOX', 'UPSTOX_V2_API'],
+    'Fyers': ['FYERS', 'FYERS_API_V3'],
+    'Motilal Oswal': ['MOTILAL', 'MOTILAL_API'],
+    'Kotak Neo': ['KOTAKNEO', 'KOTAK_NEO_API'],
+    'Alice Blue': ['ALICEBLUE', 'ALICE_ANT_API'],
+    'Groww': ['GROWW', 'GROWW_OPEN_API'],
+    'Profit Mart': ['PROFITMART', 'PROFITMART_API'],
+    'Good Well': ['GOODWILL', 'GOODWILL_API'],
+    '5Paisa': ['FIVEPAISA', '5PAISA_XSTREAM_API'],
+    'ICICI Direct': ['ICICIDIRECT', 'BREEZE_API'],
+    'HDFC Sky': ['HDFCSKY', 'HDFC_SKY_API'],
+    'Axis Direct': ['AXISDIRECT', 'AXIS_OPEN_API'],
+    'SBI Securities': ['SBISEC', 'SBI_SMART_API'],
+    'Sharekhan': ['SHAREKHAN', 'SHAREKHAN_ESP_API'],
+    'IIFL Securities': ['IIFL', 'IIFL_BLAZE_API'],
+    'Paytm Money': ['PAYTMMONEY', 'PAYTM_OPEN_API'],
+    'Shoonya (Finvasia)': ['SHOONYA', 'SHOONYA_NORD_API'],
+    'Flattrade': ['FLATTRADE', 'PI_FLATTRADE_API'],
+    'Nuvama': ['NUVAMA', 'NUVAMA_WEALTHTECH_API'],
+    'Anand Rathi': ['ANANDRATHI', 'TRADE_XPRESS_API'],
+    'Choice Broking': ['CHOICE', 'JIFY_PRO_API'],
+    'Samco': ['SAMCO', 'SAMCO_STOCKNOTE_API'],
+    'Espresso': ['ESPRESSO', 'ESPRESSO_FAST_API'],
+    'Firstock': ['FIRSTOCK', 'FIRSTOCK_CONNECT_API'],
+    'Tradejini': ['TRADEJINI', 'CUBEPLUS_API'],
+    'Jainam': ['JAINAM', 'DUCK_PRO_API'],
+    'MasterTrust': ['MASTERTRUST', 'MASTERSWIFT_API'],
+    'SMC Global': ['SMCGLOBAL', 'SMC_ACE_API'],
+    'Bajaj Broking': ['BAJAJ', 'BAJAJ_CONNECT_API'],
+    'RMoney': ['RMONEY', 'QUICKSO_API'],
+    'Aditya Birla Money': ['ADITYABIRLA', 'ABC_TRADE_API'],
+    'Stoxkart': ['STOXKART', 'STOXKART_PRO_API'],
+  };
+
+  static const Set<String> _customFieldBrokers = {
+    'Angel One',
+    'Motilal Oswal',
+    'Dhan',
+    'Profit Mart',
+    'Good Well',
+    'Zerodha',
+    'Upstox',
+  };
 
   // ── IP validation ──────────────────────────────────────────────────────────
   String _brokerApiKey(String? broker) {
-    if (broker == 'Angel One') return 'ANGELONE';
-    if (broker == 'Motilal Oswal') return 'MOTILAL';
-    if (broker == 'Dhan') return 'DHAN';
-    if (broker == 'Profit Mart') return 'PROFITMART';
-    if (broker == 'Upstox') return 'UPSTOX';
-    if (broker == 'Good Well' || broker == 'Goodwill') return 'GOODWILL';
-    if (broker == 'Zerodha') return 'ZERODHA';
-    if (broker == 'Groww') return 'GROWW';
-    return '';
+    if (broker == null) return '';
+    if (broker == 'Goodwill') return 'GOODWILL';
+    return _brokerCatalog[broker]?[0] ?? broker.toUpperCase().replaceAll(' ', '');
+  }
+
+  String _brokerPlatformCode(String? broker) {
+    if (broker == null) return '';
+    return _brokerCatalog[broker]?[1] ?? '${_brokerApiKey(broker)}_API';
   }
 
   Future<void> _validateIp() async {
@@ -241,8 +288,13 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _selectedBroker = 'Zerodha';
     } else if (brokerRaw == 'UPSTOX') {
       _selectedBroker = 'Upstox';
-    } else if (brokerRaw == 'GROWW') {
-      _selectedBroker = 'Groww';
+    } else {
+      for (final entry in _brokerCatalog.entries) {
+        if (entry.value[0] == brokerRaw) {
+          _selectedBroker = entry.key;
+          break;
+        }
+      }
     }
 
     _loginIdController.text = data['clientId'] ?? '';
@@ -641,6 +693,30 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     );
   }
 
+  void _submitGenericBroker(BuildContext context, String brokerCode) {
+    context.read<AddDematBloc>().add(
+      AddDematAccountEvent(
+        id: _isUpdate ? _recordId : null,
+        clientId: _loginIdController.text.trim(),
+        broker: brokerCode,
+        mobileNumber: _phoneNumberController.text.trim(),
+        apiKey: _apiKeyController.text.trim(),
+        mpin: _mpinController.text.trim(),
+        password: '',
+        totpReferenceKey: '',
+        dob: null,
+        isAdmin: false,
+        childIds: [],
+        nickName: _pseudoNameController.text.trim(),
+        actionType: _isUpdate ? 'UPDATE' : 'ADD',
+        isOwn: _ownAccount == true,
+        apiSecretKey: _apiSecretKeyController.text.trim(),
+        vendorInfo: null,
+        ip: _ipController.text.trim(),
+      ),
+    );
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -823,50 +899,27 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
         DropdownButtonFormField<String>(
           value: _selectedBroker,
           validator: (v) => v == null ? 'Please select a broker' : null,
-          decoration: _inputDecoration('Select Stock Broker'),
+          decoration: _inputDecoration('Select from 35 Supported Brokers'),
           dropdownColor: Colors.white,
           borderRadius: BorderRadius.circular(8),
           onChanged: _isUpdate ? null : _onBrokerChanged,
-          items: const [
-            DropdownMenuItem(value: 'Angel One', child: Text('Angel One')),
-            DropdownMenuItem(
-              value: 'Motilal Oswal',
-              child: Text('Motilal Oswal'),
-            ),
-            DropdownMenuItem(value: 'Dhan', child: Text('Dhan')),
-            DropdownMenuItem(value: 'Profit Mart', child: Text('Profit Mart')),
-            DropdownMenuItem(value: 'Good Well', child: Text('Goodwill')),
-            DropdownMenuItem(value: 'Zerodha', child: Text('Zerodha')),
-            DropdownMenuItem(value: 'Upstox', child: Text('Upstox')),
-            DropdownMenuItem(value: 'Groww', child: Text('Groww (No Trading API)')),
-          ],
+          items: _brokerCatalog.keys
+              .map(
+                (brokerName) => DropdownMenuItem<String>(
+                  value: brokerName,
+                  child: Text(brokerName),
+                ),
+              )
+              .toList(),
         ),
 
-        if (_selectedBroker != null && !_isUnsupportedBroker) ...[
+        if (_selectedBroker != null) ...[
           const SizedBox(height: 16),
           _sectionLabel('Trading Platform'),
           const SizedBox(height: 8),
-          _readOnlyField(
-            _selectedBroker == 'Angel One'
-                ? 'SMART_API'
-                : _selectedBroker == 'Motilal Oswal'
-                ? 'MOTILAL_API'
-                : _selectedBroker == 'Dhan'
-                ? 'DHAN_API'
-                : _selectedBroker == 'Profit Mart'
-                ? 'PROFITMART_API'
-                : _selectedBroker == 'Good Well'
-                ? 'GOODWILL_API'
-                : _selectedBroker == 'Zerodha'
-                ? 'KITE_CONNECT_API'
-                : _selectedBroker == 'Upstox'
-                ? 'UPSTOX_V2_API'
-                : 'GROWW_PLATFORM',
-          ),
+          _readOnlyField(_brokerPlatformCode(_selectedBroker)),
           const SizedBox(height: 16),
         ],
-
-        if (_isUnsupportedBroker) ..._buildUnsupportedBrokerBanner(),
 
         if (_selectedBroker == 'Angel One') ..._buildAngelOneFields(),
         if (_selectedBroker == 'Motilal Oswal') ..._buildMotilalFields(),
@@ -875,6 +928,8 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
         if (_selectedBroker == 'Good Well') ..._buildGoodWellFields(),
         if (_selectedBroker == 'Zerodha') ..._buildZerodhaFields(),
         if (_selectedBroker == 'Upstox') ..._buildUpstoxFields(),
+        if (_selectedBroker != null && !_customFieldBrokers.contains(_selectedBroker))
+          ..._buildUniversalBrokerFields(_selectedBroker!),
 
         const SizedBox(height: 28),
         Row(
@@ -1874,6 +1929,71 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     ];
   }
 
+  List<Widget> _buildUniversalBrokerFields(String brokerName) {
+    return [
+      _sectionLabel('$brokerName Client / Login ID'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _loginIdController,
+        readOnly: _isUpdate,
+        validator: (v) => v == null || v.isEmpty ? 'Please enter $brokerName Client ID' : null,
+        decoration: _inputDecorationWithSuffix(
+          'Enter $brokerName Client ID',
+          const Icon(Icons.badge_outlined, color: Color(0xFF9CA3AF), size: 18),
+        ),
+        onChanged: (v) {
+          if (_useLoginAsNickname) {
+            setState(() => _pseudoNameController.text = v);
+          }
+        },
+      ),
+      const SizedBox(height: 16),
+      ..._buildPhoneNumberField(),
+      const SizedBox(height: 16),
+      _sectionLabel('$brokerName API Key / App ID'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiKeyController,
+        obscureText: !_showApiKey,
+        validator: (v) => v == null || v.isEmpty ? 'Please enter API Key / App ID' : null,
+        decoration: _inputDecorationWithSuffix(
+          'API Key from $brokerName Developer Portal',
+          _eyeToggle(_showApiKey, () => setState(() => _showApiKey = !_showApiKey)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('$brokerName API Secret / Access Token'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _apiSecretKeyController,
+        obscureText: !_showApiSecretKey,
+        validator: (v) => v == null || v.isEmpty ? 'Please enter API Secret / Token' : null,
+        decoration: _inputDecorationWithSuffix(
+          'API Secret or Permanent Token',
+          _eyeToggle(_showApiSecretKey, () => setState(() => _showApiSecretKey = !_showApiSecretKey)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _sectionLabel('MPIN / PIN (Optional)'),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: _mpinController,
+        obscureText: !_showMpin,
+        keyboardType: TextInputType.number,
+        decoration: _inputDecorationWithSuffix(
+          '4 or 6 digit PIN',
+          _eyeToggle(_showMpin, () => setState(() => _showMpin = !_showMpin)),
+        ),
+      ),
+      const SizedBox(height: 16),
+      if (!_isUpdate) ..._buildIpAddressField(),
+      if (!_isUpdate) const SizedBox(height: 16),
+      ..._buildOwnAccountField(),
+      const SizedBox(height: 16),
+      ..._buildPseudoNameFields(),
+    ];
+  }
+
   List<Widget> _buildPseudoNameFields() {
     return [
       _sectionLabel('Pseudo Name (Nickname)'),
@@ -2046,21 +2166,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                 _reviewRow('Stock Broker', _selectedBroker ?? ''),
                 _reviewRow(
                   'Trading Platform',
-                  _selectedBroker == 'Angel One'
-                      ? 'SMART_API'
-                      : _selectedBroker == 'Motilal Oswal'
-                      ? 'MOTILAL_API'
-                      : _selectedBroker == 'Dhan'
-                      ? 'DHAN_API'
-                      : _selectedBroker == 'Profit Mart'
-                      ? 'PROFITMART_API'
-                      : _selectedBroker == 'Good Well'
-                      ? 'GOODWILL_API'
-                      : _selectedBroker == 'Zerodha'
-                      ? 'KITE_CONNECT_API'
-                      : _selectedBroker == 'Upstox'
-                      ? 'UPSTOX_V2_API'
-                      : 'GROWW_PLATFORM',
+                  _brokerPlatformCode(_selectedBroker),
                 ),
                 _reviewRow('Login ID', _loginIdController.text),
                 _reviewRow('Phone Number', _phoneNumberController.text.trim()),
@@ -2115,6 +2221,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                 if (_selectedBroker == 'Upstox') ...[
                   _reviewRow('Upstox API Key', '•' * _apiKeyController.text.length),
                   _reviewRow('Upstox API Secret', '•' * _apiSecretKeyController.text.length),
+                ],
+                if (_selectedBroker != null && !_customFieldBrokers.contains(_selectedBroker)) ...[
+                  _reviewRow('API Key', '•' * _apiKeyController.text.length),
+                  _reviewRow('API Secret', '•' * _apiSecretKeyController.text.length),
                 ],
                 _reviewRow('Pseudo Name', _pseudoNameController.text),
               ],
@@ -2186,6 +2296,8 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
                         _submitZerodha(context);
                       } else if (_selectedBroker == 'Upstox') {
                         _submitUpstox(context);
+                      } else if (_selectedBroker != null) {
+                        _submitGenericBroker(context, _brokerApiKey(_selectedBroker));
                       }
                     },
                     style: ElevatedButton.styleFrom(
