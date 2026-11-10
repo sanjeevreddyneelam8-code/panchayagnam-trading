@@ -10,11 +10,12 @@ import '../../../service/theme_mode_service.dart';
 /// Panchayagnam MCX & NSE Commodity Derivatives Terminal
 /// Inspired by Angel One's clean Future Chain + Options Watchlist (ITM/ATM/OTM)
 /// upgraded to institutional trading-floor standards:
-/// - Commodities: Crude Oil, Natural Gas, Gold, Silver, Crude Oil Mini, Gold Mini, Silver Mini, Copper, Zinc
+/// - 9 Commodities: Crude Oil, Natural Gas, Gold, Silver, Crude Oil Mini, Gold Mini, Silver Mini, Copper, Zinc
 /// - Exchange selector (MCX | NSE) & Expiry selector (Nov | Dec | Jan)
-/// - Live 1.1s streaming Future Chain + bid/ask depth + OI/Volume
-/// - Interactive Commodity Chart modal & Full Dual-Side MCX Option Chain modal
-/// - Options Watchlist with Call / Put / Straddle toggle, ITM/ATM/OTM badges, Greeks & 1-click 35-demat replication
+/// - Live 1.1s Future Chain card with embedded sparkline, Day Range bar, Bid/Ask pressure, CHARTS & OPTION CHAIN
+/// - MCX Expiry Term Curve (Nov/Dec/Jan) + Lot Economics & Tick Value Calculator
+/// - Live-priced 1-Click Commodity Strategy Strip (ATM Straddle, Bull Call Spread, Futures Hedge)
+/// - OHLC Candlestick Chart Modal (5m/15m/1H/4H/1D) & Visual OI-Bar Dual-Side Option Chain Modal
 class CommodityMarketView extends StatefulWidget {
   final int initialCommodityIndex;
   final bool initialShowOptionChain;
@@ -40,6 +41,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   String _selectedExpiry = 'Nov'; // Nov | Dec | Jan
   String _optionTypeMode = 'CALL'; // CALL | PUT | BOTH
   String _strikeFilter = '';
+  int _calcLots = 1;
 
   late List<Map<String, dynamic>> _commodities;
 
@@ -64,6 +66,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'CRUDEOIL',
         'unit': '100 bbl',
         'lot': 100,
+        'tickPerPoint': 100.0,
+        'marginPerLot': 142500.0,
         'spot': 8229.00,
         'prevClose': 8180.50,
         'high': 8268.00,
@@ -75,6 +79,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 8250,
         'ivBase': 30.2,
         'flash': 0,
+        'buyPressure': 0.64,
+        'spark': [0.70, 0.64, 0.66, 0.54, 0.50, 0.55, 0.42, 0.36, 0.38, 0.25, 0.21, 0.17],
         'presetCalls': {8150: 314.80, 8200: 287.30, 8250: 264.70, 8300: 241.70, 8350: 217.40},
       },
       {
@@ -82,6 +88,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'NATURALGAS',
         'unit': '1250 mmBtu',
         'lot': 1250,
+        'tickPerPoint': 1250.0,
+        'marginPerLot': 118000.0,
         'spot': 248.40,
         'prevClose': 242.10,
         'high': 252.80,
@@ -93,13 +101,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 250,
         'ivBase': 46.5,
         'flash': 0,
+        'buyPressure': 0.59,
+        'spark': [0.76, 0.68, 0.72, 0.59, 0.52, 0.48, 0.43, 0.37, 0.31, 0.27, 0.22, 0.18],
         'presetCalls': <int, double>{},
       },
       {
         'tabName': 'Gold',
         'symbol': 'GOLD',
-        'unit': '1 Kg',
-        'lot': 1,
+        'unit': '1 Kg (₹/10g)',
+        'lot': 100,
+        'tickPerPoint': 100.0,
+        'marginPerLot': 585000.0,
         'spot': 76450.00,
         'prevClose': 76120.00,
         'high': 76680.00,
@@ -111,6 +123,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 76500,
         'ivBase': 14.8,
         'flash': 0,
+        'buyPressure': 0.68,
+        'spark': [0.72, 0.66, 0.60, 0.55, 0.51, 0.46, 0.41, 0.35, 0.30, 0.24, 0.20, 0.16],
         'presetCalls': <int, double>{},
       },
       {
@@ -118,6 +132,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'SILVER',
         'unit': '30 Kg',
         'lot': 30,
+        'tickPerPoint': 30.0,
+        'marginPerLot': 248000.0,
         'spot': 91240.00,
         'prevClose': 90480.00,
         'high': 91800.00,
@@ -129,6 +145,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 91000,
         'ivBase': 22.4,
         'flash': 0,
+        'buyPressure': 0.62,
+        'spark': [0.78, 0.72, 0.64, 0.61, 0.54, 0.47, 0.39, 0.34, 0.28, 0.22, 0.19, 0.14],
         'presetCalls': <int, double>{},
       },
       {
@@ -136,6 +154,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'CRUDEOILM',
         'unit': '10 bbl',
         'lot': 10,
+        'tickPerPoint': 10.0,
+        'marginPerLot': 14500.0,
         'spot': 8231.00,
         'prevClose': 8182.00,
         'high': 8270.00,
@@ -147,13 +167,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 8250,
         'ivBase': 30.4,
         'flash': 0,
+        'buyPressure': 0.63,
+        'spark': [0.69, 0.63, 0.65, 0.53, 0.49, 0.54, 0.41, 0.35, 0.37, 0.24, 0.20, 0.16],
         'presetCalls': {8150: 316.20, 8200: 288.50, 8250: 265.10, 8300: 242.40, 8350: 218.00},
       },
       {
         'tabName': 'Gold Mini',
         'symbol': 'GOLDM',
-        'unit': '100 g',
-        'lot': 100,
+        'unit': '100 g (₹/10g)',
+        'lot': 10,
+        'tickPerPoint': 10.0,
+        'marginPerLot': 59500.0,
         'spot': 76410.00,
         'prevClose': 76090.00,
         'high': 76640.00,
@@ -165,6 +189,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 76500,
         'ivBase': 15.1,
         'flash': 0,
+        'buyPressure': 0.66,
+        'spark': [0.71, 0.65, 0.59, 0.54, 0.50, 0.45, 0.40, 0.34, 0.29, 0.23, 0.19, 0.15],
         'presetCalls': <int, double>{},
       },
       {
@@ -172,6 +198,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'SILVERM',
         'unit': '5 Kg',
         'lot': 5,
+        'tickPerPoint': 5.0,
+        'marginPerLot': 42500.0,
         'spot': 91210.00,
         'prevClose': 90455.00,
         'high': 91760.00,
@@ -183,6 +211,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 91000,
         'ivBase': 22.8,
         'flash': 0,
+        'buyPressure': 0.61,
+        'spark': [0.77, 0.71, 0.63, 0.60, 0.53, 0.46, 0.38, 0.33, 0.27, 0.21, 0.18, 0.13],
         'presetCalls': <int, double>{},
       },
       {
@@ -190,6 +220,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'COPPER',
         'unit': '2500 Kg',
         'lot': 2500,
+        'tickPerPoint': 2500.0,
+        'marginPerLot': 164000.0,
         'spot': 842.60,
         'prevClose': 836.40,
         'high': 848.10,
@@ -201,6 +233,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 840,
         'ivBase': 19.6,
         'flash': 0,
+        'buyPressure': 0.55,
+        'spark': [0.68, 0.62, 0.58, 0.55, 0.51, 0.48, 0.44, 0.39, 0.36, 0.32, 0.28, 0.24],
         'presetCalls': <int, double>{},
       },
       {
@@ -208,6 +242,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'symbol': 'ZINC',
         'unit': '5000 Kg',
         'lot': 5000,
+        'tickPerPoint': 5000.0,
+        'marginPerLot': 132000.0,
         'spot': 284.20,
         'prevClose': 281.90,
         'high': 286.50,
@@ -219,6 +255,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'atm': 285,
         'ivBase': 18.2,
         'flash': 0,
+        'buyPressure': 0.53,
+        'spark': [0.66, 0.63, 0.59, 0.57, 0.52, 0.49, 0.46, 0.42, 0.39, 0.35, 0.31, 0.28],
         'presetCalls': <int, double>{},
       },
     ];
@@ -239,6 +277,13 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           c['high'] = math.max((c['high'] as num).toDouble(), newSpot);
           c['low'] = math.min((c['low'] as num).toDouble(), newSpot);
           c['flash'] = delta > 0.02 ? 1 : (delta < -0.02 ? -1 : 0);
+          final bp = ((c['buyPressure'] as double) + (delta >= 0 ? 0.015 : -0.015)).clamp(0.35, 0.80);
+          c['buyPressure'] = bp;
+
+          final spark = List<double>.from(c['spark'] as List);
+          spark.removeAt(0);
+          spark.add((spark.last + (delta >= 0 ? -0.035 : 0.035)).clamp(0.08, 0.88));
+          c['spark'] = spark;
         }
       });
     });
@@ -252,18 +297,22 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   }
 
   String _formatIndianPrice(double val) {
-    final parts = val.toStringAsFixed(2).split('.');
+    final parts = val.abs().toStringAsFixed(2).split('.');
     final intPart = parts[0];
     final decPart = parts[1];
-    if (intPart.length <= 3) return '$intPart.$decPart';
-    final last3 = intPart.substring(intPart.length - 3);
-    final rest = intPart.substring(0, intPart.length - 3);
-    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
-    return '${rest.replaceAll(reg, ',')},$last3.$decPart';
+    String formatted;
+    if (intPart.length <= 3) {
+      formatted = '$intPart.$decPart';
+    } else {
+      final last3 = intPart.substring(intPart.length - 3);
+      final rest = intPart.substring(0, intPart.length - 3);
+      formatted = '${rest.replaceAll(RegExp(r'\B(?=(\d{2})+(?!\d))'), ',')},$last3.$decPart';
+    }
+    return val < 0 ? '-$formatted' : formatted;
   }
 
-  String _expiryFutDate() {
-    switch (_selectedExpiry) {
+  String _expiryFutDate([String? exp]) {
+    switch (exp ?? _selectedExpiry) {
       case 'Dec':
         return '18-Dec-26';
       case 'Jan':
@@ -273,8 +322,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     }
   }
 
-  String _expiryOptDate() {
-    switch (_selectedExpiry) {
+  String _expiryOptDate([String? exp]) {
+    switch (exp ?? _selectedExpiry) {
       case 'Dec':
         return '16-Dec-26';
       case 'Jan':
@@ -284,8 +333,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     }
   }
 
-  double _expiryMultiplier() {
-    switch (_selectedExpiry) {
+  double _expiryMultiplier([String? exp]) {
+    switch (exp ?? _selectedExpiry) {
       case 'Dec':
         return 1.006;
       case 'Jan':
@@ -306,7 +355,6 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     final rows = <Map<String, dynamic>>[];
     for (int offset = -3; offset <= 4; offset++) {
       final strike = atm + (offset * step);
-      // CE calculations
       final ceIntrinsic = math.max(0.0, spot - strike);
       final ceDistFactor = math.max(0.15, 1.0 - (offset.abs() * 0.14));
       final baseTimeVal = spot * 0.026 * ceDistFactor * (_selectedExpiry == 'Dec' ? 1.18 : (_selectedExpiry == 'Jan' ? 1.34 : 1.0));
@@ -321,7 +369,6 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           ? 'ITM'
           : (strike > spot + (step * 0.4) ? 'OTM' : 'ATM');
 
-      // PE calculations
       final peIntrinsic = math.max(0.0, strike - spot);
       final peLtp = double.parse((peIntrinsic + baseTimeVal * 0.96).toStringAsFixed(2));
       final peChg = double.parse((-(peLtp * 0.031)).toStringAsFixed(2));
@@ -330,6 +377,9 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
       final peMoneyness = strike > spot + (step * 0.4)
           ? 'ITM'
           : (strike < spot - (step * 0.4) ? 'OTM' : 'ATM');
+
+      final ceOiNum = (14.2 + (offset + 4) * 3.1).clamp(4.0, 45.0);
+      final peOiNum = (29.8 - (offset + 3) * 2.4).clamp(4.0, 45.0);
 
       rows.add({
         'symbol': sym,
@@ -340,14 +390,16 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'ceChg': ceChg,
         'ceChgPct': ceChgPct,
         'ceDelta': ceDelta,
-        'ceOi': '${(14.2 + (offset + 4) * 3.1).toStringAsFixed(1)}L',
+        'ceOi': '${ceOiNum.toStringAsFixed(1)}L',
+        'ceOiNorm': (ceOiNum / 45.0).clamp(0.12, 1.0),
         'ceVol': '${(18.4 - offset.abs() * 2.1).toStringAsFixed(1)}K',
         'ceIv': '${(ivBase - offset * 0.5).toStringAsFixed(1)}%',
         'peLtp': peLtp,
         'peChg': peChg,
         'peChgPct': peChgPct,
         'peDelta': peDelta,
-        'peOi': '${(29.8 - (offset + 3) * 2.4).clamp(4.0, 45.0).toStringAsFixed(1)}L',
+        'peOi': '${peOiNum.toStringAsFixed(1)}L',
+        'peOiNorm': (peOiNum / 45.0).clamp(0.12, 1.0),
         'peVol': '${(16.2 - offset.abs() * 1.9).toStringAsFixed(1)}K',
         'peIv': '${(ivBase + 0.6 + offset * 0.4).toStringAsFixed(1)}%',
       });
@@ -362,12 +414,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     final tabName = c['tabName'] as String;
     final unit = c['unit'] as String;
     final lot = c['lot'] as int;
-    final spot = (c['spot'] as num).toDouble() * _expiryMultiplier();
+    final baseSpot = (c['spot'] as num).toDouble();
+    final spot = baseSpot * _expiryMultiplier();
     final prevClose = (c['prevClose'] as num).toDouble() * _expiryMultiplier();
     final diff = spot - prevClose;
     final chgPct = (diff / prevClose) * 100;
     final isUp = diff >= 0;
     final flash = c['flash'] as int;
+    final spark = (c['spark'] as List).cast<double>();
+    final buyPressure = c['buyPressure'] as double;
+    final tickPerPoint = (c['tickPerPoint'] as num).toDouble();
+    final marginPerLot = (c['marginPerLot'] as num).toDouble();
     final allStrikes = _buildStrikesForCommodity(c);
     final strikes = _strikeFilter.trim().isEmpty
         ? allStrikes
@@ -388,47 +445,103 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── 1. Institutional Commodity Header & Search Bar ────────────
-                _buildTopHeader(isDark, borderCol, textSub),
+                // 1. Top Header & Strike Search
+                _buildTopHeader(isDark, borderCol),
 
-                // ── 2. Global Commodities Benchmark Strip ─────────────────────
+                // 2. Global Commodities Benchmark Strip
                 _buildGlobalCommoditiesStrip(isDark, borderCol, textSub),
 
-                // ── 3. Horizontal Commodity Selector Tabs (Crude Oil, Natural Gas, Gold, Silver...) ──
+                // 3. Horizontal Commodity Selector Tabs (Crude Oil, Natural Gas, Gold, Silver, etc.)
                 _buildCommodityTabsBar(isDark, cardBg, borderCol, textMain, textSub),
 
-                // ── 4. Exchange & Expiry Filter Bar + Main Content ────────────
+                // 4. Main Derivatives Workspace
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildExchangeAndExpiryBar(isDark, cardBg, borderCol, textMain, textSub, sym, tabName, spot, lot, unit, c['pcr'] as double),
+                      // Exchange (MCX|NSE) + Live Session Clock + Expiry (Nov|Dec|Jan)
+                      _buildExchangeAndExpiryBar(
+                        isDark, cardBg, borderCol, textMain, textSub, sym, tabName, spot, lot, unit, c['pcr'] as double,
+                      ),
                       const SizedBox(height: 18),
 
-                      // Future Chain Card (Matching & Elevating Image Design)
-                      _buildFutureChainCard(
+                      // Future Chain Card + Futures Curve / Lot Profit Calculator
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final futCard = _buildFutureChainCard(
+                            isDark: isDark,
+                            cardBg: cardBg,
+                            borderCol: borderCol,
+                            textMain: textMain,
+                            textSub: textSub,
+                            sym: sym,
+                            unit: unit,
+                            lot: lot,
+                            spot: spot,
+                            diff: diff,
+                            chgPct: chgPct,
+                            isUp: isUp,
+                            flash: flash,
+                            high: (c['high'] as num).toDouble() * _expiryMultiplier(),
+                            low: (c['low'] as num).toDouble() * _expiryMultiplier(),
+                            oi: c['oi'] as String,
+                            vol: c['vol'] as String,
+                            spark: spark,
+                            buyPressure: buyPressure,
+                          );
+
+                          final sideRail = _buildTermCurveAndCalculatorPanel(
+                            isDark: isDark,
+                            cardBg: cardBg,
+                            borderCol: borderCol,
+                            textMain: textMain,
+                            textSub: textSub,
+                            sym: sym,
+                            baseSpot: baseSpot,
+                            tickPerPoint: tickPerPoint,
+                            marginPerLot: marginPerLot,
+                            unit: unit,
+                          );
+
+                          if (constraints.maxWidth > 1020) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(flex: 7, child: futCard),
+                                const SizedBox(width: 16),
+                                Expanded(flex: 4, child: sideRail),
+                              ],
+                            );
+                          }
+                          return Column(
+                            children: [
+                              futCard,
+                              const SizedBox(height: 16),
+                              sideRail,
+                            ],
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // 1-Click Live Commodity Strategy Strip (ATM Straddle / Spread / Hedge)
+                      _buildCommodityStrategyStrip(
                         isDark: isDark,
                         cardBg: cardBg,
                         borderCol: borderCol,
                         textMain: textMain,
                         textSub: textSub,
                         sym: sym,
-                        unit: unit,
-                        lot: lot,
                         spot: spot,
-                        diff: diff,
-                        chgPct: chgPct,
-                        isUp: isUp,
-                        flash: flash,
-                        high: (c['high'] as num).toDouble(),
-                        low: (c['low'] as num).toDouble(),
-                        oi: c['oi'] as String,
-                        vol: c['vol'] as String,
+                        lot: lot,
+                        allStrikes: allStrikes,
                       ),
-                      const SizedBox(height: 20),
 
-                      // Options Watchlist Section (Matching Call/Put Toggle & ITM/ATM/OTM Strikes)
+                      const SizedBox(height: 18),
+
+                      // Options Watchlist Section (Call / Put / Straddle + ITM/ATM/OTM)
                       _buildOptionsWatchlistSection(
                         isDark: isDark,
                         cardBg: cardBg,
@@ -450,10 +563,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     );
   }
 
-  Widget _buildTopHeader(bool isDark, Color borderCol, Color textSub) {
+  Widget _buildTopHeader(bool isDark, Color borderCol) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0B132B) : const Color(0xFF1E293B),
         border: Border(bottom: BorderSide(color: borderCol)),
@@ -462,7 +575,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 16,
-        runSpacing: 12,
+        runSpacing: 10,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -472,9 +585,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFF59E0B)]),
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(color: const Color(0xFFF59E0B).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 3)),
-                  ],
+                  boxShadow: [BoxShadow(color: const Color(0xFFF59E0B).withOpacity(0.32), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: const Icon(Icons.oil_barrel_rounded, color: Colors.white, size: 22),
               ),
@@ -486,7 +597,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                     children: [
                       const Text(
                         'COMMODITY DERIVATIVES FLOOR',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 0.4),
+                        style: TextStyle(color: Colors.white, fontSize: 17.5, fontWeight: FontWeight.w900, letterSpacing: 0.4),
                       ),
                       const SizedBox(width: 10),
                       Container(
@@ -505,28 +616,27 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Future Chain, Options Watchlist (ITM/ATM/OTM Greeks) & Instant Multi-Demat MCX Replication',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                    'Future Chain, Options Watchlist (ITM/ATM/OTM Greeks), Straddle Builder & Multi-Broker Replication',
+                    style: TextStyle(color: Colors.white.withOpacity(0.74), fontSize: 11.5),
                   ),
                 ],
               ),
             ],
           ),
 
-          // Quick Strike Search + Connected Demats Pill
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 220,
-                height: 36,
+                width: 205,
+                height: 35,
                 child: TextField(
                   controller: _searchCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
                     hintText: 'Filter strike e.g. 8250...',
-                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 17, color: Color(0xFF38BDF8)),
+                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFF38BDF8)),
                     filled: true,
                     fillColor: const Color(0xFF0F172A),
                     contentPadding: EdgeInsets.zero,
@@ -551,7 +661,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                 builder: (context, _) {
                   final count = CopyTradingEngine().totalAccountsCount;
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
                     decoration: BoxDecoration(
                       color: const Color(0xFF38BDF8).withOpacity(0.14),
                       borderRadius: BorderRadius.circular(8),
@@ -561,7 +671,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                       children: [
                         const Icon(Icons.sync_rounded, color: Color(0xFF38BDF8), size: 14),
                         const SizedBox(width: 6),
-                        Text('$count Demats Synced', style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.w900)),
+                        Text('$count Brokers Synced', style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.w900)),
                       ],
                     ),
                   );
@@ -597,6 +707,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             _stripMetric('HENRY HUB NATGAS', '\$2.88 (+2.10%)', const Color(0xFF10B981)),
             _stripDivider(textSub),
             _stripMetric('USD/INR', '84.38 (-0.04%)', const Color(0xFFF59E0B)),
+            _stripDivider(textSub),
+            _stripMetric('MCX SESSION', '09:00–23:30 IST OPEN', const Color(0xFF38BDF8)),
             _stripDivider(textSub),
             Text(
               'STREAM ${DateFormat('HH:mm:ss').format(_now)} IST',
@@ -636,6 +748,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             final active = _selectedCommodityIdx == idx;
             final spot = (item['spot'] as num).toDouble();
             final prev = (item['prevClose'] as num).toDouble();
+            final pct = ((spot - prev) / prev) * 100;
             final isUp = spot >= prev;
 
             return Padding(
@@ -669,7 +782,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '₹${_formatIndianPrice(spot)} ${isUp ? '▲' : '▼'}',
+                        '₹${_formatIndianPrice(spot)} (${isUp ? '+' : ''}${pct.toStringAsFixed(2)}%)',
                         style: TextStyle(
                           color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                           fontSize: 11,
@@ -702,18 +815,13 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol),
-      ),
+      decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: borderCol)),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 16,
         runSpacing: 12,
         children: [
-          // Left: Exchange Toggle (MCX | NSE)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -727,8 +835,6 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
               ),
             ],
           ),
-
-          // Center Telemetry Pill
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -737,12 +843,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
               border: Border.all(color: borderCol),
             ),
             child: Text(
-              '$tabName ($sym) · Lot: $unit · Spot PCR: $pcr',
+              '$tabName ($sym)  ·  Contract Lot: $unit  ·  OI PCR: $pcr',
               style: TextStyle(color: textSub, fontSize: 11.5, fontWeight: FontWeight.w700),
             ),
           ),
-
-          // Right: Expiry Toggle (Nov | Dec | Jan)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -781,7 +885,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             onTap: () => onSelect(opt),
             borderRadius: BorderRadius.circular(7),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 7),
               decoration: BoxDecoration(
                 color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
                 borderRadius: BorderRadius.circular(7),
@@ -819,19 +923,21 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     required double low,
     required String oi,
     required String vol,
+    required List<double> spark,
+    required double buyPressure,
   }) {
     final futContract = '$sym $_selectedExpiry FUT ($_selectedExchange)';
     final bid = spot - math.max(0.5, spot * 0.00015);
     final ask = spot + math.max(0.5, spot * 0.00015);
+    final rangePos = ((spot - low) / math.max(0.5, high - low)).clamp(0.06, 0.94);
+    final accentCol = isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderCol),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.04), blurRadius: 10, offset: const Offset(0, 3)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.04), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,11 +953,14 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.15), borderRadius: BorderRadius.circular(5)),
                       child: Text('$_selectedExchange · $unit', style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 10, fontWeight: FontWeight.w900)),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(color: accentCol.withOpacity(0.14), borderRadius: BorderRadius.circular(5)),
+                      child: Text('SUPERTREND: BULLISH BUY', style: TextStyle(color: accentCol, fontSize: 9.5, fontWeight: FontWeight.w900)),
                     ),
                     const Spacer(),
                     Text('Exp: ${_expiryFutDate()}', style: TextStyle(color: textSub, fontSize: 12, fontWeight: FontWeight.w700)),
@@ -859,7 +968,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                 ),
                 const SizedBox(height: 14),
 
-                // Main Contract Row
+                // Main Contract Row + Embedded Live Sparkline
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -867,25 +976,64 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(sym, style: TextStyle(color: textMain, fontSize: 20, fontWeight: FontWeight.w900)),
+                          Text(sym, style: TextStyle(color: textMain, fontSize: 21, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 4),
                           Text(
-                            '${_expiryFutDate()}  ·  Bid ₹${_formatIndianPrice(bid)} | Ask ₹${_formatIndianPrice(ask)}  ·  OI: $oi · Vol: $vol',
+                            'Bid ₹${_formatIndianPrice(bid)}  |  Ask ₹${_formatIndianPrice(ask)}  ·  OI: $oi · Vol: $vol',
                             style: TextStyle(color: textSub, fontSize: 12),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Day High: ₹${_formatIndianPrice(high)}   ·   Day Low: ₹${_formatIndianPrice(low)}',
-                            style: TextStyle(color: textSub, fontSize: 11.5, fontWeight: FontWeight.w600),
+                          const SizedBox(height: 10),
+
+                          // Day Range Bar
+                          SizedBox(
+                            width: 260,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Day Low ₹${_formatIndianPrice(low)}', style: TextStyle(color: textSub, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                                    Text('High ₹${_formatIndianPrice(high)}', style: TextStyle(color: textSub, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: rangePos,
+                                    minHeight: 5.5,
+                                    backgroundColor: Colors.grey.withOpacity(0.2),
+                                    valueColor: AlwaysStoppedAnimation<Color>(accentCol),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
 
+                    // Embedded Intraday Live Sparkline
+                    Container(
+                      width: 115,
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: borderCol),
+                      ),
+                      child: CustomPaint(
+                        painter: _CommoditySparklinePainter(points: spark, color: accentCol),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
                     // Flashing Price & Change
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: flash == 1
                             ? const Color(0xFF10B981).withOpacity(0.14)
@@ -897,92 +1045,96 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                         children: [
                           Text(
                             '₹${_formatIndianPrice(spot)} ${isUp ? '▲' : '▼'}',
-                            style: TextStyle(
-                              color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                            ),
+                            style: TextStyle(color: accentCol, fontSize: 22, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${isUp ? '+' : ''}₹${diff.toStringAsFixed(2)} (${isUp ? '+' : ''}${chgPct.toStringAsFixed(2)}%)',
-                            style: TextStyle(
-                              color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                            style: TextStyle(color: accentCol, fontSize: 12, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Buy / Sell Pressure Depth + Execution Action Row
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 14,
+                  runSpacing: 12,
+                  children: [
+                    // Orderflow Bid/Ask Pressure Meter
+                    SizedBox(
+                      width: 260,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Buyers ${(buyPressure * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Color(0xFF10B981), fontSize: 10.5, fontWeight: FontWeight.w900)),
+                              Text('Sellers ${((1 - buyPressure) * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Color(0xFFEF4444), fontSize: 10.5, fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: (buyPressure * 100).round(),
+                                  child: Container(height: 6, color: const Color(0xFF10B981)),
+                                ),
+                                Expanded(
+                                  flex: ((1 - buyPressure) * 100).round(),
+                                  child: Container(height: 6, color: const Color(0xFFEF4444)),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 16),
 
-                    // Direct Execution Action Buttons
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    // Action Buttons
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                OrderPlacementTicketDialog.show(
-                                  context,
-                                  symbol: futContract,
-                                  side: 'BUY',
-                                  ltp: spot,
-                                  lotSize: lot,
-                                  category: 'COMMODITY',
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF059669),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              ),
-                              child: const Text('BUY FUT', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w900)),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                OrderPlacementTicketDialog.show(
-                                  context,
-                                  symbol: futContract,
-                                  side: 'SELL',
-                                  ltp: spot,
-                                  lotSize: lot,
-                                  category: 'COMMODITY',
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFDC2626),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              ),
-                              child: const Text('SELL FUT', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w900)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        OutlinedButton.icon(
+                        ElevatedButton(
                           onPressed: () {
+                            OrderPlacementTicketDialog.show(context, symbol: futContract, side: 'BUY', ltp: spot, lotSize: lot, category: 'COMMODITY');
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
+                          child: const Text('BUY FUT', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w900)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            OrderPlacementTicketDialog.show(context, symbol: futContract, side: 'SELL', ltp: spot, lotSize: lot, category: 'COMMODITY');
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
+                          child: const Text('SELL FUT', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w900)),
+                        ),
+                        AnimatedBuilder(
+                          animation: CopyTradingEngine(),
+                          builder: (context, _) {
                             final count = CopyTradingEngine().totalAccountsCount;
-                            CopyTradingEngine().replicateTrade(symbol: futContract, side: 'BUY', baseQty: lot, price: spot);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('⚡ Replicated $futContract across all $count Connected Demats!'),
-                                backgroundColor: const Color(0xFF059669),
-                              ),
+                            return OutlinedButton.icon(
+                              onPressed: () {
+                                CopyTradingEngine().replicateTrade(symbol: futContract, side: 'BUY', baseQty: lot, price: spot);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('⚡ Replicated $futContract across all $count Connected Brokers!'), backgroundColor: const Color(0xFF059669)),
+                                );
+                              },
+                              icon: const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF10B981)),
+                              label: Text('Copy ($count Brokers)', style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w800)),
+                              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF10B981)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
                             );
                           },
-                          icon: const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF10B981)),
-                          label: Text(
-                            'Copy across ${CopyTradingEngine().totalAccountsCount} Demats',
-                            style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w800),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF10B981)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            minimumSize: Size.zero,
-                          ),
                         ),
                       ],
                     ),
@@ -994,12 +1146,12 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
 
           Divider(height: 1, color: borderCol),
 
-          // Angel One-Inspired Split Action Strip: CHARTS | OPTION CHAIN
+          // CHARTS | OPTION CHAIN Action Strip
           Row(
             children: [
               Expanded(
                 child: InkWell(
-                  onTap: () => _showCommodityChartModal(context, sym, spot, isDark),
+                  onTap: () => _showCommodityChartModal(context, sym, spot, spark, isDark),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
                     child: Row(
@@ -1037,6 +1189,247 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     );
   }
 
+  Widget _buildTermCurveAndCalculatorPanel({
+    required bool isDark,
+    required Color cardBg,
+    required Color borderCol,
+    required Color textMain,
+    required Color textSub,
+    required String sym,
+    required double baseSpot,
+    required double tickPerPoint,
+    required double marginPerLot,
+    required String unit,
+  }) {
+    final months = ['Nov', 'Dec', 'Jan'];
+    final tickValueTotal = tickPerPoint * _calcLots;
+    final totalMargin = marginPerLot * _calcLots;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(14), border: Border.all(color: borderCol)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$sym Futures Term Curve', style: TextStyle(color: textMain, fontSize: 14.5, fontWeight: FontWeight.w900)),
+              const Text('Contango Spread', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 10.5, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          ...months.map((m) {
+            final price = baseSpot * _expiryMultiplier(m);
+            final spread = price - baseSpot;
+            final isSel = m == _selectedExpiry;
+            return InkWell(
+              onTap: () => setState(() => _selectedExpiry = m),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSel ? const Color(0xFF2563EB).withOpacity(isDark ? 0.22 : 0.08) : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isSel ? const Color(0xFF38BDF8) : borderCol),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$m (${_expiryFutDate(m)})', style: TextStyle(color: textMain, fontSize: 12, fontWeight: FontWeight.w800)),
+                        Text(spread == 0 ? 'Front Month Benchmark' : '+₹${spread.toStringAsFixed(1)} vs Nov', style: TextStyle(color: textSub, fontSize: 10)),
+                      ],
+                    ),
+                    Text('₹${_formatIndianPrice(price)}', style: TextStyle(color: isSel ? const Color(0xFF38BDF8) : const Color(0xFF10B981), fontSize: 13, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 10),
+          Divider(height: 1, color: borderCol),
+          const SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Lot P&L & Margin Calculator', style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w900)),
+              Wrap(
+                spacing: 4,
+                children: [1, 2, 5, 10].map((lots) {
+                  final active = _calcLots == lots;
+                  return InkWell(
+                    onTap: () => setState(() => _calcLots = lots),
+                    borderRadius: BorderRadius.circular(5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: active ? const Color(0xFF10B981) : (isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text('${lots}L', style: TextStyle(color: active ? Colors.white : textSub, fontSize: 10, fontWeight: FontWeight.w900)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderCol),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('P&L per ₹1 move ($_calcLots Lot)', style: TextStyle(color: textSub, fontSize: 11)),
+                    Text('₹${_formatIndianPrice(tickValueTotal)} / pt', style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Est. NRML Margin ($unit)', style: TextStyle(color: textSub, fontSize: 11)),
+                    Text('₹${_formatIndianPrice(totalMargin)}', style: TextStyle(color: textMain, fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommodityStrategyStrip({
+    required bool isDark,
+    required Color cardBg,
+    required Color borderCol,
+    required Color textMain,
+    required Color textSub,
+    required String sym,
+    required double spot,
+    required int lot,
+    required List<Map<String, dynamic>> allStrikes,
+  }) {
+    final atmRow = allStrikes.firstWhere(
+      (r) => r['ceMoneyness'] == 'ATM',
+      orElse: () => allStrikes[allStrikes.length ~/ 2],
+    );
+    final atmStrike = atmRow['strike'] as int;
+    final atmIdx = allStrikes.indexOf(atmRow);
+    final otmRow = allStrikes[(atmIdx + 1).clamp(0, allStrikes.length - 1)];
+
+    final ceLtp = atmRow['ceLtp'] as double;
+    final peLtp = atmRow['peLtp'] as double;
+    final otmCeLtp = otmRow['ceLtp'] as double;
+    final straddlePrem = ceLtp + peLtp;
+    final spreadDebit = math.max(1.0, ceLtp - otmCeLtp);
+
+    final strategies = [
+      {
+        'name': 'ATM Short Straddle',
+        'legs': '$sym $atmStrike CE + PE',
+        'metric': 'Total Credit: ₹${straddlePrem.toStringAsFixed(1)} · BE ${(atmStrike - straddlePrem).round()}–${(atmStrike + straddlePrem).round()}',
+        'side': 'SELL',
+        'price': straddlePrem,
+        'col': const Color(0xFFF59E0B),
+      },
+      {
+        'name': 'Bull Call Spread',
+        'legs': 'Buy $atmStrike CE / Sell ${otmRow['strike']} CE',
+        'metric': 'Net Debit: ₹${spreadDebit.toStringAsFixed(1)} · Defined Risk Setup',
+        'side': 'BUY',
+        'price': spreadDebit,
+        'col': const Color(0xFF10B981),
+      },
+      {
+        'name': 'Protected FUT + PE Hedge',
+        'legs': 'Long FUT + Buy $atmStrike PE',
+        'metric': 'Downside capped below $atmStrike · Hedge Cost ₹${peLtp.toStringAsFixed(1)}',
+        'side': 'BUY',
+        'price': spot,
+        'col': const Color(0xFF38BDF8),
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('1-Click Institutional Commodity Strategies ($sym ATM $atmStrike)', style: TextStyle(color: textMain, fontSize: 15, fontWeight: FontWeight.w900)),
+            const Text('Auto-calculated from Live Options', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardW = constraints.maxWidth > 900 ? (constraints.maxWidth - 24) / 3 : constraints.maxWidth;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: strategies.map((st) {
+                final col = st['col'] as Color;
+                final legs = st['legs'] as String;
+                final price = st['price'] as double;
+                final side = st['side'] as String;
+                return Container(
+                  width: cardW,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: col.withOpacity(0.45))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(st['name'] as String, style: TextStyle(color: col, fontSize: 12.5, fontWeight: FontWeight.w900)),
+                          InkWell(
+                            onTap: () {
+                              final count = CopyTradingEngine().totalAccountsCount;
+                              CopyTradingEngine().replicateTrade(symbol: legs, side: side, baseQty: lot, price: price);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('⚡ Deployed ${st['name']} ($legs) across $count brokers!'), backgroundColor: const Color(0xFF059669)),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(5),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(color: col, borderRadius: BorderRadius.circular(5)),
+                              child: const Text('Deploy ⚡', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(legs, style: TextStyle(color: textMain, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Text(st['metric'] as String, style: TextStyle(color: textSub, fontSize: 10.5)),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildOptionsWatchlistSection({
     required bool isDark,
     required Color cardBg,
@@ -1049,19 +1442,18 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderCol),
-      ),
+      decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(14), border: Border.all(color: borderCol)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header + Call / Put / Straddle toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 10,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('Options Watchlist', style: TextStyle(color: textMain, fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(width: 10),
@@ -1089,37 +1481,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           if (strikes.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 28),
-              child: Center(
-                child: Text('No strikes matching "$_strikeFilter"', style: TextStyle(color: textSub, fontSize: 13)),
-              ),
+              child: Center(child: Text('No strikes matching "$_strikeFilter"', style: TextStyle(color: textSub, fontSize: 13))),
             )
           else
             Column(
               children: strikes.expand((row) {
                 final List<Widget> widgets = [];
                 if (_optionTypeMode == 'CALL' || _optionTypeMode == 'BOTH') {
-                  widgets.add(_buildOptionStrikeTile(
-                    row: row,
-                    isCall: true,
-                    sym: sym,
-                    lot: lot,
-                    isDark: isDark,
-                    borderCol: borderCol,
-                    textMain: textMain,
-                    textSub: textSub,
-                  ));
+                  widgets.add(_buildOptionStrikeTile(row: row, isCall: true, sym: sym, lot: lot, isDark: isDark, borderCol: borderCol, textMain: textMain, textSub: textSub));
                 }
                 if (_optionTypeMode == 'PUT' || _optionTypeMode == 'BOTH') {
-                  widgets.add(_buildOptionStrikeTile(
-                    row: row,
-                    isCall: false,
-                    sym: sym,
-                    lot: lot,
-                    isDark: isDark,
-                    borderCol: borderCol,
-                    textMain: textMain,
-                    textSub: textSub,
-                  ));
+                  widgets.add(_buildOptionStrikeTile(row: row, isCall: false, sym: sym, lot: lot, isDark: isDark, borderCol: borderCol, textMain: textMain, textSub: textSub));
                 }
                 return widgets;
               }).toList(),
@@ -1146,6 +1518,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     final chgPct = (isCall ? row['ceChgPct'] : row['peChgPct']) as double;
     final delta = (isCall ? row['ceDelta'] : row['peDelta']) as double;
     final oi = (isCall ? row['ceOi'] : row['peOi']) as String;
+    final oiNorm = (isCall ? row['ceOiNorm'] : row['peOiNorm']) as double;
     final vol = (isCall ? row['ceVol'] : row['peVol']) as String;
     final iv = (isCall ? row['ceIv'] : row['peIv']) as String;
     final isUp = chg >= 0;
@@ -1170,13 +1543,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             ? const Color(0xFFF59E0B).withOpacity(isDark ? 0.08 : 0.04)
             : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: moneyness == 'ATM' ? const Color(0xFFF59E0B).withOpacity(0.55) : borderCol,
-        ),
+        border: Border.all(color: moneyness == 'ATM' ? const Color(0xFFF59E0B).withOpacity(0.55) : borderCol),
       ),
       child: Row(
         children: [
-          // Left: Contract & ITM/ATM/OTM badge + Expiry & Strike
           Expanded(
             flex: 3,
             child: Column(
@@ -1194,14 +1564,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: (isCall ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        optType,
-                        style: TextStyle(color: isCall ? const Color(0xFF10B981) : const Color(0xFFEF4444), fontSize: 10, fontWeight: FontWeight.w900),
-                      ),
+                      decoration: BoxDecoration(color: (isCall ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withOpacity(0.14), borderRadius: BorderRadius.circular(4)),
+                      child: Text(optType, style: TextStyle(color: isCall ? const Color(0xFF10B981) : const Color(0xFFEF4444), fontSize: 10, fontWeight: FontWeight.w900)),
                     ),
                   ],
                 ),
@@ -1210,46 +1574,42 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                   '${_expiryOptDate()}  $strike $optType   ·   OI: $oi  ·  Vol: $vol  ·  IV: $iv  ·  Δ $delta',
                   style: TextStyle(color: textSub, fontSize: 11.5, fontWeight: FontWeight.w500),
                 ),
+                const SizedBox(height: 5),
+                SizedBox(
+                  width: 180,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: oiNorm,
+                      minHeight: 3.5,
+                      backgroundColor: Colors.grey.withOpacity(0.18),
+                      valueColor: AlwaysStoppedAnimation<Color>(isCall ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
 
-          // Middle-Right: Live LTP & Change
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 '₹${_formatIndianPrice(ltp)} ${isUp ? '▲' : '▼'}',
-                style: TextStyle(
-                  color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444), fontSize: 15, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 2),
               Text(
                 '${isUp ? '+' : ''}₹${chg.toStringAsFixed(2)} (${isUp ? '+' : ''}${chgPct.toStringAsFixed(2)}%)',
-                style: TextStyle(
-                  color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(width: 16),
 
-          // Direct Execution Buttons ([B], [S], [⚡ Copy])
           InkWell(
             onTap: () {
-              OrderPlacementTicketDialog.show(
-                context,
-                symbol: fullContract,
-                side: 'BUY',
-                ltp: ltp,
-                lotSize: lot,
-                category: 'COMMODITY',
-              );
+              OrderPlacementTicketDialog.show(context, symbol: fullContract, side: 'BUY', ltp: ltp, lotSize: lot, category: 'COMMODITY');
             },
             borderRadius: BorderRadius.circular(5),
             child: Container(
@@ -1263,14 +1623,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           const SizedBox(width: 6),
           InkWell(
             onTap: () {
-              OrderPlacementTicketDialog.show(
-                context,
-                symbol: fullContract,
-                side: 'SELL',
-                ltp: ltp,
-                lotSize: lot,
-                category: 'COMMODITY',
-              );
+              OrderPlacementTicketDialog.show(context, symbol: fullContract, side: 'SELL', ltp: ltp, lotSize: lot, category: 'COMMODITY');
             },
             borderRadius: BorderRadius.circular(5),
             child: Container(
@@ -1283,13 +1636,13 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           ),
           const SizedBox(width: 6),
           Tooltip(
-            message: 'Replicate across all ${CopyTradingEngine().totalAccountsCount} connected demats',
+            message: 'Replicate across all ${CopyTradingEngine().totalAccountsCount} connected brokers',
             child: InkWell(
               onTap: () {
                 final count = CopyTradingEngine().totalAccountsCount;
                 CopyTradingEngine().replicateTrade(symbol: fullContract, side: 'BUY', baseQty: lot, price: ltp);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('⚡ Replicated $fullContract across $count Connected Demats!'), backgroundColor: const Color(0xFF059669)),
+                  SnackBar(content: Text('⚡ Replicated $fullContract across all $count Connected Brokers!'), backgroundColor: const Color(0xFF059669)),
                 );
               },
               borderRadius: BorderRadius.circular(5),
@@ -1311,61 +1664,123 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     );
   }
 
-  // ── Interactive Commodity Chart Modal ──
-  void _showCommodityChartModal(BuildContext context, String sym, double spot, bool isDark) {
+  // ── Upgraded OHLC Candlestick & EMA Chart Modal ──
+  void _showCommodityChartModal(BuildContext context, String sym, double spot, List<double> spark, bool isDark) {
+    String selectedTf = '15m';
+    final lot = _commodities[_selectedCommodityIdx]['lot'] as int;
+
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 740),
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.candlestick_chart_rounded, color: Color(0xFF38BDF8), size: 22),
-                    const SizedBox(width: 10),
-                    Text('$sym ($_selectedExchange $_selectedExpiry) · Live Technical Chart',
-                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w900)),
-                    const Spacer(),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  height: 220,
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF090D16),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF1E293B)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Dialog(
+          backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('LTP: ₹${_formatIndianPrice(spot)}  |  EMA(20): ₹${_formatIndianPrice(spot * 0.994)}  |  VWAP: ₹${_formatIndianPrice(spot * 0.996)}',
-                              style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold)),
-                          const Text('SUPERTREND (10,3): BULLISH BUY 🟢', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.w900)),
-                        ],
+                      const Icon(Icons.candlestick_chart_rounded, color: Color(0xFF38BDF8), size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '$sym ($_selectedExchange $_selectedExpiry) · Institutional Candlestick & EMA',
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w900),
+                        ),
                       ),
-                      const Spacer(),
-                      CustomPaint(
-                        size: const Size(double.infinity, 130),
-                        painter: _CommoditySparklinePainter(),
+                      Wrap(
+                        spacing: 4,
+                        children: ['5m', '15m', '1H', '4H', '1D'].map((tf) {
+                          final active = tf == selectedTf;
+                          return InkWell(
+                            onTap: () => setModalState(() => selectedTf = tf),
+                            borderRadius: BorderRadius.circular(5),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: active ? const Color(0xFF2563EB) : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(tf, style: TextStyle(color: active ? Colors.white : const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 270,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF090D16),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF1E293B)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '$selectedTf  |  LTP ₹${_formatIndianPrice(spot)}  |  EMA(20) ₹${_formatIndianPrice(spot * 0.994)}  |  VWAP ₹${_formatIndianPrice(spot * 0.996)}',
+                              style: const TextStyle(color: Color(0xFF10B981), fontSize: 11.5, fontWeight: FontWeight.bold),
+                            ),
+                            const Text('SUPERTREND (10,3): BUY 🟢', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.w900)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: CustomPaint(
+                            size: const Size(double.infinity, double.infinity),
+                            painter: _OhlcCandlestickPainter(tfSeed: selectedTf.hashCode),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pivot: ₹${_formatIndianPrice(spot * 0.997)}   ·   R1: ₹${_formatIndianPrice(spot * 1.008)}   ·   S1: ₹${_formatIndianPrice(spot * 0.991)}',
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontWeight: FontWeight.bold),
+                      ),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              OrderPlacementTicketDialog.show(context, symbol: '$sym $_selectedExpiry FUT', side: 'BUY', ltp: spot, lotSize: lot, category: 'COMMODITY');
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                            child: const Text('BUY FUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              OrderPlacementTicketDialog.show(context, symbol: '$sym $_selectedExpiry FUT', side: 'SELL', ltp: spot, lotSize: lot, category: 'COMMODITY');
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+                            child: const Text('SELL FUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1373,7 +1788,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     );
   }
 
-  // ── Full Dual-Side MCX Option Chain Modal ──
+  // ── Upgraded Dual-Side MCX Option Chain Modal with OI Bars ──
   void _showFullOptionChainModal(BuildContext context) {
     final c = _commodities[_selectedCommodityIdx];
     final sym = c['symbol'] as String;
@@ -1387,7 +1802,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 880, maxHeight: 640),
+          constraints: const BoxConstraints(maxWidth: 920, maxHeight: 650),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -1405,15 +1820,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
                   child: const Row(
                     children: [
-                      Expanded(child: Text('CALL OI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900))),
-                      Expanded(child: Text('CALL LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF10B981)))),
-                      Expanded(child: Text('STRIKE', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900))),
-                      Expanded(child: Text('PUT LTP', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFFEF4444)))),
-                      Expanded(child: Text('PUT OI', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900))),
+                      Expanded(flex: 2, child: Text('CALL OI BAR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900))),
+                      Expanded(child: Text('IV / Δ', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900))),
+                      Expanded(child: Text('CALL LTP', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Color(0xFF10B981)))),
+                      Expanded(child: Text('STRIKE', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900))),
+                      Expanded(child: Text('PUT LTP', textAlign: TextAlign.right, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Color(0xFFEF4444)))),
+                      Expanded(child: Text('IV / Δ', textAlign: TextAlign.right, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900))),
+                      Expanded(flex: 2, child: Text('PUT OI BAR', textAlign: TextAlign.right, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900))),
                     ],
                   ),
                 ),
@@ -1427,6 +1844,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                       final strike = r['strike'] as int;
                       final ceLtp = r['ceLtp'] as double;
                       final peLtp = r['peLtp'] as double;
+                      final ceOiNorm = r['ceOiNorm'] as double;
+                      final peOiNorm = r['peOiNorm'] as double;
                       final isAtm = r['ceMoneyness'] == 'ATM';
 
                       return Container(
@@ -1434,7 +1853,22 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         child: Row(
                           children: [
-                            Expanded(child: Text('${r['ceOi']}', style: const TextStyle(fontSize: 12))),
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                children: [
+                                  SizedBox(width: 44, child: Text('${r['ceOi']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
+                                  Expanded(
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: ceOiNorm,
+                                      child: Container(height: 7, decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.65), borderRadius: BorderRadius.circular(3))),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(child: Text('${r['ceIv']} / ${r['ceDelta']}', style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)))),
                             Expanded(
                               child: InkWell(
                                 onTap: () {
@@ -1446,7 +1880,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                             ),
                             Expanded(
                               child: Text(
-                                isAtm ? '$strike (ATM)' : '$strike',
+                                isAtm ? '$strike ATM' : '$strike',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: isAtm ? const Color(0xFFF59E0B) : null),
                               ),
@@ -1460,7 +1894,23 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                                 child: Text('₹$peLtp', textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12.5)),
                               ),
                             ),
-                            Expanded(child: Text('${r['peOi']}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12))),
+                            Expanded(child: Text('${r['peIv']} / ${r['peDelta']}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)))),
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerRight,
+                                      widthFactor: peOiNorm,
+                                      child: Container(height: 7, decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.65), borderRadius: BorderRadius.circular(3))),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SizedBox(width: 44, child: Text('${r['peOi']}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -1477,15 +1927,20 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
 }
 
 class _CommoditySparklinePainter extends CustomPainter {
+  final List<double> points;
+  final Color color;
+
+  const _CommoditySparklinePainter({required this.points, required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final pts = [0.65, 0.58, 0.62, 0.52, 0.48, 0.54, 0.42, 0.36, 0.40, 0.28, 0.22, 0.16];
+    if (points.length < 2) return;
     final path = Path();
     final fillPath = Path();
 
-    for (int i = 0; i < pts.length; i++) {
-      final x = (i / (pts.length - 1)) * size.width;
-      final y = pts[i] * size.height;
+    for (int i = 0; i < points.length; i++) {
+      final x = (i / (points.length - 1)) * size.width;
+      final y = points[i] * size.height;
       if (i == 0) {
         path.moveTo(x, y);
         fillPath.moveTo(x, size.height);
@@ -1502,17 +1957,81 @@ class _CommoditySparklinePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [const Color(0xFF10B981).withOpacity(0.35), const Color(0xFF10B981).withOpacity(0.0)],
+        colors: [color.withOpacity(0.32), color.withOpacity(0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(fillPath, fillPaint);
 
     final linePaint = Paint()
-      ..color = const Color(0xFF10B981)
-      ..strokeWidth = 2.5
+      ..color = color
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
     canvas.drawPath(path, linePaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CommoditySparklinePainter oldDelegate) =>
+      oldDelegate.points != points || oldDelegate.color != color;
+}
+
+class _OhlcCandlestickPainter extends CustomPainter {
+  final int tfSeed;
+  const _OhlcCandlestickPainter({required this.tfSeed});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = const Color(0xFF1E293B)
+      ..strokeWidth = 1;
+    for (int g = 1; g <= 3; g++) {
+      final y = (g / 4) * size.height;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    const count = 24;
+    final slotW = size.width / count;
+    final candleW = slotW * 0.56;
+    final r = math.Random(tfSeed + 42);
+    double cursor = 0.68;
+    final emaPath = Path();
+
+    for (int i = 0; i < count; i++) {
+      final isBull = (i % 5 != 2) ? r.nextDouble() > 0.35 : false;
+      final move = (r.nextDouble() * 0.08 + 0.02) * (isBull ? -1 : 1);
+      final open = cursor.clamp(0.18, 0.82);
+      final close = (cursor + move).clamp(0.14, 0.84);
+      final high = math.min(open, close) - r.nextDouble() * 0.05;
+      final low = math.max(open, close) + r.nextDouble() * 0.05;
+      cursor = close;
+
+      final xCenter = i * slotW + slotW / 2;
+      final col = close <= open ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+      final paint = Paint()
+        ..color = col
+        ..strokeWidth = 1.6;
+
+      canvas.drawLine(Offset(xCenter, high * size.height), Offset(xCenter, low * size.height), paint);
+      final rectTop = math.min(open, close) * size.height;
+      final rectH = math.max(4.0, (open - close).abs() * size.height);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(xCenter - candleW / 2, rectTop, candleW, rectH), const Radius.circular(1.5)),
+        paint..style = PaintingStyle.fill,
+      );
+
+      final emaY = ((open + close) / 2 + 0.05) * size.height;
+      if (i == 0) {
+        emaPath.moveTo(xCenter, emaY);
+      } else {
+        emaPath.lineTo(xCenter, emaY);
+      }
+    }
+
+    final emaPaint = Paint()
+      ..color = const Color(0xFF38BDF8)
+      ..strokeWidth = 1.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(emaPath, emaPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _OhlcCandlestickPainter oldDelegate) => oldDelegate.tfSeed != tfSeed;
 }

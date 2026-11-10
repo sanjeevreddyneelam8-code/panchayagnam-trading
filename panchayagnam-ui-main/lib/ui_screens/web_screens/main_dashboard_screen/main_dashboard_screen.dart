@@ -525,57 +525,52 @@ class _MainDashboardState extends State<MainDashboard> {
             ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
 
-          // Middle: Global Live Search Box (Angel One + Tradetron Live Discovery)
-          Flexible(
-            flex: 2,
-            fit: FlexFit.loose,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                onTap: () => _showQuickSearchDialog(context),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 320, minWidth: 150),
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.45)),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1)),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search_rounded, size: 16, color: Color(0xFF38BDF8)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Live Search: Scrip, Strike, Algos...',
-                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+          // Compact Global Live Search Box (Angel One + Tradetron Live Discovery)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 188, minWidth: 135),
+            child: InkWell(
+              onTap: () => _showQuickSearchDialog(context),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.45)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search_rounded, size: 14, color: Color(0xFF38BDF8)),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'Search scrip, strike...',
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                        decoration: const BoxDecoration(color: Color(0xFF334155), borderRadius: BorderRadius.all(Radius.circular(4))),
-                        child: const Text('LIVE', style: TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: const BoxDecoration(color: Color(0xFF334155), borderRadius: BorderRadius.all(Radius.circular(3))),
+                      child: const Text('LIVE', style: TextStyle(color: Color(0xFF10B981), fontSize: 8.5, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
-          // Right-Center Utility Controls (Right-aligned inside Expanded; scrolls only if viewport is ultra narrow)
+          // Right-Center Utility Controls (100% of remaining space so Refer & Earn & all pills stay neatly visible)
           Expanded(
-            flex: 3,
             child: Align(
               alignment: Alignment.centerRight,
               child: SingleChildScrollView(
@@ -665,7 +660,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       },
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                         decoration: BoxDecoration(
                           color: const Color(0xFF10B981).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(6),
@@ -674,8 +669,8 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.menu_book_rounded, size: 13, color: Color(0xFF10B981)),
-                            SizedBox(width: 5),
+                            Icon(Icons.menu_book_rounded, size: 12.5, color: Color(0xFF10B981)),
+                            SizedBox(width: 4),
                             Text('Guide', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF10B981))),
                           ],
                         ),
@@ -685,25 +680,33 @@ class _MainDashboardState extends State<MainDashboard> {
 
                   const SizedBox(width: 6),
 
-                  // Compact Refer & Earn 30% Button
+                  // Neatly Visible Refer & Earn Button
                   Tooltip(
-                    message: 'Refer & Earn 30% Lifetime Commission',
+                    message: 'Refer & Earn — Partner Rewards Program',
                     child: InkWell(
                       onTap: () => _showReferAndEarnDialog(context),
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withOpacity(0.15),
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFF59E0B).withOpacity(0.22),
+                              const Color(0xFFD97706).withOpacity(0.14),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.6)),
+                          border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.75)),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.card_giftcard_rounded, size: 13, color: Color(0xFFF59E0B)),
+                            Icon(Icons.card_giftcard_rounded, size: 13, color: Color(0xFFFBBF24)),
                             SizedBox(width: 5),
-                            Text('Refer 30%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B))),
+                            Text(
+                              'Refer & Earn',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFFDE68A)),
+                            ),
                           ],
                         ),
                       ),
@@ -723,7 +726,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onTap: () => StaticIpService.showPaymentOrQrDialog(context),
                             borderRadius: BorderRadius.circular(6),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF78350F).withOpacity(0.35),
                                 borderRadius: BorderRadius.circular(6),
@@ -733,7 +736,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFBBF24)),
-                                  SizedBox(width: 5),
+                                  SizedBox(width: 4),
                                   Text('Static IP ⚡', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFFDE68A))),
                                 ],
                               ),
@@ -1439,7 +1442,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               Text('ACTIVE REFERRALS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
                               SizedBox(height: 3),
                               Text('12 TRADERS', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 14, fontWeight: FontWeight.w900)),
-                              Text('96 demats synced', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                              Text('420+ demats synced', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
                             ],
                           ),
                         ),
@@ -1481,7 +1484,7 @@ class _MainDashboardState extends State<MainDashboard> {
                     children: [
                       ElevatedButton.icon(
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: 'Hey, checkout Panchayagnam — India\'s 1st 8-Demat Copy Trading & Algo Platform! Sign up here for 7 days free trial: ' + refLink));
+                          Clipboard.setData(ClipboardData(text: 'Hey, checkout Panchayagnam — India\'s #1 35-Broker Multi-Demat Copy Trading & Algo Platform! Sign up here for 7 days free trial: ' + refLink));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('WhatsApp invitation message copied to clipboard! Share it in your trading groups.'), backgroundColor: Color(0xFF059669)),
                           );
