@@ -117,11 +117,11 @@ class _OrdersViewState extends State<OrdersView> {
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFFA7F3D0)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.sync_rounded, size: 14, color: Color(0xFF059669)),
-                      SizedBox(width: 4),
-                      Text('8 / 8 Demats Synced (Sub-15ms)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
+                      const Icon(Icons.sync_rounded, size: 14, color: Color(0xFF059669)),
+                      const SizedBox(width: 4),
+                      Text('${CopyTradingEngine().totalAccountsCount} / ${CopyTradingEngine().totalAccountsCount} Brokers Synced (Sub-15ms)', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
                     ],
                   ),
                 ),
@@ -260,7 +260,7 @@ class _OrdersViewState extends State<OrdersView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(o['qty'], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                                  const Text('Across 8 Demats', style: TextStyle(fontSize: 10, color: Color(0xFF059669))),
+                                  Text('Across ${CopyTradingEngine().totalAccountsCount} Brokers', style: const TextStyle(fontSize: 10, color: Color(0xFF059669))),
                                 ],
                               ),
                             ),
@@ -503,15 +503,15 @@ class _PositionsViewState extends State<PositionsView> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFFCA5A5)),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
-                    SizedBox(width: 8),
+                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'WARNING: This will instantly cancel ALL 14 pending orders, market square-off all 4 open positions across ALL 8 Demats, and freeze all automated algo strategies.',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7F1D1D)),
+                        'WARNING: This will instantly cancel ALL 14 pending orders, market square-off all open positions across ALL ${CopyTradingEngine().totalAccountsCount} Brokers, and freeze all automated algo strategies.',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7F1D1D)),
                       ),
                     ),
                   ],
@@ -520,7 +520,7 @@ class _PositionsViewState extends State<PositionsView> {
               const SizedBox(height: 16),
               const Text('Actions to be executed synchronously in < 15ms:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              _buildKillSwitchItem('Cancel pending Limit & SL orders across 8 Demats (14 orders)'),
+              _buildKillSwitchItem('Cancel pending Limit & SL orders across ${CopyTradingEngine().totalAccountsCount} Brokers (14 orders)'),
               _buildKillSwitchItem('Execute Market Square-Off on 4 open multi-broker legs'),
               _buildKillSwitchItem('Pause 3 running Algorithmic Strategies'),
               _buildKillSwitchItem('Halt incoming TradingView webhooks for the day'),
@@ -544,7 +544,7 @@ class _PositionsViewState extends State<PositionsView> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('KILL SWITCH ACTIVATED: $count positions squared off across 8 Demats. Portfolio is 100% Flat.'),
+                    content: Text('KILL SWITCH ACTIVATED: $count positions squared off across ${engine.totalAccountsCount} Brokers. Portfolio is 100% Flat.'),
                     backgroundColor: const Color(0xFF991B1B),
                     behavior: SnackBarBehavior.floating,
                     duration: const Duration(seconds: 4),
@@ -601,7 +601,7 @@ class _PositionsViewState extends State<PositionsView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Set automated risk rules that continuously monitor pooled MTM across all 8 connected Demats.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text('Set automated risk rules that continuously monitor pooled MTM across all ${CopyTradingEngine().totalAccountsCount} connected Brokers.', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                 const SizedBox(height: 16),
                 Text('Max Daily Loss Limit (Auto Square-Off): ₹${loss.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
                 Slider(
@@ -706,7 +706,7 @@ class _PositionsViewState extends State<PositionsView> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text('This will place synchronized exchange SL-M orders across all 8 Demats instantly.', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+              Text('This will place synchronized exchange SL-M orders across all ${CopyTradingEngine().totalAccountsCount} Brokers instantly.', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
             ],
           ),
         ),
@@ -722,7 +722,7 @@ class _PositionsViewState extends State<PositionsView> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Bracket SL & Target orders placed across all 8 Demats for $sym!'),
+                  content: Text('Bracket SL & Target orders placed across all ${CopyTradingEngine().totalAccountsCount} Brokers for $sym!'),
                   backgroundColor: const Color(0xFF059669),
                 ),
               );
@@ -912,7 +912,7 @@ class _PositionsViewState extends State<PositionsView> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  _buildSummaryItem('POOLED MARGIN', '₹80,00,000.00', '8 Demats Synced', const Color(0xFF059669)),
+                  _buildSummaryItem('POOLED MARGIN', '₹3,50,00,000.00', '${CopyTradingEngine().totalAccountsCount} Brokers Synced', const Color(0xFF059669)),
                   const SizedBox(width: 16),
                   _buildSummaryItem('TRAILING SL TARGET', 'Lock ₹${_lockedProfit.toInt()} @ ₹${_profitLockTarget.toInt()}', 'Step ₹${_trailStep.toInt()}', const Color(0xFF2563EB)),
                   const SizedBox(width: 16),
@@ -977,7 +977,7 @@ class _PositionsViewState extends State<PositionsView> {
                     ],
                   ),
                 ),
-                Text('${displayedPositions.length} Contracts Active across 8 Demats', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                Text('${displayedPositions.length} Contracts Active across ${CopyTradingEngine().totalAccountsCount} Brokers', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
               ],
             ),
             const SizedBox(height: 14),
@@ -1094,7 +1094,7 @@ class _PositionsViewState extends State<PositionsView> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text('${qty > 0 ? '+' : ''}$qty', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: qty > 0 ? const Color(0xFF059669) : const Color(0xFFDC2626))),
-                                        const Text('8 Demats Pooled', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                                        Text('${CopyTradingEngine().totalAccountsCount} Brokers Pooled', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
                                       ],
                                     ),
                                   ),
@@ -1314,7 +1314,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Reliance Industries Ltd',
       'isin': 'INE002A01018',
       'sector': 'Oil & Gas',
-      'demat': 'Dhan Master + 7 Childs',
+      'demat': 'Dhan Master + Connected Pool',
       'qty': 150,
       't1Qty': 0,
       'avg': 2810.00,
@@ -1326,7 +1326,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Tata Consultancy Services',
       'isin': 'INE467B01029',
       'sector': 'IT & Software',
-      'demat': 'Zerodha Child 1 + 6 Childs',
+      'demat': 'Zerodha + Connected Children',
       'qty': 80,
       't1Qty': 0,
       'avg': 3920.00,
@@ -1338,7 +1338,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Infosys Limited',
       'isin': 'INE009A01021',
       'sector': 'IT & Software',
-      'demat': 'All Demats (8 Combined)',
+      'demat': 'All 35 Brokers (Combined)',
       'qty': 160,
       't1Qty': 20,
       'avg': 1780.00,
@@ -1350,7 +1350,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'HDFC Bank Ltd',
       'isin': 'INE040A01034',
       'sector': 'Banking',
-      'demat': 'Angel One Child 2',
+      'demat': 'Angel One Child Pool',
       'qty': 180,
       't1Qty': 0,
       'avg': 1610.00,
@@ -1362,7 +1362,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'ICICI Bank Ltd',
       'isin': 'INE090A01021',
       'sector': 'Banking',
-      'demat': 'All Demats (8 Combined)',
+      'demat': 'All 35 Brokers (Combined)',
       'qty': 150,
       't1Qty': 0,
       'avg': 1210.00,
@@ -1374,7 +1374,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Tata Motors Limited',
       'isin': 'INE155A01022',
       'sector': 'Auto',
-      'demat': 'Dhan Master + 7 Childs',
+      'demat': 'Dhan Master + Connected Pool',
       'qty': 140,
       't1Qty': 0,
       'avg': 920.00,
@@ -1386,7 +1386,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'State Bank of India',
       'isin': 'INE062A01020',
       'sector': 'Banking',
-      'demat': 'All Demats (8 Combined)',
+      'demat': 'All 35 Brokers (Combined)',
       'qty': 120,
       't1Qty': 0,
       'avg': 790.00,
@@ -1398,7 +1398,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'ITC Limited',
       'isin': 'INE154A01025',
       'sector': 'FMCG',
-      'demat': 'Zerodha Child 2',
+      'demat': 'Zerodha Child Pool',
       'qty': 250,
       't1Qty': 0,
       'avg': 465.00,
@@ -1410,7 +1410,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Larsen & Toubro Ltd',
       'isin': 'INE018A01030',
       'sector': 'Infrastructure',
-      'demat': 'All Demats (8 Combined)',
+      'demat': 'All 35 Brokers (Combined)',
       'qty': 30,
       't1Qty': 0,
       'avg': 3420.00,
@@ -1422,7 +1422,7 @@ class _HoldingsViewState extends State<HoldingsView> {
       'name': 'Bharti Airtel Ltd',
       'isin': 'INE397D01024',
       'sector': 'Telecom',
-      'demat': 'Dhan Master + 7 Childs',
+      'demat': 'Dhan Master + Connected Pool',
       'qty': 80,
       't1Qty': 0,
       'avg': 1590.00,
@@ -1478,7 +1478,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(color: const Color(0xFFBFDBFE)),
                             ),
-                            child: const Text('8 DEMATS CONSOLIDATED', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
+                            child: Text('${CopyTradingEngine().totalAccountsCount} BROKERS CONSOLIDATED', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
                           ),
                         ],
                       ),
@@ -2734,7 +2734,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
                     children: [
                       const Text('Reports, Tax P&L & Audit Station', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
                       const SizedBox(height: 4),
-                      Text('Comprehensive execution ledger, SEBI-compliant Tax P&L statements, and latency audits across 8 Demats.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                      Text('Comprehensive execution ledger, SEBI-compliant Tax P&L statements, and latency audits across ${CopyTradingEngine().totalAccountsCount} Brokers.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
                     ],
                   ),
                 ),
@@ -2948,7 +2948,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'All figures are aggregated across all 8 verified Demat accounts. This statement matches the Annual Information Statement (AIS) and Form 26AS format for direct ITR filing.',
+                    'All figures are aggregated across all ${CopyTradingEngine().totalAccountsCount} verified Broker accounts. This statement matches the Annual Information Statement (AIS) and Form 26AS format for direct ITR filing.',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.4),
                   ),
                 ),
@@ -2997,7 +2997,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
         children: [
           const Text('Multi-Broker API Execution Latency & Parallel Fan-Out SLA', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A))),
           const SizedBox(height: 4),
-          Text('Real-time measurements measured from Panchayagnam Dedicated Gateway 103.159.214.88 to broker exchange endpoints.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text('Real-time telemetry measured from Panchayagnam Dedicated Gateway 13.235.14.89 to broker exchange endpoints.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           const SizedBox(height: 16),
           Expanded(
             child: ListView.separated(
@@ -3072,7 +3072,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'id': 'AL-901',
       'title': 'Order Filled: NIFTY 24200 CE',
       'category': 'EXECUTION',
-      'description': '200 Qty filled across 8 Demat accounts at ₹135.50 via sub-12ms parallel dispatch. Master: ₹135.50, Children Avg: ₹135.52 (Slippage: 0.015%).',
+      'description': '200 Qty filled across all 35 connected Broker accounts at ₹135.50 via sub-12ms parallel dispatch. Master: ₹135.50, Children Avg: ₹135.52 (Slippage: 0.015%).',
       'time': 'Just now • 14:32:05 IST',
       'latency': '12ms',
       'icon': Icons.check_circle_rounded,
@@ -3083,7 +3083,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'id': 'AL-902',
       'title': 'TradingView Pine Script Webhook Received',
       'category': 'WEBHOOK',
-      'description': 'Supertrend (10, 2) 15m Long Trigger received from dedicated IP 103.159.214.88. Secret signature verified.',
+      'description': 'Supertrend (10, 2) 15m Long Trigger received from dedicated IP 13.235.14.89. Secret signature verified.',
       'time': '5 min ago • 14:27:00 IST',
       'latency': '4ms',
       'icon': Icons.sensors_rounded,
@@ -3094,7 +3094,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'id': 'AL-903',
       'title': 'Master-Child Copy Replication Synchronized',
       'category': 'COPY_TRADE',
-      'description': 'Leader Dhan (#DHAN-9012) triggered order. 7 child followers replicated in parallel. Total pooled volume ₹2,16,800.',
+      'description': 'Leader Dhan (#DHAN-9012) triggered order. 34 child followers replicated in parallel across 35 Brokers.',
       'time': '12 min ago • 14:20:15 IST',
       'latency': '18ms',
       'icon': Icons.sync_alt_rounded,
@@ -3105,7 +3105,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'id': 'AL-904',
       'title': 'Margin Heartbeat & SEBI Peak Compliance',
       'category': 'MARGIN',
-      'description': 'Margin utilization at 42.5%. Available pooled liquid cash: ₹80,00,000. All 8 Demat accounts verified with zero deficit.',
+      'description': 'Margin utilization at 42.5%. Available pooled liquid cash: ₹3.50 Cr+. All 35 Broker accounts verified with zero deficit.',
       'time': '25 min ago • 14:07:00 IST',
       'latency': '35ms',
       'icon': Icons.account_balance_wallet_rounded,
@@ -3372,10 +3372,10 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Platform Settings saved! Risk safeguards active across all 8 Demats.'),
-                        backgroundColor: Color(0xFF059669),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text('Platform Settings saved! Risk safeguards active across all ${CopyTradingEngine().totalAccountsCount} Brokers.'),
+                        backgroundColor: const Color(0xFF059669),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
@@ -3563,7 +3563,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
           SwitchListTile(
             title: const Text('Asynchronous Parallel Fan-Out (Sub-20ms)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-            subtitle: const Text('Dispatches copy trades across all 8 Demats concurrently using 8 non-blocking worker threads.', style: TextStyle(fontSize: 11.5)),
+            subtitle: Text('Dispatches copy trades across all ${CopyTradingEngine().totalAccountsCount} Brokers concurrently using non-blocking worker threads.', style: const TextStyle(fontSize: 11.5)),
             value: _asyncFanOut,
             activeColor: const Color(0xFF059669),
             onChanged: (v) => setState(() => _asyncFanOut = v),

@@ -139,7 +139,7 @@ class _DashboardTabState extends State<DashboardTab> {
   String _tradeOrderType = 'MARKET';
   String _tradeProductType = 'MIS';
   int _tradeQty = 50;
-  String _tradeBroker = 'All Accounts (8 Demats - Group 1x)';
+  String _tradeBroker = 'ALL_BROKERS';
 
   // ── Balance fetch tracking ────────────────────────────────────────────────
   final Map<int, _PendingTrade> _pendingTrades = {};
@@ -875,9 +875,9 @@ class _DashboardTabState extends State<DashboardTab> {
               context.read<FetchUserDematBloc>().add(LoadUserDematAccounts(pyId!));
             }
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Portfolio refreshed · All 8 Demats synchronized'),
-                duration: Duration(seconds: 1),
+              SnackBar(
+                content: Text('Portfolio refreshed · ${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Brokers synchronized'),
+                duration: const Duration(seconds: 1),
               ),
             );
           },
@@ -1451,7 +1451,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   const SizedBox(height: 10),
                   const Text('No Open Positions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 4),
-                  const Text('Go to the Trade tab or MarketWatch to execute demo orders across your 8 Demats.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+                  const Text('Go to the Trade tab or MarketWatch to execute demo orders across all connected brokers.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
                   const SizedBox(height: 14),
                   ElevatedButton(
                     onPressed: () => setState(() => _selectedPortfolioTab = 'Trade'),
@@ -1704,18 +1704,25 @@ class _DashboardTabState extends State<DashboardTab> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: _tradeBroker,
+                          value: (_tradeBroker == 'ALL_BROKERS' || _activeAccounts.any((a) => '${a['name']} (${a['clientCode']})' == _tradeBroker)) ? _tradeBroker : 'ALL_BROKERS',
                           isExpanded: true,
-                          items: const [
-                            DropdownMenuItem(value: 'All Accounts (8 Demats - Group 1x)', child: Text('All Accounts (8 Demats - Broadcast Multiplier 1x)')),
-                            DropdownMenuItem(value: 'Angel One (ANGEL-28941)', child: Text('Angel One (ANGEL-28941)')),
-                            DropdownMenuItem(value: 'Zerodha Kite (ZERODHA-88219)', child: Text('Zerodha Kite (ZERODHA-88219)')),
-                            DropdownMenuItem(value: 'DhanHQ (DHAN-44912)', child: Text('DhanHQ (DHAN-44912)')),
-                            DropdownMenuItem(value: 'Fyers (FYERS-77312)', child: Text('Fyers (FYERS-77312)')),
-                            DropdownMenuItem(value: 'Alice Blue (ALICE-10293)', child: Text('Alice Blue (ALICE-10293)')),
-                            DropdownMenuItem(value: 'Upstox Pro (UPSTOX-55109)', child: Text('Upstox Pro (UPSTOX-55109)')),
-                            DropdownMenuItem(value: 'Kotak Neo (KOTAK-99214)', child: Text('Kotak Neo (KOTAK-99214)')),
-                            DropdownMenuItem(value: '5Paisa (PAISA-66321)', child: Text('5Paisa (PAISA-66321)')),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'ALL_BROKERS',
+                              child: Text('All Connected (${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Brokers - Broadcast 1x)'),
+                            ),
+                            ...(_activeAccounts.isNotEmpty
+                                ? _activeAccounts.map((a) {
+                                    final lbl = '${a['name']} (${a['clientCode']})';
+                                    return DropdownMenuItem(value: lbl, child: Text(lbl));
+                                  })
+                                : const [
+                                    DropdownMenuItem(value: 'Angel One (ANGEL-28941)', child: Text('Angel One (ANGEL-28941)')),
+                                    DropdownMenuItem(value: 'Zerodha Kite (ZERODHA-88219)', child: Text('Zerodha Kite (ZERODHA-88219)')),
+                                    DropdownMenuItem(value: 'DhanHQ (DHAN-44912)', child: Text('DhanHQ (DHAN-44912)')),
+                                    DropdownMenuItem(value: 'Fyers (FYERS-77312)', child: Text('Fyers (FYERS-77312)')),
+                                    DropdownMenuItem(value: 'Upstox Pro (UPSTOX-55109)', child: Text('Upstox Pro (UPSTOX-55109)')),
+                                  ]),
                           ],
                           onChanged: (v) {
                             if (v != null) setState(() => _tradeBroker = v);
@@ -1932,7 +1939,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                 ],
               ),
-              const Text('Instant multi-broker demo trading · All 8 Demats synchronized', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+              Text('Instant multi-broker demo trading · ${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Brokers synchronized', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
             ],
           ),
           const SizedBox(height: 14),
@@ -2043,7 +2050,7 @@ class _DashboardTabState extends State<DashboardTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Pooled Margin Breakdown across 8 Demats (Total: ₹ ${_formatINRDouble(_pooledMargin)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text('Pooled Margin Breakdown across ${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Brokers (Total: ₹ ${_formatINRDouble(_pooledMargin)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 2),
                   Text('Available: ₹ ${_formatINRDouble(_pooledMargin - _usedMargin)} · Utilized: ₹ ${_formatINRDouble(_usedMargin)}', style: const TextStyle(color: Color(0xFF047857), fontWeight: FontWeight.bold, fontSize: 12)),
                 ],
@@ -2089,16 +2096,28 @@ class _DashboardTabState extends State<DashboardTab> {
                 DataColumn(label: Text('AVAILABLE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                 DataColumn(label: Text('STATUS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
               ],
-              rows: [
-                DataRow(cells: [const DataCell(Text('Angel One (ANGEL-28941)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('Zerodha Kite (ZERODHA-88219)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('DhanHQ (DHAN-44912)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('Fyers (FYERS-77312)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('Alice Blue (ALICE-10293)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('Upstox Pro (UPSTOX-55109)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('Kotak Neo (KOTAK-99214)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-                DataRow(cells: [const DataCell(Text('5Paisa (PAISA-66321)')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('₹ 0.00')), DataCell(Text('₹ ${_formatINRDouble(_pooledMargin / 8)}')), const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold)))]),
-              ],
+              rows: (_activeAccounts.isNotEmpty
+                      ? _activeAccounts.take(12).toList()
+                      : [
+                          {'name': 'Angel One', 'clientCode': 'ANGEL-28941', 'availableBalance': _pooledMargin / 8},
+                          {'name': 'Zerodha Kite', 'clientCode': 'ZERODHA-88219', 'availableBalance': _pooledMargin / 8},
+                          {'name': 'DhanHQ', 'clientCode': 'DHAN-44912', 'availableBalance': _pooledMargin / 8},
+                          {'name': 'Fyers', 'clientCode': 'FYERS-77312', 'availableBalance': _pooledMargin / 8},
+                          {'name': 'Upstox Pro', 'clientCode': 'UPSTOX-55109', 'availableBalance': _pooledMargin / 8},
+                        ])
+                  .map((acc) {
+                    final divisor = _activeAccounts.isEmpty ? 5 : _activeAccounts.length;
+                    final alloc = (acc['availableBalance'] as num?)?.toDouble() ?? (_pooledMargin / divisor);
+                    final label = '${acc['name']} (${acc['clientCode']})';
+                    return DataRow(cells: [
+                      DataCell(Text(label)),
+                      DataCell(Text('₹ ${_formatINRDouble(alloc)}')),
+                      const DataCell(Text('₹ 0.00')),
+                      DataCell(Text('₹ ${_formatINRDouble(alloc)}')),
+                      const DataCell(Text('ACTIVE', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold))),
+                    ]);
+                  })
+                  .toList(),
             ),
           ),
         ],
@@ -2107,11 +2126,12 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildGTTTableView() {
+    final cnt = _activeAccounts.isNotEmpty ? _activeAccounts.length : 35;
     final gttOrders = [
-      {'symbol': 'RELIANCE EQ', 'condition': '<=', 'triggerPrice': 2900.00, 'ltp': 2949.20, 'qty': '50 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
-      {'symbol': 'NIFTY 24000 PE', 'condition': '>=', 'triggerPrice': 160.00, 'ltp': 144.50, 'qty': '100 Qty (8 Demats)', 'action': 'SELL', 'status': 'ACTIVE', 'validity': 'Weekly Expiry'},
-      {'symbol': 'HDFCBANK EQ', 'condition': '<=', 'triggerPrice': 1610.00, 'ltp': 1652.10, 'qty': '100 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
-      {'symbol': 'INFY EQ', 'condition': '<=', 'triggerPrice': 1740.00, 'ltp': 1785.40, 'qty': '100 Qty (8 Demats)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+      {'symbol': 'RELIANCE EQ', 'condition': '<=', 'triggerPrice': 2900.00, 'ltp': 2949.20, 'qty': '50 Qty ($cnt Brokers)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+      {'symbol': 'NIFTY 24000 PE', 'condition': '>=', 'triggerPrice': 160.00, 'ltp': 144.50, 'qty': '100 Qty ($cnt Brokers)', 'action': 'SELL', 'status': 'ACTIVE', 'validity': 'Weekly Expiry'},
+      {'symbol': 'HDFCBANK EQ', 'condition': '<=', 'triggerPrice': 1610.00, 'ltp': 1652.10, 'qty': '100 Qty ($cnt Brokers)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
+      {'symbol': 'INFY EQ', 'condition': '<=', 'triggerPrice': 1740.00, 'ltp': 1785.40, 'qty': '100 Qty ($cnt Brokers)', 'action': 'BUY', 'status': 'ACTIVE', 'validity': '1 Year GTT'},
     ];
 
     return Container(
@@ -2135,13 +2155,13 @@ class _DashboardTabState extends State<DashboardTab> {
                 children: [
                   const Text('Good-Till-Triggered (GTT) Orders', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E293B))),
                   const SizedBox(height: 2),
-                  Text('4 active conditional orders monitoring NSE ticks 24/7 across all 8 Demats.', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  Text('4 active conditional orders monitoring NSE ticks 24/7 across all $cnt Brokers.', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                 ],
               ),
               ElevatedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('GTT Order Creator: Trigger set on Parent Demat will automatically copy to 7 child accounts.'), backgroundColor: Color(0xFF059669)),
+                    SnackBar(content: Text('GTT Order Creator: Trigger set on Master Demat copies to all $cnt connected brokers.'), backgroundColor: const Color(0xFF059669)),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -2347,7 +2367,7 @@ class _DashboardTabState extends State<DashboardTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                                const Text('Delivery (CNC) • 8 Demats', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                                Text('Delivery (CNC) • ${_activeAccounts.isNotEmpty ? _activeAccounts.length : 35} Brokers', style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
                               ],
                             ),
                           ),
@@ -2376,10 +2396,11 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildNotificationsStreamView() {
+    final cnt = _activeAccounts.isNotEmpty ? _activeAccounts.length : 35;
     final streamItems = [
-      {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across 8 Demats at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
+      {'title': 'Order Filled: NIFTY 24200 CE', 'sub': '200 Qty filled across $cnt Brokers at ₹135.50 in 12ms', 'time': 'Just now', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Webhook Received: TradingView Alert', 'sub': 'Supertrend 15m Long trigger received from dedicated IP', 'time': '5 min ago', 'icon': Icons.sensors_rounded, 'color': const Color(0xFF059669)},
-      {'title': 'Margin Heartbeat Verified', 'sub': 'All 8 Demat account sessions alive with ₹80L pooled liquid margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF059669)},
+      {'title': 'Margin Heartbeat Verified', 'sub': 'All $cnt connected broker sessions alive with ₹${_formatINRDouble(_pooledMargin)} pooled margin', 'time': '12 min ago', 'icon': Icons.shield_rounded, 'color': const Color(0xFF059669)},
       {'title': 'Risk Circuit Normal', 'sub': 'M2M drawdowns within strict 2% safety parameter across all children', 'time': '25 min ago', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF059669)},
     ];
 

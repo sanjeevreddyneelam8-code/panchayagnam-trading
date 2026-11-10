@@ -67,6 +67,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   void initState() {
     super.initState();
     _side = widget.side.toUpperCase();
+    _selectedExchange = widget.category.toUpperCase() == 'COMMODITY' ? 'MCX' : 'NSE';
     _quantity = widget.lotSize > 1 ? widget.lotSize : 25;
     _limitPrice = widget.ltp;
     _slTriggerPrice = _side == 'BUY' ? (_limitPrice * 0.90) : (_limitPrice * 1.10);
@@ -241,12 +242,18 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   ),
                   const SizedBox(height: 10),
 
-                  // Exchange Selector Radios (NSE vs BSE)
+                  // Exchange Selector Radios (MCX/NSE for Commodity, NSE/BSE for Equities & F&O)
                   Row(
                     children: [
-                      _buildExchangeRadio('NSE', '₹${widget.ltp.toStringAsFixed(2)}', '+2.09%'),
-                      const SizedBox(width: 14),
-                      _buildExchangeRadio('BSE', '₹${(widget.ltp * 0.996).toStringAsFixed(2)}', '+1.98%'),
+                      if (widget.category.toUpperCase() == 'COMMODITY') ...[
+                        _buildExchangeRadio('MCX', '₹${widget.ltp.toStringAsFixed(2)}', '+1.42%'),
+                        const SizedBox(width: 14),
+                        _buildExchangeRadio('NSE', '₹${(widget.ltp * 0.998).toStringAsFixed(2)}', '+1.38%'),
+                      ] else ...[
+                        _buildExchangeRadio('NSE', '₹${widget.ltp.toStringAsFixed(2)}', '+2.09%'),
+                        const SizedBox(width: 14),
+                        _buildExchangeRadio('BSE', '₹${(widget.ltp * 0.996).toStringAsFixed(2)}', '+1.98%'),
+                      ],
                     ],
                   ),
                 ],
@@ -455,82 +462,96 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             const SizedBox(height: 12),
 
             // ── Synchronized Execution Multi-Broker Banner ───────────────────
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 18),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.hub_rounded, size: 14, color: Color(0xFF38BDF8)),
-                  SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Panchayagnam Synchronized: Replicating to 8 Demats (Sub-15ms)',
-                      style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  Text('8/8 Ready', style: TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Bottom Summary & CTA Button ──────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            Builder(
+              builder: (context) {
+                final brokerCount = CopyTradingEngine().totalAccountsCount;
+                final activeCount = CopyTradingEngine().childAccounts.where((a) => a.isActive).length;
+                final readyCount = activeCount > 0 ? activeCount : brokerCount;
+                final totalPooled = CopyTradingEngine().childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
+                final pooledCrores = totalPooled > 0 ? (totalPooled / 10000000).toStringAsFixed(2) : '3.50';
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 18),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
                         children: [
-                          const Text('Margin Required (Approx)', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          const SizedBox(height: 2),
-                          Text('₹${_marginRequired.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                          const Icon(Icons.hub_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Panchayagnam Synchronized: Replicating to $brokerCount Brokers (Sub-15ms)',
+                              style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Text('$readyCount/$brokerCount Ready', style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Bottom Summary & CTA Button ──────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                      ),
+                      child: Column(
                         children: [
-                          Text('Available Pooled Margin', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          SizedBox(height: 2),
-                          Text('₹80,00,000.00', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Margin Required (Approx)', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                  const SizedBox(height: 2),
+                                  Text('₹${_marginRequired.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text('Available Pooled Margin', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                  const SizedBox(height: 2),
+                                  Text('₹$pooledCrores Cr ($brokerCount Brokers)', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Place Buy / Sell Order CTA
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _executeOrder,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: themeColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 2,
+                              ),
+                              child: Text(
+                                'PLACE $_side ORDER ($readyCount BROKERS)',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Place Buy / Sell Order CTA
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _executeOrder,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: themeColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'PLACE $_side ORDER (8 DEMATS)',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
-                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ],
         ),

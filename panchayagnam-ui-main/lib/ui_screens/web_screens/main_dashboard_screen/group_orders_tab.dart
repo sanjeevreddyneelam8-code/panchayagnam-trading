@@ -978,7 +978,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Test your own multi-broker mirror ideas with zero simulated slippage, costs, and fills across 8 Demats.',
+                      'Test your own multi-broker mirror ideas with zero simulated slippage, costs, and fills across all connected brokers.',
                       style: TextStyle(fontSize: 11.5, color: Color(0xFF059669)),
                     ),
                   ],
@@ -1527,7 +1527,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                 engine.toggleGlobalCopyTrading(!isGlobalActive);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(isGlobalActive ? 'Copy Trading Engine PAUSED' : 'Copy Trading Engine ACTIVE across 8 Demats'),
+                                    content: Text(isGlobalActive ? 'Copy Trading Engine PAUSED' : 'Copy Trading Engine ACTIVE across ${CopyTradingEngine().totalAccountsCount} Brokers'),
                                     backgroundColor: isGlobalActive ? const Color(0xFFDC2626) : const Color(0xFF059669),
                                     duration: const Duration(seconds: 2),
                                   ),
@@ -3108,7 +3108,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 children: [
                   const Text('TradingView Webhook Alert Bridge', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
                   const SizedBox(height: 2),
-                  Text('Trigger instant sub-15ms execution across all 8 Demats directly from Pine Script alerts.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  Text('Trigger instant sub-15ms execution across ${CopyTradingEngine().totalAccountsCount} connected brokers directly from Pine Script alerts.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 ],
               ),
               Container(
@@ -3330,7 +3330,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               OutlinedButton(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Risk Guard Settings: Daily Drawdown limit set to ₹5,000 across all 8 Demats.')),
+                    SnackBar(content: Text('Risk Guard Settings: Daily Drawdown limit set to ₹5,000 across all ${CopyTradingEngine().totalAccountsCount} Brokers.')),
                   );
                 },
                 style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF38BDF8), side: const BorderSide(color: Color(0xFF38BDF8))),
@@ -3440,13 +3440,13 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Now copying ${t['name']} across all 8 Demats! Proportional allocation active.'),
+                              content: Text('Now copying ${t['name']} across all ${CopyTradingEngine().totalAccountsCount} Brokers! Proportional allocation active.'),
                               backgroundColor: const Color(0xFF059669),
                             ),
                           );
                         },
                         icon: const Icon(Icons.person_add_alt_1_rounded, size: 14),
-                        label: const Text('Copy to 8 Demats'),
+                        label: Text('Copy (${CopyTradingEngine().totalAccountsCount} Brokers)'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF059669),
                           foregroundColor: Colors.white,
@@ -6537,11 +6537,11 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.hub_rounded, size: 16, color: Color(0xFF6366F1)),
-                              SizedBox(width: 6),
-                              Text('Multi-Broker Live Allocation (8 Demats)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                              const Icon(Icons.hub_rounded, size: 16, color: Color(0xFF6366F1)),
+                              const SizedBox(width: 6),
+                              Text('Multi-Broker Live Allocation (${_targetBrokers.length} Brokers)', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
                             ],
                           ),
                           Container(
@@ -6560,7 +6560,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildMetricTile('Total Shares', '$totalQty Shares', '($qtyPerAccount × 8 Demats)'),
+                            child: _buildMetricTile('Total Shares', '$totalQty Shares', '($qtyPerAccount × ${_targetBrokers.length} Brokers)'),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -6649,7 +6649,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           ),
                           const SizedBox(width: 10),
-                          const Text('Broadcasting Signal to 8 Demats...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          Text('Broadcasting Signal to ${_targetBrokers.length} Brokers...', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                         ],
                       )
                     : Row(
@@ -6658,7 +6658,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                           const Icon(Icons.bolt_rounded, size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Execute $totalQty Shares ($_side across 8 Demats)',
+                            'Execute $totalQty Shares ($_side across ${_targetBrokers.length} Brokers)',
                             style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
                           ),
                         ],
@@ -6725,7 +6725,7 @@ class _ModernCopyOrderDialogState extends State<_ModernCopyOrderDialog> {
                     const Text('Multi-Broker Copy Order Filled!', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 3),
                     Text(
-                      'Replicated ${receipt['totalQty']} shares across 8 Demat accounts in ${receipt['avgLatency']} avg latency.',
+                      'Replicated ${receipt['totalQty']} shares across ${_targetBrokers.length} Broker accounts in ${receipt['avgLatency']} avg latency.',
                       style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
                     ),
                   ],
@@ -7159,7 +7159,7 @@ class _GroupTable extends StatelessWidget {
                       ),
                     )),
                     _td(Text(
-                      g['description'] ?? 'Multi-broker mirror pool replicating Dhan Pro trades across 8 Demats.',
+                      g['description'] ?? 'Multi-broker mirror pool replicating Dhan Pro trades across connected brokers.',
                       style: const TextStyle(fontSize: 11.5, color: Color(0xFF4B5563)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -8140,8 +8140,8 @@ class _ModernGroupDetailDialog extends StatelessWidget {
                     Expanded(
                       child: _buildKpiTile(
                         'Pooled Margin',
-                        '₹80,00,000.00',
-                        '8 Demats Synced',
+                        '₹3.50 Cr+',
+                        '${CopyTradingEngine().totalAccountsCount} Brokers Synced',
                         const Color(0xFF059669),
                       ),
                     ),

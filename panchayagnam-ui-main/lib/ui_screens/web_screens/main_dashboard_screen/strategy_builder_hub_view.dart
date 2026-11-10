@@ -74,9 +74,9 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
               _buildParamRow('Instrument', 'BANKNIFTY Weekly Derivatives (ATM CE & PE)'),
               _buildParamRow('Trigger Condition', '09:20:00 AM mechanical entry (sub-15ms)'),
               _buildParamRow('Risk Management', '25% SL per leg (SL-M orders placed at exchange)'),
-              _buildParamRow('Exit Window', '03:15:00 PM auto square-off across 8 Demats'),
+              _buildParamRow('Exit Window', '03:15:00 PM auto square-off (All Brokers)'),
               _buildParamRow('Sharpe Ratio', '2.68 · Win Rate: 74.5% · Max DD: -4.2%'),
-              _buildParamRow('Demat Replication', 'ALL 8 Demats (Sub-15ms Synchronized)'),
+              _buildParamRow('Demat Replication', '${CopyTradingEngine().totalAccountsCount} Brokers (Sub-15ms Synchronized)'),
             ],
           ),
         ),
@@ -99,7 +99,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
               }
             },
             icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-            label: const Text('Deploy to All 8 Demats (Sub-15ms)'),
+            label: Text('Deploy to All ${CopyTradingEngine().totalAccountsCount} Brokers (Sub-15ms)'),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
           ),
         ],
@@ -147,7 +147,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
                       children: [
                         Text('Build New Algorithmic Strategy', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textColor)),
                         const SizedBox(height: 4),
-                        Text('Create, backtest, and deploy high-frequency quantitative strategies across all 8 Demats.', style: TextStyle(fontSize: 13, color: subTextColor)),
+                        Text('Create, backtest, and deploy high-frequency quantitative strategies across ${CopyTradingEngine().totalAccountsCount} connected brokers.', style: TextStyle(fontSize: 13, color: subTextColor)),
                       ],
                     ),
                     Container(
@@ -463,15 +463,16 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
 
           ElevatedButton.icon(
             onPressed: () {
+              final cnt = CopyTradingEngine().totalAccountsCount;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Visual Strategy Saved & Deployed to all 8 Demats! Live engine monitoring ticks.'),
-                  backgroundColor: Color(0xFF059669),
+                SnackBar(
+                  content: Text('Visual Strategy Saved & Deployed across all $cnt Brokers! Live engine monitoring ticks.'),
+                  backgroundColor: const Color(0xFF059669),
                 ),
               );
             },
             icon: const Icon(Icons.save_rounded, size: 16),
-            label: const Text('Save & Deploy Visual Strategy (8 Demats)'),
+            label: Text('Save & Deploy Strategy (${CopyTradingEngine().totalAccountsCount} Brokers)'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
@@ -531,12 +532,13 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
                   Text('CAGR: ${t['cagr']} | Max DD: ${t['dd']}', style: TextStyle(fontSize: 11, color: subTextColor, fontWeight: FontWeight.bold)),
                   ElevatedButton(
                     onPressed: () {
+                      final cnt = CopyTradingEngine().totalAccountsCount;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Cloned "${t['title']}". Deployed to 8 Demats!'), backgroundColor: const Color(0xFF059669)),
+                        SnackBar(content: Text('Cloned "${t['title']}". Deployed across $cnt Brokers!'), backgroundColor: const Color(0xFF059669)),
                       );
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6)),
-                    child: const Text('Deploy (8 Demats)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text('Deploy (${CopyTradingEngine().totalAccountsCount} Brokers)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

@@ -89,6 +89,7 @@ class MainDashboard extends StatefulWidget {
 }
 
 class _MainDashboardState extends State<MainDashboard> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   _NavSelection _currentSelection = const _NavSelection(0, 0);
   bool _sidebarCollapsed = false;
   bool _roleLoaded = false;
@@ -470,6 +471,15 @@ class _MainDashboardState extends State<MainDashboard> {
       ),
       child: Row(
         children: [
+          if (MediaQuery.of(context).size.width < 820) ...[
+            IconButton(
+              icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+              tooltip: 'Open Navigation Menu',
+              padding: const EdgeInsets.only(right: 8),
+              constraints: const BoxConstraints(),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+          ],
           // Left: Brand Logo & AUTO PRO Badge
           MouseRegion(
             cursor: SystemMouseCursors.click,
@@ -1179,30 +1189,31 @@ class _MainDashboardState extends State<MainDashboard> {
                       ),
                     ),
 
-                    // Menu Item 4: Demo Mode Toggle
-                    PopupMenuItem(
-                      value: 'toggle_ip',
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
-                            child: const Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF818CF8)),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Manager Demo Mode', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                                Text(StaticIpService.isUnlocked ? 'Switch to Locked/Unpaid' : 'Unlock IP via QR Payment', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
-                              ],
+                    // Menu Item 4: Manager Demo Mode (Super Admin only)
+                    if (html.window.sessionStorage['user_role'] == 'SUPER_ADMIN')
+                      PopupMenuItem(
+                        value: 'toggle_ip',
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.18), borderRadius: BorderRadius.circular(6)),
+                              child: const Icon(Icons.swap_horiz_rounded, size: 16, color: Color(0xFF818CF8)),
                             ),
-                          ),
-                          const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF64748B)),
-                        ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Manager Demo Mode', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                  Text(StaticIpService.isUnlocked ? 'Switch to Locked/Unpaid' : 'Unlock IP via QR Payment', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF64748B)),
+                          ],
+                        ),
                       ),
-                    ),
 
                     const PopupMenuDivider(height: 1),
 
@@ -1622,20 +1633,20 @@ class _MainDashboardState extends State<MainDashboard> {
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
                               ),
-                              child: const Column(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
+                                  const Row(
                                     children: [
                                       Icon(Icons.hub_rounded, size: 16, color: Color(0xFF2563EB)),
                                       SizedBox(width: 4),
                                       Text('CONNECTED DEMATS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
-                                  Text('8 Demats', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-                                  SizedBox(height: 4),
-                                  Text('Avg. ₹12.50 / account / day', style: TextStyle(fontSize: 10.5, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 8),
+                                  Text('${CopyTradingEngine().totalAccountsCount} Brokers', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  const SizedBox(height: 4),
+                                  const Text('Avg. ₹12.50 / account / day', style: TextStyle(fontSize: 10.5, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),
@@ -1665,7 +1676,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                     const SizedBox(height: 4),
                                     const Text('PANCHAYAGNAM AUTO PRO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2563EB))),
                                     const SizedBox(height: 2),
-                                    Text('Multi-Broker Institutional · 8 Connected Accounts · Dedicated Static IP Included', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                    Text('Multi-Broker Institutional · ${CopyTradingEngine().totalAccountsCount} Connected Brokers · Dedicated Static IP Included', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
                                   ],
                                 ),
                                 Container(
@@ -1843,7 +1854,7 @@ class _MainDashboardState extends State<MainDashboard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildProfileDetailRow('Role', 'Institutional Pro Trader (8 Demats Connected)'),
+              _buildProfileDetailRow('Role', 'Institutional Pro Trader (${CopyTradingEngine().totalAccountsCount} Brokers Connected)'),
               const Divider(height: 16),
               _buildProfileDetailRow('Platform ID', userIdStr),
               const Divider(height: 16),
@@ -1853,7 +1864,7 @@ class _MainDashboardState extends State<MainDashboard> {
               const Divider(height: 16),
               _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '13.235.14.89 (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
               const Divider(height: 16),
-              _buildProfileDetailRow('Multi-Broker Status', '8 Demats Whitelisted & Connected'),
+              _buildProfileDetailRow('Multi-Broker Status', '${CopyTradingEngine().totalAccountsCount} Brokers Whitelisted & Connected'),
             ],
           ),
         ),
@@ -2091,7 +2102,7 @@ class _MainDashboardState extends State<MainDashboard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Integrate Python scripts, TradingView alerts, or REST API hooks into your 8 Demats with sub-15ms replication.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+              const Text('Integrate Python scripts, TradingView alerts, or REST API hooks across all connected brokers with sub-15ms replication.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -2106,7 +2117,7 @@ class _MainDashboardState extends State<MainDashboard> {
                     SizedBox(height: 4),
                     Text('pip install autotrader-sdk', style: TextStyle(color: Color(0xFF34D399), fontSize: 12, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                     SizedBox(height: 10),
-                    Text('from autotrader import AutoTrader\nclient = AutoTrader(token="py_live_9999999999")\n# Broadcast order across 8 Demats\nclient.place_group_order(symbol="NIFTY", qty=50)', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, fontFamily: 'monospace')),
+                    Text('from autotrader import AutoTrader\nclient = AutoTrader(token="py_live_9999999999")\n# Broadcast order across all connected brokers\nclient.place_group_order(symbol="NIFTY", qty=50)', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, fontFamily: 'monospace')),
                   ],
                 ),
               ),
@@ -2826,7 +2837,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Broker Token Auto-Refresh Daemon', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF0F172A))),
-                        Text('ALL 8 DEMATS SYNCED 🟢', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF059669))),
+                        Text('ALL 35+ BROKERS SYNCED 🟢', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF059669))),
                       ],
                     ),
                   ],
@@ -3076,7 +3087,7 @@ class _MainDashboardState extends State<MainDashboard> {
                         children: [
                           Text('Current Master Leader: Dhan Pro Master (Client: 1100345678)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF065F46))),
                           SizedBox(height: 2),
-                          Text('Latency: 11ms • Pooled Followers: 7 Child Demats • Status: ACTIVE LEADER', style: TextStyle(fontSize: 11.5, color: Color(0xFF2563EB))),
+                          Text('Latency: 11ms • Pooled Followers: 34 Active Child Brokers • Status: ACTIVE LEADER', style: TextStyle(fontSize: 11.5, color: Color(0xFF2563EB))),
                         ],
                       ),
                     ),
@@ -3089,7 +3100,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('All manual orders placed in MarketWatch, Charts, Option Chain or incoming webhooks on this master replicate automatically across all 7 child accounts according to their individual multipliers.', style: TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
+              Text('All manual orders placed in MarketWatch, Charts, Option Chain, Commodity or incoming webhooks replicate across all ${CopyTradingEngine().totalAccountsCount - 1} connected child brokers automatically according to their individual multipliers.', style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
               const SizedBox(height: 20),
               Align(
                 alignment: Alignment.centerRight,
@@ -3278,7 +3289,7 @@ class _MainDashboardState extends State<MainDashboard> {
                   const SizedBox(width: 8),
                   const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
                   const SizedBox(width: 4),
-                  const Text('8 Demats Synchronized', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                  Text('${CopyTradingEngine().totalAccountsCount} Brokers Synchronized', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -3610,7 +3621,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                   );
                                 },
                                 icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 16, color: Colors.white),
-                                label: Text('Buy $symbol (8 Demats)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                label: Text('Buy $symbol (${CopyTradingEngine().totalAccountsCount} Brokers)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF059669),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3632,7 +3643,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                   );
                                 },
                                 icon: const Icon(Icons.sell_rounded, size: 16, color: Colors.white),
-                                label: Text('Sell $symbol (8 Demats)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                label: Text('Sell $symbol (${CopyTradingEngine().totalAccountsCount} Brokers)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFDC2626),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3708,9 +3719,10 @@ class _MainDashboardState extends State<MainDashboard> {
       );
     }
 
-    final double sidebarWidth = _sidebarCollapsed
-        ? _kCollapsedWidth
-        : _kExpandedWidth;
+    final bool isMobile = MediaQuery.of(context).size.width < 820;
+    final double sidebarWidth = isMobile
+        ? 0.0
+        : (_sidebarCollapsed ? _kCollapsedWidth : _kExpandedWidth);
 
     final bgColor = _isDarkMode ? const Color(0xFF081214) : AppColors.scaffold;
 
@@ -3741,58 +3753,62 @@ class _MainDashboardState extends State<MainDashboard> {
               ),
             ),
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: bgColor,
+        drawer: isMobile ? _buildMobileDrawer(context) : null,
         body: Stack(
           children: [
             Row(
               children: [
-                _AnimatedSidebar(
-                collapsed: _sidebarCollapsed,
-                navItems: _navItems,
-                currentSelection: _currentSelection,
-                openGroupFlyoutIndex: _openGroupFlyoutIndex,
-                initials: _initials,
-                userRole: currentUserRole,
-                onGroupHeaderTap: (groupIndex) {
-                  setState(() {
-                    _openGroupFlyoutIndex =
-                        (_openGroupFlyoutIndex == groupIndex) ? null : groupIndex;
-                    _currentSelection = _NavSelection(
-                      groupIndex,
-                      _currentSelection.topIndex == groupIndex
-                          ? _currentSelection.subIndex
-                          : 0,
-                    );
-                    _bodyKey = UniqueKey();
-                  });
-                },
-                onItemTap: (sel) => setState(() {
-                  _currentSelection = sel;
-                  _openGroupFlyoutIndex = null;
-                  _bodyKey =
-                      UniqueKey(); // ← new key on every tap → full remount
-                }),
-                onLogout: _handleLogout,
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildTopHeader(),
-                    _buildMarketTickerStrip(),
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: _bodyKey, // ← applied here
-                        child: _buildBody(),
+                if (!isMobile)
+                  _AnimatedSidebar(
+                    collapsed: _sidebarCollapsed,
+                    navItems: _navItems,
+                    currentSelection: _currentSelection,
+                    openGroupFlyoutIndex: _openGroupFlyoutIndex,
+                    initials: _initials,
+                    userRole: currentUserRole,
+                    onGroupHeaderTap: (groupIndex) {
+                      setState(() {
+                        _openGroupFlyoutIndex =
+                            (_openGroupFlyoutIndex == groupIndex) ? null : groupIndex;
+                        _currentSelection = _NavSelection(
+                          groupIndex,
+                          _currentSelection.topIndex == groupIndex
+                              ? _currentSelection.subIndex
+                              : 0,
+                        );
+                        _bodyKey = UniqueKey();
+                      });
+                    },
+                    onItemTap: (sel) => setState(() {
+                      _currentSelection = sel;
+                      _openGroupFlyoutIndex = null;
+                      _bodyKey =
+                          UniqueKey(); // ← new key on every tap → full remount
+                    }),
+                    onLogout: _handleLogout,
+                  ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildTopHeader(),
+                      _buildMarketTickerStrip(),
+                      Expanded(
+                        child: KeyedSubtree(
+                          key: _bodyKey, // ← applied here
+                          child: _buildBody(),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          // Floating side flyout menu that opens ON THE SIDE (not downward)
-          if (_openGroupFlyoutIndex != null &&
+          // Floating side flyout menu that opens ON THE SIDE (desktop only)
+          if (!isMobile &&
+              _openGroupFlyoutIndex != null &&
               _openGroupFlyoutIndex! < _navItems.length &&
               _navItems[_openGroupFlyoutIndex!].children.isNotEmpty) ...[
             // Modal dismiss barrier when clicking anywhere outside
@@ -3825,20 +3841,21 @@ class _MainDashboardState extends State<MainDashboard> {
             ),
           ],
 
-          AnimatedPositioned(
-            duration: _kAnimDuration,
-            curve: _kAnimCurve,
-            left: sidebarWidth - 12,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: _ToggleButton(
-                collapsed: _sidebarCollapsed,
-                onTap: () =>
-                    setState(() => _sidebarCollapsed = !_sidebarCollapsed),
+          if (!isMobile)
+            AnimatedPositioned(
+              duration: _kAnimDuration,
+              curve: _kAnimCurve,
+              left: sidebarWidth - 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _ToggleButton(
+                  collapsed: _sidebarCollapsed,
+                  onTap: () =>
+                      setState(() => _sidebarCollapsed = !_sidebarCollapsed),
+                ),
               ),
             ),
-          ),
           Positioned(
             bottom: 24,
             right: 24,
@@ -3849,6 +3866,105 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
     ),
+    );
+  }
+
+  Widget _buildMobileDrawer(BuildContext context) {
+    final items = _navItems;
+    return Drawer(
+      backgroundColor: _kGradientTop,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFF063B32))),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: const Color(0xFF10B981), borderRadius: BorderRadius.circular(7)),
+                    child: const Icon(Icons.trending_up, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text('Panchayagnam', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (ctx, groupIdx) {
+                  final item = items[groupIdx];
+                  final isSelectedGroup = _currentSelection.topIndex == groupIdx;
+                  if (item.children.isEmpty) {
+                    return ListTile(
+                      leading: Icon(item.icon, color: isSelectedGroup ? const Color(0xFF10B981) : Colors.white70, size: 20),
+                      title: Text(item.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        setState(() {
+                          _currentSelection = _NavSelection(groupIdx, 0);
+                          _bodyKey = UniqueKey();
+                        });
+                      },
+                    );
+                  }
+                  return ExpansionTile(
+                    initiallyExpanded: isSelectedGroup,
+                    iconColor: const Color(0xFF10B981),
+                    collapsedIconColor: Colors.white54,
+                    leading: Icon(item.icon, color: isSelectedGroup ? const Color(0xFF10B981) : Colors.white70, size: 20),
+                    title: Text(item.label, style: TextStyle(color: isSelectedGroup ? const Color(0xFF34D399) : Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    children: List.generate(item.children.length, (subIdx) {
+                      final sub = item.children[subIdx];
+                      final isSubSel = isSelectedGroup && _currentSelection.subIndex == subIdx;
+                      return ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.only(left: 48, right: 16),
+                        leading: Icon(sub.icon, color: isSubSel ? const Color(0xFF10B981) : Colors.white60, size: 17),
+                        title: Text(
+                          sub.label,
+                          style: TextStyle(
+                            color: isSubSel ? const Color(0xFF34D399) : Colors.white70,
+                            fontWeight: isSubSel ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          setState(() {
+                            _currentSelection = _NavSelection(groupIdx, subIdx);
+                            _openGroupFlyoutIndex = null;
+                            _bodyKey = UniqueKey();
+                          });
+                        },
+                      );
+                    }),
+                  );
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: Color(0xFFF87171)),
+              title: const Text('Logout', style: TextStyle(color: Color(0xFFF87171), fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.of(context).pop();
+                _handleLogout();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

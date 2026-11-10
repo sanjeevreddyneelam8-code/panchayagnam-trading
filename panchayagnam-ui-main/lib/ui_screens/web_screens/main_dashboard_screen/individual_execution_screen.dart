@@ -1438,20 +1438,6 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                   color: active ? color : _inkLight,
                 ),
               ),
-              if (b == _Broker.goodWill) ...[
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: const Text(
-                    'Coming Soon',
-                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -1976,24 +1962,7 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
             ),
           const Spacer(),
           if (_ltpReady) ...[
-            if (_activeBroker == _Broker.goodWill)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFF59E0B)),
-                ),
-                child: const Text(
-                  'API Integration Pending — Coming Soon',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFB45309),
-                  ),
-                ),
-              )
-            else ...[
+            ...[
               _miniTradeBtn(
                 'BUY',
                 _gainText,

@@ -195,7 +195,7 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Everything you need to master 8-Demat Copy Trading, Automated Algo Strategies & Capital Safeguards',
+                  'Everything you need to master 35+ Broker Copy Trading, MCX Commodities, Algos & Capital Safeguards',
                   style: TextStyle(color: textSub, fontSize: 12),
                 ),
               ],
@@ -242,7 +242,7 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Instead of placing separate orders on 8 individual broker apps, Panchayagnam connects your entire portfolio into a single ultra-fast command center with automatic risk parity and sub-15ms execution.',
+                      'Instead of placing separate orders across dozens of individual broker apps, Panchayagnam connects your 35+ broker demats into one ultra-fast command center with automatic risk parity and sub-15ms execution.',
                       style: TextStyle(color: textSub, fontSize: 12, height: 1.35),
                     ),
                   ],
@@ -256,9 +256,9 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         // Step 1: Link Demats
         _buildStepItem(
           stepNumber: '1',
-          title: 'Link Your Broker Demat Accounts (Supports 8 Major Brokers)',
+          title: 'Link Your Broker Demat Accounts (Supports 35+ Major Indian Brokers)',
           description:
-              'Connect Angel One, Zerodha Kite, DhanHQ, Fyers, Upstox, Kotak Neo, Motilal Oswal, or Alice Blue using official SEBI-compliant broker APIs and TOTP. Your broker login passwords are encrypted with AES-256 and never stored on plain text.',
+              'Connect DhanHQ, Angel One, Zerodha Kite, Upstox, Groww, Fyers, Kotak Neo, Motilal Oswal, Alice Blue, ICICI Direct, HDFC Sky, Sharekhan, and 23+ more using official SEBI-compliant APIs & TOTP. Passwords stay encrypted.',
           icon: Icons.link_rounded,
           accentCol: const Color(0xFF38BDF8),
           actionLabel: 'Connect Broker Demats',
@@ -277,9 +277,9 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         // Step 2: Choose Mode
         _buildStepItem(
           stepNumber: '2',
-          title: 'Select Your Trading Mode (Copy Trading, Algo Bots, or SEBI Calls)',
+          title: 'Select Your Trading Mode (Copy Trading, Algo Bots, Commodity, or SEBI Calls)',
           description:
-              '• Parent-Child Copy Trading: Choose one Master Demat. Any trade you place on Master instantly mirrors to all 7 Child demats based on your lot multipliers.\n• Auto Trading: Deploy automated strategies like 9:20 AM Short Straddles or Supertrend Momentum bots with zero manual emotion.\n• Trade Market: Access verified institutional SEBI trade calls with 1-click execution across all 8 demats.',
+              '• Parent-Child Copy Trading: Choose one Master Demat. Any trade placed on Master mirrors instantly to all connected Child brokers based on lot multipliers.\n• Auto Trading & Commodity: Deploy automated NIFTY/BankNifty bots or trade MCX/NSE Crude Oil, Gold, Silver & Natural Gas Futures/Options.\n• Trade Market: Access SEBI-verified setups with 1-click execution across all connected demats.',
           icon: Icons.alt_route_rounded,
           accentCol: const Color(0xFF10B981),
           actionLabel: 'Open Parent-Child Trading',
@@ -581,7 +581,7 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
                 onChanged: (val) => setState(() => _masterLots = val.round()),
               ),
               Text(
-                'NIFTY Lot Size: 25 shares per lot. When Master buys $_masterLots lots, Panchayagnam dispatches $totalPooledLots lots ($totalPooledQty Qty) across all 8 demats in parallel!',
+                'Sample 8-account slice (scales to all 35+ connected brokers): When Master buys $_masterLots NIFTY lots, Panchayagnam mirrors $totalPooledLots lots ($totalPooledQty Qty) in parallel!',
                 style: TextStyle(color: textSub, fontSize: 11.5),
               ),
             ],
@@ -665,7 +665,7 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         _buildSafetyRuleCard(
           title: 'Daily MTM Loss Kill-Switch',
           desc:
-              'Configure your maximum acceptable loss per day (e.g. ₹20,000). The moment cumulative unrealized losses across all 8 demats hit this threshold, the system automatically squares off all active positions and halts trading for the remainder of the session.',
+              'Configure your maximum acceptable loss per day (e.g. ₹20,000). The moment cumulative unrealized losses across your connected demats hit this threshold, the system automatically squares off all active positions and halts trading for the session.',
           icon: Icons.cancel_presentation_rounded,
           accentCol: const Color(0xFFEF4444),
           badge: 'CAPITAL PRESERVATION',
@@ -677,9 +677,9 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         ),
         const SizedBox(height: 12),
         _buildSafetyRuleCard(
-          title: 'Dedicated Whitelisted Static IP (103.159.214.88)',
+          title: 'Dedicated Whitelisted Static IP (13.235.14.89)',
           desc:
-              'Indian exchanges (NSE & BSE) enforce strict security policies regarding IP changes during live trading. Panchayagnam routes all 8 demat orders through your dedicated static IP gateway, preventing IP mismatch rejections and broker API session drops.',
+              'Indian exchanges (NSE, BSE & MCX) enforce strict security policies regarding IP changes during live trading. Panchayagnam routes all connected broker orders through your dedicated static IP gateway (13.235.14.89), preventing IP mismatch rejections.',
           icon: Icons.router_rounded,
           accentCol: const Color(0xFF38BDF8),
           badge: 'EXCHANGE COMPLIANCE',
@@ -707,7 +707,7 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         _buildSafetyRuleCard(
           title: 'Automatic Isolated Broker Fail-Safe',
           desc:
-              'If one broker’s server experiences downtime or API disconnection, Panchayagnam instantly isolates that demat without halting or delaying execution for your other 7 demats, alerting you via SMS and Telegram.',
+              'If one broker’s server experiences downtime or API disconnection, Panchayagnam instantly isolates that demat without halting or delaying execution for all your remaining connected brokers, alerting you immediately.',
           icon: Icons.safety_check_rounded,
           accentCol: const Color(0xFF10B981),
           badge: 'HIGH AVAILABILITY',

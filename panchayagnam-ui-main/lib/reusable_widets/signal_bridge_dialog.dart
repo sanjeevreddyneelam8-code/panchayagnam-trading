@@ -66,7 +66,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 50,
       price: 135.50,
       timestamp: 'Today, 09:25:12 AM',
-      status: 'EXECUTED (8 Demats)',
+      status: 'EXECUTED (35 Brokers)',
       latencyMs: 14,
     ),
     WebhookLogItem(
@@ -77,7 +77,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 25,
       price: 2942.00,
       timestamp: 'Today, 09:20:05 AM',
-      status: 'EXECUTED (8 Demats)',
+      status: 'EXECUTED (35 Brokers)',
       latencyMs: 12,
     ),
     WebhookLogItem(
@@ -88,7 +88,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 30,
       price: 184.00,
       timestamp: 'Today, 09:16:40 AM',
-      status: 'EXECUTED (8 Demats)',
+      status: 'EXECUTED (35 Brokers)',
       latencyMs: 11,
     ),
   ];
@@ -562,7 +562,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
                   icon: _isFiring
                       ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(Icons.flash_on_rounded, size: 16),
-                  label: const Text('Fire Live Test Webhook Across 8 Demats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  label: Text('Fire Live Test Webhook Across ${CopyTradingEngine().totalAccountsCount} Brokers', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
               ],
             ),

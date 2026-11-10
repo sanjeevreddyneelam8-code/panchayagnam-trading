@@ -577,7 +577,7 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
       {
         'symbol': 'Rohan_AlphaQuant',
         'exchange': 'PRO',
-        'type': 'SEBI Regd Quant Master · 1-Click 8-Demat Auto Copy',
+        'type': 'SEBI Regd Quant Master · 1-Click Multi-Broker Auto Copy',
         'return': '+164.2%',
         'winRate': '81.4%',
         'copiers': '1,420 Demats',
@@ -912,7 +912,7 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
                           const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF10B981)),
                           const SizedBox(width: 5),
                           Text(
-                            'Live quotes streaming · Click [B] / [S] for Angel One Order Ticket or Deploy Algos across 8 Demats',
+                            'Live quotes streaming · Click [B] / [S] for Direct Order Ticket or Deploy Algos across ${CopyTradingEngine().totalAccountsCount} Brokers',
                             style: TextStyle(color: textSub, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -1233,11 +1233,12 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
+              final count = CopyTradingEngine().totalAccountsCount;
               Navigator.of(context).pop();
               widget.onOpenAutoTrading();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('⚡ Deploying Tradetron Strategy "$sym" across connected 8-Demat Engine!'),
+                  content: Text('⚡ Deploying Tradetron Strategy "$sym" across connected $count-Broker Engine!'),
                   backgroundColor: const Color(0xFF059669),
                 ),
               );
@@ -1297,14 +1298,15 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
+              final count = CopyTradingEngine().totalAccountsCount;
               Navigator.of(context).pop();
               CopyTradingEngine().replicateTrade(symbol: 'NIFTY 24200 CE', side: 'BUY', baseQty: 25, price: 218.40);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('⚡ 1-Click Auto Copy Active for $sym across 8 Demats!'), backgroundColor: const Color(0xFF059669)),
+                SnackBar(content: Text('⚡ 1-Click Auto Copy Active for $sym across $count Brokers!'), backgroundColor: const Color(0xFF059669)),
               );
             },
             icon: const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
-            label: const Text('Copy 8x', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+            label: const Text('Copy All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF059669),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

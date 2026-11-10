@@ -530,10 +530,10 @@ class _HeroSection extends StatelessWidget {
                   const SizedBox(height: 28),
 
                   SizedBox(
-                    width: 520,
+                    width: 560,
                     child: Text(
-                      'Institutional-grade trading intelligence for Indian markets. '
-                      'Multi-broker, multi-client, built for traders who mean business.',
+                      'Institutional-grade trading intelligence for Indian Equities, F&O, and MCX Commodities. '
+                      '35+ brokers connected permanently on one live terminal.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -912,12 +912,12 @@ class _FeaturesSectionState extends State<_FeaturesSection> {
     ),
     (
       'Simplicity & Versatility',
-      'One platform for Stocks, Futures, and Options across NSE & BSE. A single unified portfolio view removes all complexity.',
+      'One platform for Stocks, F&O, and MCX/NSE Commodities (Crude Oil, Gold, Silver, Natural Gas) with live Option Chains and AI Trade Market.',
       Icons.tune_rounded,
     ),
     (
-      'Multi-Broker Support',
-      'Connect multiple broker accounts simultaneously. Execute across Profit Mart, Upstox, Angel One, and more without switching between apps.',
+      '35+ Brokers Connected',
+      'Connect 35+ Indian brokers including Zerodha, Angel One, Dhan, Upstox, Groww, Fyers, Kotak Neo, Alice Blue & Motilal on one screen.',
       Icons.hub_rounded,
     ),
     (
@@ -947,12 +947,12 @@ class _FeaturesSectionState extends State<_FeaturesSection> {
       ],
     ),
     _MockPanelData(
-      title: 'Connected Brokers',
+      title: '35+ Connected Brokers',
       rows: [
-        ('Profit Mart', 'BROKER', '4 Accounts'),
-        ('UPSTOX', 'BROKER', '2 Accounts'),
-        ('ANGEL ONE', 'BROKER', '1 Account'),
-        ('MOTILAL', 'BROKER', 'Pending'),
+        ('DhanHQ / Angel One', 'CONNECTED', 'Sub-12ms'),
+        ('Zerodha / Upstox', 'CONNECTED', 'Synced'),
+        ('Groww / Fyers / Kotak', 'CONNECTED', 'Active Pool'),
+        ('+29 Other Indian Brokers', 'PERMANENT', '35+ Ready'),
       ],
     ),
     _MockPanelData(
@@ -1366,19 +1366,19 @@ class _FaqSection extends StatelessWidget {
   static const _faqs = [
     (
       'What is PANCHAYAGNAM INVESTMENTS?',
-      'A Multi-Client, Multi-Broker Trading and Investment Platform supporting NSE and BSE operations from a single, unified dashboard.',
+      'India\'s Multi-Client, 35+ Broker Copy Trading, Algo Execution & Commodity Derivatives Platform supporting NSE, BSE, and MCX from one unified dashboard.',
     ),
     (
       'Which segments are supported?',
-      'Fully supports STOCKS, FUTURES, and OPTIONS across NSE and BSE markets, covering all major trading instruments available in Indian markets.',
+      'Supports Equities, Index/Stock Futures & Options across NSE & BSE, plus MCX/NSE Commodities including Crude Oil, Natural Gas, Gold, Silver, Copper & Zinc.',
     ),
     (
       'Can I use it for Intraday, Swing & Positional trading?',
-      'Yes. The platform is designed and optimised for all three strategies: Intraday, Swing, and Positional trading with tailored tools for each.',
+      'Yes. Engineered for Intraday scalping, Swing setups, MCX Commodity hedging, and automated Positional Algo strategies with 1-click multi-broker copy.',
     ),
     (
       'Is the platform available on Mobile?',
-      'Currently available on desktop/web only. Mobile app support is planned for a future release and will be announced to subscribers first.',
+      'Yes! Our responsive web terminal adapts cleanly across Desktop workstations, Tablets, and Mobile browsers.',
     ),
     (
       'Is stock market training provided?',

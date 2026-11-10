@@ -1576,7 +1576,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                       elevation: 2,
                     ),
                     icon: const Icon(Icons.flash_on_rounded, size: 16),
-                    label: const Text('Execute Spread Across All 8 Demats (Sub-15ms)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    label: Text('Execute Spread (${CopyTradingEngine().totalAccountsCount} Brokers · Sub-15ms)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                   ),
                 ],
               ),

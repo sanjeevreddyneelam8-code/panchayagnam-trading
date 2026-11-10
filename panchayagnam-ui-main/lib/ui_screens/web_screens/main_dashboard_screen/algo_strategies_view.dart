@@ -1207,7 +1207,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
           children: [
             const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text('$name deployed successfully across 8 Demat accounts!')),
+            Expanded(child: Text('$name deployed successfully across ${CopyTradingEngine().totalAccountsCount} connected brokers!')),
           ],
         ),
         backgroundColor: const Color(0xFF059669),
@@ -1284,7 +1284,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               _deployReadyMadeStrategy('AI: ${text.length > 30 ? text.substring(0, 30) : text}...', 'NIFTY50-INDEX', 'AI Synthesized Rule', text);
             },
             icon: const Icon(Icons.bolt_rounded, size: 16),
-            label: const Text('Generate & Deploy to 8 Demats'),
+            label: Text('Generate & Deploy (${CopyTradingEngine().totalAccountsCount} Brokers)'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
@@ -1376,7 +1376,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('Deploy Option Strategy to 8 Demats'),
+              child: Text('Deploy Option Strategy (${CopyTradingEngine().totalAccountsCount} Brokers)'),
             ),
           ],
         ),
@@ -1846,7 +1846,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                 const SizedBox(width: 6),
                 const Expanded(
                   child: Text(
-                    'RSI & Mean Reversion, tested on real NIFTY data • Multi-Broker Algorithmic Execution Active across 8 Demat Accounts.',
+                    'RSI & Mean Reversion, tested on real NIFTY data • Multi-Broker Algorithmic Execution Active across 35+ Brokers.',
                     style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF022C22)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -2309,7 +2309,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                       ),
                       SizedBox(width: 8),
                       Text(
-                        'All 8 Demat tokens (Dhan, Zerodha, Upstox, AngelOne) auto-generated at 08:45 IST via TOTP daemon.',
+                        'All 35+ Broker tokens (Dhan, Zerodha, Upstox, AngelOne, Groww & more) auto-generated at 08:45 IST via TOTP daemon.',
                         style: TextStyle(fontSize: 11, color: Color(0xFFE2E8F0)),
                       ),
                     ],
@@ -2521,7 +2521,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               _buildParamRow('Leg 1 & Leg 2', 'Sell ATM Call & Sell ATM Put (0.50 Delta)'),
               _buildParamRow('Stop Loss Structure', '25% on each individual leg (SL-M)'),
               _buildParamRow('Backtested Sharpe Ratio', '2.68 · Win Rate: 74.5% · Max DD: -4.2%'),
-              _buildParamRow('Multi-Demat Routing', 'ALL 8 Demats (Sub-15ms Replication)'),
+              _buildParamRow('Multi-Broker Routing', 'ALL ${CopyTradingEngine().totalAccountsCount} Brokers (Sub-15ms Replication)'),
             ],
           ),
         ),
@@ -2529,16 +2529,17 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Edit Rules')),
           ElevatedButton.icon(
             onPressed: () {
+              final cnt = CopyTradingEngine().totalAccountsCount;
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('AI Strategy deployed to all 8 Demats! Live condition engine active.'),
-                  backgroundColor: Color(0xFF059669),
+                SnackBar(
+                  content: Text('AI Strategy deployed across all $cnt connected brokers! Live condition engine active.'),
+                  backgroundColor: const Color(0xFF059669),
                 ),
               );
             },
             icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-            label: const Text('Deploy to 8 Demats'),
+            label: Text('Deploy (${CopyTradingEngine().totalAccountsCount} Brokers)'),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
           ),
         ],
@@ -2674,7 +2675,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
                 icon: const Icon(Icons.flash_on_rounded, size: 14),
-                label: const Text('Deploy (8 Demats)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: Text('Deploy (${CopyTradingEngine().totalAccountsCount} Brokers)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),

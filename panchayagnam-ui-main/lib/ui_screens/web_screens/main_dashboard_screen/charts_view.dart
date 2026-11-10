@@ -409,7 +409,7 @@ class _ChartsViewState extends State<ChartsView> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Demo Order $side: $qty Qty (${_tradeLots}L) of ${_selectedInstrument.name} @ ₹${_currentLtp.toStringAsFixed(2)} executed across 8 Demats! (₹${totalVal.toStringAsFixed(0)})',
+                'Order $side: $qty Qty (${_tradeLots}L) of ${_selectedInstrument.name} @ ₹${_currentLtp.toStringAsFixed(2)} replicated across connected brokers! (₹${totalVal.toStringAsFixed(0)})',
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
