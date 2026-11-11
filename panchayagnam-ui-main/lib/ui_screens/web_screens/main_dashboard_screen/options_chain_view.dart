@@ -344,24 +344,29 @@ class _OptionsChainViewState extends State<OptionsChainView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Top Header Row ───────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 12,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 6,
                       children: [
-                        const Text(
-                          'Panchayagnam Options Chain (F&O)',
+                        Text(
+                          'Panchayagnam Trade Options (F&O)',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF0F172A),
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(width: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -389,13 +394,13 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'NSE/BSE derivatives contract chain, live implied volatility (IV), Greeks, PCR analysis, and 1-click execution.',
+                      'NSE/BSE derivatives strikes, live implied volatility (IV), Greeks, PCR analysis, and 1-click execution.',
                       style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
 
-                // Sub-Tabs: Option Chain / Multi-Strike OI / Strategy Builder
+                // Sub-Tabs: F&O Strikes / Multi-Strike OI / Strategy Builder
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -403,12 +408,16 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Row(
-                    children: [
-                      _buildSubTabButton(0, 'Option Chain (F&O)', Icons.table_chart_rounded),
-                      _buildSubTabButton(1, 'Multi-Strike OI & Greeks', Icons.auto_graph_rounded),
-                      _buildSubTabButton(2, 'Strategy Builder', Icons.psychology_alt_rounded),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildSubTabButton(0, 'F&O Strikes & IV', Icons.table_chart_rounded),
+                        _buildSubTabButton(1, 'Multi-Strike OI & Greeks', Icons.auto_graph_rounded),
+                        _buildSubTabButton(2, 'Strategy Builder', Icons.psychology_alt_rounded),
+                      ],
+                    ),
                   ),
                 ),
               ],

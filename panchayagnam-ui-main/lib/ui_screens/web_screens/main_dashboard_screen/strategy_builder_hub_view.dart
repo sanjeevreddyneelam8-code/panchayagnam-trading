@@ -24,15 +24,23 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
   // Visual Rule Builder State
   String _selectedInstrument = 'BANKNIFTY-OPT';
   String _selectedTimeframe = '5m';
-  String _entryCondition1 = '9 EMA crosses above 21 EMA';
-  String _entryCondition2 = 'RSI(14) > 55';
-  double _stopLossPct = 20.0;
-  double _targetPct = 40.0;
+  late final TextEditingController _entryCtrl1 =
+      TextEditingController(text: '9 EMA crosses above 21 EMA');
+  late final TextEditingController _entryCtrl2 =
+      TextEditingController(text: 'RSI(14) > 55');
+  late final TextEditingController _stopLossCtrl =
+      TextEditingController(text: '20.0%');
+  late final TextEditingController _targetCtrl =
+      TextEditingController(text: '40.0%');
   bool _enableTrailing = true;
 
   @override
   void dispose() {
     _aiPromptCtrl.dispose();
+    _entryCtrl1.dispose();
+    _entryCtrl2.dispose();
+    _stopLossCtrl.dispose();
+    _targetCtrl.dispose();
     super.dispose();
   }
 
@@ -404,7 +412,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: TextEditingController(text: _entryCondition1),
+                  controller: _entryCtrl1,
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -422,7 +430,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: TextEditingController(text: _entryCondition2),
+                  controller: _entryCtrl2,
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -440,7 +448,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
             children: [
               Expanded(
                 child: TextField(
-                  controller: TextEditingController(text: '$_stopLossPct%'),
+                  controller: _stopLossCtrl,
                   decoration: InputDecoration(
                     labelText: 'Stop Loss %',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -450,7 +458,7 @@ class _StrategyBuilderHubViewState extends State<StrategyBuilderHubView> {
               const SizedBox(width: 14),
               Expanded(
                 child: TextField(
-                  controller: TextEditingController(text: '$_targetPct%'),
+                  controller: _targetCtrl,
                   decoration: InputDecoration(
                     labelText: 'Target Profit %',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

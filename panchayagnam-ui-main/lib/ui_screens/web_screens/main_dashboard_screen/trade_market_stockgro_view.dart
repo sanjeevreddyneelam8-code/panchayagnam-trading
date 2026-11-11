@@ -93,14 +93,11 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     },
   ];
 
-  // AI Copilot Query State
+  // AI Copilot Chat State
   final TextEditingController _aiQueryController = TextEditingController();
-  String _aiResponseSymbol = 'NIFTY 24200 CE';
-  String _aiResponseText =
-      'Panchayagnam AI Analysis: NIFTY 24,200 strike exhibits heavy Call Unwinding with 2.8M shares shed in intraday trading. PCR shifted from 0.88 to 1.18, signaling high-probability continuation towards 24,350. Support established firmly at 24,100.';
-  String _aiStrategyAction = 'BUY BULL CALL SPREAD';
-  double _aiConfidence = 0.94;
+  final ScrollController _aiChatScrollController = ScrollController();
   bool _isAiThinking = false;
+  late List<Map<String, dynamic>> _aiChatHistory;
 
   @override
   void initState() {
@@ -111,7 +108,39 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
       initialIndex: widget.initialTabIndex.clamp(0, 6),
     );
     _initMarketData();
+    _initAiChat();
     _startLiveTickEngine();
+  }
+
+  @override
+  void didUpdateWidget(covariant TradeMarketStockGroView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != oldWidget.initialTabIndex) {
+      final target = widget.initialTabIndex.clamp(0, 6);
+      if (_tabController.index != target) {
+        _tabController.animateTo(target);
+      }
+    }
+  }
+
+  void _initAiChat() {
+    _aiChatHistory = [
+      {
+        'isUser': false,
+        'time': DateFormat('HH:mm').format(DateTime.now()),
+        'symbol': 'NIFTY 24200 CE',
+        'action': 'BULL CALL SPREAD',
+        'confidence': 0.94,
+        'ltp': 228.40,
+        'lot': 25,
+        'pivot': '24,180',
+        'r1': '24,280',
+        'r2': '24,350',
+        'support': '24,100',
+        'text':
+            'Hello Trader! I am **Panchayagnam AI Copilot**. Ask me about NIFTY / BANKNIFTY options, stocks (Reliance, Tata Steel, Trent), MCX commodities (Crude Oil, Gold, Silver, Nickel, Zinc), Parent-Child copy trading, or risk management.',
+      },
+    ];
   }
 
   void _initMarketData() {
@@ -341,6 +370,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     _tickTimer?.cancel();
     _tabController.dispose();
     _aiQueryController.dispose();
+    _aiChatScrollController.dispose();
     super.dispose();
   }
 
@@ -2011,195 +2041,524 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     );
   }
 
-  // ── Tab 4: Panchayagnam AI Quant Copilot ──
+  // ── Tab 4: Panchayagnam AI Quant Copilot (Full Interactive Chat) ──
   Widget _buildAICopilotTab(bool isDark, Color cardBg, Color borderCol, Color textMain, Color textSub) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark ? [const Color(0xFF1E293B), const Color(0xFF0F172A)] : [const Color(0xFFF0FDF4), const Color(0xFFE2E8F0)],
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Header Card + Quick Prompt Pills
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                    : [const Color(0xFFF0FDF4), const Color(0xFFE2E8F0)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF10B981).withOpacity(0.35)),
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.smart_toy_rounded, color: Color(0xFF10B981), size: 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.smart_toy_rounded, color: Color(0xFF10B981), size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Flexible(
+                                child: Text(
+                                  'PANCHAYAGNAM AI COPILOT',
+                                  style: TextStyle(color: Color(0xFF10B981), fontSize: 15.5, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withOpacity(0.16),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  '• ONLINE',
+                                  style: TextStyle(color: Color(0xFF10B981), fontSize: 9.5, fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'Ask about Options, Nickel / Zinc / Crude Oil / Gold, Stocks or Copy Trading',
+                            style: TextStyle(color: textSub, fontSize: 11.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => setState(_initAiChat),
+                      icon: Icon(Icons.refresh_rounded, size: 15, color: textSub),
+                      label: Text('New Chat', style: TextStyle(color: textSub, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildPromptChip('Analyze NIFTY 24200 CE strike OI', isDark),
+                      const SizedBox(width: 8),
+                      _buildPromptChip('Nickel & Zinc MCX outlook today', isDark),
+                      const SizedBox(width: 8),
+                      _buildPromptChip('Gold & Crude Oil setup', isDark),
+                      const SizedBox(width: 8),
+                      _buildPromptChip('Bank Nifty expiry delta hedge', isDark),
+                      const SizedBox(width: 8),
+                      _buildPromptChip('How does Parent-Child copy trading work?', isDark),
+                    ],
                   ),
-                  const SizedBox(width: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Live Interactive Conversation Thread
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderCol),
+              ),
+              child: Column(
+                children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: ListView.builder(
+                      controller: _aiChatScrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _aiChatHistory.length + (_isAiThinking ? 1 : 0),
+                      itemBuilder: (ctx, idx) {
+                        if (_isAiThinking && idx == _aiChatHistory.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Panchayagnam Copilot is analyzing NSE & MCX live feeds...',
+                                  style: TextStyle(color: textSub, fontSize: 12, fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        final msg = _aiChatHistory[idx];
+                        final isUser = msg['isUser'] == true;
+                        if (isUser) {
+                          return Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12, left: 60),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(14),
+                                  bottomRight: Radius.circular(4),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    msg['text'] as String,
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    msg['time'] as String,
+                                    style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final symbol = (msg['symbol'] ?? 'MARKET BRIEF').toString();
+                        final action = (msg['action'] ?? '').toString();
+                        final conf = ((msg['confidence'] as double?) ?? 0.90) * 100;
+                        final pivot = msg['pivot']?.toString();
+                        final r1 = msg['r1']?.toString();
+                        final support = msg['support']?.toString();
+                        final ltp = (msg['ltp'] as num?)?.toDouble() ?? 100.0;
+                        final lot = (msg['lot'] as int?) ?? 25;
+
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 14, right: 24),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(14),
+                                topRight: Radius.circular(14),
+                                bottomRight: Radius.circular(14),
+                                bottomLeft: Radius.circular(4),
+                              ),
+                              border: Border.all(color: borderCol),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981), size: 16),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        symbol,
+                                        style: TextStyle(color: textMain, fontSize: 13.5, fontWeight: FontWeight.w900),
+                                      ),
+                                    ),
+                                    if (action.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981).withOpacity(0.14),
+                                          borderRadius: BorderRadius.circular(5),
+                                        ),
+                                        child: Text(
+                                          '$action · ${conf.toStringAsFixed(0)}%',
+                                          style: const TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  msg['text'] as String,
+                                  style: TextStyle(color: textMain, fontSize: 12.8, height: 1.45),
+                                ),
+                                if (pivot != null && r1 != null && support != null) ...[
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 14,
+                                    runSpacing: 6,
+                                    children: [
+                                      Text('Pivot: $pivot', style: TextStyle(color: textMain, fontWeight: FontWeight.w800, fontSize: 11.5)),
+                                      Text('Resistance: $r1', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w800, fontSize: 11.5)),
+                                      Text('Support: $support', style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800, fontSize: 11.5)),
+                                    ],
+                                  ),
+                                ],
+                                if (action.isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  AnimatedBuilder(
+                                    animation: CopyTradingEngine(),
+                                    builder: (context, _) {
+                                      final activeCount = _activeBrokerCount(CopyTradingEngine());
+                                      return Align(
+                                        alignment: Alignment.centerRight,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            CopyTradingEngine().replicateTrade(
+                                              symbol: symbol,
+                                              side: action.contains('SELL') ? 'SELL' : 'BUY',
+                                              baseQty: lot,
+                                              price: ltp,
+                                            );
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Executed $symbol ($action) across $activeCount connected brokers!'),
+                                                backgroundColor: const Color(0xFF059669),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.flash_on_rounded, size: 15, color: Colors.white),
+                                          label: Text('Execute Setup ($activeCount Brokers)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF059669),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Bottom Input Bar
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: borderCol)),
+                    ),
+                    child: Row(
                       children: [
-                        const Text('PANCHAYAGNAM AI QUANT COPILOT', style: TextStyle(color: Color(0xFF10B981), fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                        Text('Powered by Live NSE/MCX Telemetry for Institutional Trade Synthesis', style: TextStyle(color: textSub, fontSize: 11.5)),
+                        Expanded(
+                          child: TextField(
+                            controller: _aiQueryController,
+                            style: TextStyle(color: textMain, fontSize: 13),
+                            textInputAction: TextInputAction.send,
+                            decoration: InputDecoration(
+                              hintText: 'Ask Panchayagnam Copilot anything (e.g. "Nickel price outlook", "NIFTY CE/PE", "Best intraday setup")...',
+                              hintStyle: TextStyle(color: textSub, fontSize: 12),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderCol)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderCol)),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5)),
+                            ),
+                            onSubmitted: (_) => _runAiAnalysis(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 44,
+                          child: ElevatedButton.icon(
+                            onPressed: _isAiThinking ? null : _runAiAnalysis,
+                            icon: const Icon(Icons.send_rounded, size: 16, color: Colors.white),
+                            label: const Text('Ask AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12.5)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF059669),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _aiQueryController,
-                style: TextStyle(color: textMain, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'Ask: "Analyze NIFTY 24200 CE OI" or "Best Crude Oil / BankNifty setup"...',
-                  hintStyle: TextStyle(color: textSub, fontSize: 12),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderCol)),
-                  suffixIcon: IconButton(
-                    icon: _isAiThinking
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)))
-                        : const Icon(Icons.send_rounded, color: Color(0xFF10B981)),
-                    onPressed: _runAiAnalysis,
-                  ),
-                ),
-                onSubmitted: (_) => _runAiAnalysis(),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  _buildPromptChip('Analyze NIFTY 24200 CE strike OI', isDark),
-                  _buildPromptChip('Find High Volume Breakouts in Metals', isDark),
-                  _buildPromptChip('Options Delta Hedge for Bank Nifty', isDark),
-                  _buildPromptChip('MCX Crude Oil 8250 Straddle Analysis', isDark),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
-
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(14), border: Border.all(color: borderCol)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('Autonomous Synthesis: $_aiResponseSymbol', style: TextStyle(color: textMain, fontSize: 15, fontWeight: FontWeight.w900))),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
-                    child: Text('$_aiStrategyAction · ${(_aiConfidence * 100).toStringAsFixed(0)}% CONF', style: const TextStyle(color: Color(0xFF10B981), fontSize: 10.5, fontWeight: FontWeight.w900)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(_aiResponseText, style: TextStyle(color: textMain, fontSize: 13, height: 1.45)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderCol),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Text('Pivot: 24,180', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
-                    Text('Resistance 1: 24,280', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11.5)),
-                    Text('Resistance 2: 24,350', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11.5)),
-                    Text('Support: 24,100', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 11.5)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              AnimatedBuilder(
-                animation: CopyTradingEngine(),
-                builder: (context, _) {
-                  final activeCount = _activeBrokerCount(CopyTradingEngine());
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        CopyTradingEngine().replicateTrade(symbol: _aiResponseSymbol, side: 'BUY', baseQty: 25, price: 214.65);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('⚡ Dispatched AI Recommended $_aiStrategyAction across $activeCount connected brokers!'),
-                            backgroundColor: const Color(0xFF059669),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.flash_on_rounded, size: 16, color: Colors.white),
-                      label: Text('Execute AI Setup ($activeCount Brokers)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildPromptChip(String text, bool isDark) {
     return InkWell(
-      onTap: () {
-        _aiQueryController.text = text;
-        _runAiAnalysis();
-      },
+      onTap: () => _runAiAnalysis(overridePrompt: text),
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
-        child: Text(text, style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569), fontSize: 11, fontWeight: FontWeight.w600)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
 
-  void _runAiAnalysis() {
-    setState(() => _isAiThinking = true);
-    Future.delayed(const Duration(milliseconds: 500), () {
+  void _scrollCopilotToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_aiChatScrollController.hasClients) {
+        _aiChatScrollController.animateTo(
+          _aiChatScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _runAiAnalysis({String? overridePrompt}) {
+    final prompt = (overridePrompt ?? _aiQueryController.text).trim();
+    if (prompt.isEmpty || _isAiThinking) return;
+
+    if (overridePrompt == null) {
+      _aiQueryController.clear();
+    } else {
+      _aiQueryController.text = overridePrompt;
+      _aiQueryController.clear();
+    }
+
+    final nowStr = DateFormat('HH:mm').format(DateTime.now());
+    setState(() {
+      _aiChatHistory.add({'isUser': true, 'text': prompt, 'time': nowStr});
+      _isAiThinking = true;
+    });
+    _scrollCopilotToBottom();
+
+    Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
+      final q = prompt.toLowerCase();
+      final reply = _buildCopilotReply(q, prompt);
+      reply['isUser'] = false;
+      reply['time'] = DateFormat('HH:mm').format(DateTime.now());
+
       setState(() {
         _isAiThinking = false;
-        final q = _aiQueryController.text.toLowerCase();
-        if (q.contains('crude') || q.contains('mcx')) {
-          _aiResponseSymbol = 'CRUDEOIL 8250 CE + PE';
-          _aiResponseText =
-              'Panchayagnam AI Analysis: MCX Crude Oil trades near 8,229 ahead of US EIA inventory data. ATM 8250 IV is elevated at 30.2%. High Call OI wall sits at 8,350 with strong Put floor at 8,150. Recommended Short Strangle / Iron Fly or momentum breakout buy above 8,265.';
-          _aiStrategyAction = 'DEPLOY MCX IRON FLY';
-          _aiConfidence = 0.91;
-        } else if (q.contains('metal') || q.contains('tata')) {
-          _aiResponseSymbol = 'TATASTEEL';
-          _aiResponseText =
-              'Panchayagnam AI Analysis: Tata Steel has broken out from a 3-week consolidation cup-and-handle pattern at ₹190.20 on 3.5x 20-DMA volume. RSI is at 64 with upside towards ₹205.00 and trailing SL at ₹185.00.';
-          _aiStrategyAction = 'BUY SWING EQUITY';
-          _aiConfidence = 0.92;
-        } else if (q.contains('bank')) {
-          _aiResponseSymbol = 'BANKNIFTY 51800 PE';
-          _aiResponseText =
-              'Panchayagnam AI Analysis: Bank Nifty faces heavy option resistance near 52,000. Hedged Put Ratio Spread or 51,800 PE swing offers optimal convexity.';
-          _aiStrategyAction = 'BUY EXPIRY HEDGE';
-          _aiConfidence = 0.89;
-        } else {
-          _aiResponseSymbol = 'NIFTY 24200 CE';
-          _aiResponseText =
-              'Panchayagnam AI Analysis: NIFTY 24,200 strike exhibits heavy Call Unwinding with 2.8M shares shed in intraday trading. PCR shifted from 0.88 to 1.18, signaling continuation towards 24,350.';
-          _aiStrategyAction = 'BUY BULL CALL SPREAD';
-          _aiConfidence = 0.94;
-        }
+        _aiChatHistory.add(reply);
       });
+      _scrollCopilotToBottom();
     });
+  }
+
+  Map<String, dynamic> _buildCopilotReply(String q, String original) {
+    final niftySpot = (_liveIndices.isNotEmpty ? (_liveIndices[0]['price'] as num).toDouble() : 24218.65);
+    final bankNiftySpot = (_liveIndices.length > 1 ? (_liveIndices[1]['price'] as num).toDouble() : 51842.30);
+
+    if (q.contains('nickel') || q.contains('zinc') || q.contains('copper') || q.contains('alum') || q.contains('lead') || q.contains('metal')) {
+      return {
+        'symbol': 'MCX NICKEL & ZINC (BASE METALS)',
+        'action': 'BUY METAL SPREAD',
+        'confidence': 0.91,
+        'ltp': 1428.50,
+        'lot': 1,
+        'pivot': 'Nickel ₹1,420 | Zinc ₹284',
+        'r1': 'Nickel ₹1,455 | Zinc ₹289',
+        'support': 'Nickel ₹1,402 | Zinc ₹280',
+        'text':
+            'Base Metals Telemetry (MCX): NICKEL trades near ₹1,428.50 (+1.11%, lot 1500 Kg) and ZINC holds ₹284.20 (+0.82%, lot 5000 Kg) with firm LME London warehouse drawdowns. Open "Commodity" -> "Base Metals" to trade Nickel, Zinc, Copper, Aluminium & Lead futures or options.',
+      };
+    }
+
+    if (q.contains('crude') || q.contains('oil') || q.contains('natural') || q.contains('natgas')) {
+      return {
+        'symbol': 'MCX CRUDEOIL 8250 CE + PE',
+        'action': 'MCX IRON FLY / BREAKOUT',
+        'confidence': 0.92,
+        'ltp': 264.70,
+        'lot': 100,
+        'pivot': '8,220',
+        'r1': '8,310',
+        'support': '8,150',
+        'text':
+            'MCX Energy Desk: CRUDEOIL trades at ₹8,229 (Lot 100 bbl) with ATM 8250 CE around ₹264.70 (IV 30.2%). Call OI wall sits at 8,350 while Put support is firm at 8,150. NATURALGAS trades near ₹248.40 (support ₹241, target ₹256).',
+      };
+    }
+
+    if (q.contains('gold') || q.contains('silver') || q.contains('bullion')) {
+      return {
+        'symbol': 'MCX GOLD & SILVER BULLION',
+        'action': 'BUY ON DIPS',
+        'confidence': 0.93,
+        'ltp': 76450.00,
+        'lot': 1,
+        'pivot': 'Gold ₹76,300 | Silver ₹91,000',
+        'r1': 'Gold ₹76,850 | Silver ₹92,100',
+        'support': 'Gold ₹75,950 | Silver ₹90,200',
+        'text':
+            'Bullion Outlook: GOLD (₹76,450) and SILVER (₹91,240) remain in steady institutional accumulation supported by COMEX Gold \$2,684.50 and COMEX Silver \$31.42. Mini/Micro contracts (GOLDM, GOLDPETAL, SILVERM, SILVERMIC) are also available in the Commodity terminal.',
+      };
+    }
+
+    if (q.contains('bank')) {
+      return {
+        'symbol': 'BANKNIFTY 51800 CE / PE',
+        'action': 'DELTA HEDGE / STRADDLE',
+        'confidence': 0.90,
+        'ltp': 395.20,
+        'lot': 15,
+        'pivot': bankNiftySpot.toStringAsFixed(0),
+        'r1': (bankNiftySpot + 280).toStringAsFixed(0),
+        'support': (bankNiftySpot - 240).toStringAsFixed(0),
+        'text':
+            'BANKNIFTY Live (${bankNiftySpot.toStringAsFixed(2)}): Heavy Put writing at 51,600 creates downside cushion, while Call sellers defend 52,100. Use a hedged Iron Condor or delta-neutral ATM Straddle under "Trade Options".',
+      };
+    }
+
+    if (q.contains('copy') || q.contains('parent') || q.contains('child') || q.contains('broker') || q.contains('replicate')) {
+      final count = CopyTradingEngine().totalAccountsCount;
+      return {
+        'symbol': 'PARENT-CHILD COPY ENGINE ($count BROKERS)',
+        'action': '',
+        'confidence': 0.98,
+        'text':
+            'Parent-Children Copy Trading: Connect 1 Master (Parent) account and link Follower (Child) broker accounts under "Parent Children Trading" with custom multipliers (0.5x, 1.0x, 2.0x). Every manual order, Option strike, or Commodity trade replicates across all $count connected accounts in <15ms.',
+      };
+    }
+
+    if (q.contains('risk') || q.contains('stop') || q.contains('sl') || q.contains('loss') || q.contains('margin') || q.contains('lot')) {
+      return {
+        'symbol': 'RISK & POSITION SIZING GUARD',
+        'action': '',
+        'confidence': 0.97,
+        'text':
+            'Panchayagnam Risk Framework: Risk <= 1.5% per setup, define hard Stop-Loss at strategy entry, and enable M2M Global Square-Off protection under Auto Trading -> Auto Strategies. Always verify option lot size & span margin before scaling child multipliers.',
+      };
+    }
+
+    if (q.contains('hi') || q.contains('hello') || q.contains('hey') || q.contains('help') || q.contains('what')) {
+      return {
+        'symbol': 'PANCHAYAGNAM AI COPILOT READY',
+        'action': '',
+        'confidence': 0.99,
+        'text':
+            'I\'m active and connected to live telemetry! Try asking:\n• "Analyze NIFTY 24200 CE strike OI"\n• "Nickel & Zinc MCX outlook today"\n• "Gold & Silver targets"\n• "Bank Nifty expiry hedge"\n• "Tata Steel or Reliance view"',
+      };
+    }
+
+    if (q.contains('reliance') || q.contains('tata') || q.contains('trent') || q.contains('infy') || q.contains('hdfc') || q.contains('stock') || q.contains('equity')) {
+      return {
+        'symbol': 'EQUITY MOMENTUM SCANNER',
+        'action': 'BUY BREAKOUT',
+        'confidence': 0.91,
+        'ltp': 194.50,
+        'lot': 100,
+        'pivot': 'TATASTEEL ₹192 | RELIANCE ₹2,935',
+        'r1': 'TATASTEEL ₹204 | RELIANCE ₹2,995',
+        'support': 'TATASTEEL ₹186 | RELIANCE ₹2,905',
+        'text':
+            'Institutional Equity Flow for "$original": Leading delivery buying seen in TATASTEEL (₹194.50, 3.8x 20-DMA vol), RELIANCE (₹2,948.50), PERSISTENT (₹5,490), and TRENT (₹7,120). Watch VWAP retests on 15m charts inside "Trade Options -> Charts".',
+      };
+    }
+
+    return {
+      'symbol': 'NIFTY 24200 CE (${niftySpot.toStringAsFixed(0)})',
+      'action': 'BUY BULL CALL SPREAD',
+      'confidence': 0.94,
+      'ltp': 228.40,
+      'lot': 25,
+      'pivot': (niftySpot - 35).toStringAsFixed(0),
+      'r1': (niftySpot + 90).toStringAsFixed(0),
+      'support': (niftySpot - 115).toStringAsFixed(0),
+      'text':
+          'Analysis for "$original": NIFTY 50 is trading at ${niftySpot.toStringAsFixed(2)} with PCR 1.18. Heavy Call unwinding at 24,200 indicates bullish continuation toward 24,350 with firm Put writing floor at 24,100. Inspect strikes & Greeks live in "Trade Options".',
+    };
   }
 
   // ── Tab 5: Alpha Leagues & Star Traders Leaderboard ──

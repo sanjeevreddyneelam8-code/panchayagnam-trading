@@ -235,13 +235,15 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 4. Trade Dashboard (was Trading Workspace)
+      // 4. Trade Options (Combined Trade Dashboard + Options Workspace)
       const _NavItem(
-        icon: Icons.trending_up_rounded,
-        label: 'Trade Dashboard',
+        icon: Icons.candlestick_chart_rounded,
+        label: 'Trade Options',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
+          _SubNavItem(icon: Icons.dashboard_rounded, label: 'Trade Overview'),
+          _SubNavItem(icon: Icons.table_chart_rounded, label: 'F&O Strikes & Premiums'),
+          _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
           _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Option Markets'),
           _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
           _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
@@ -250,32 +252,22 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 5. Option Chain (4th side heading)
-      const _NavItem(
-        icon: Icons.table_chart_rounded,
-        label: 'Option Chain',
-        type: _NavItemType.group,
-        children: [
-          _SubNavItem(icon: Icons.table_chart_rounded, label: 'Option Chain (F&O)'),
-          _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
-        ],
-      ),
-
-      // 6. Commodity (MCX & NSE Commodities Future Chain + Options Watchlist)
+      // 5. Commodity (All 24 MCX, NCDEX & NSE Commodities)
       const _NavItem(
         icon: Icons.oil_barrel_rounded,
         label: 'Commodity',
         type: _NavItemType.group,
         children: [
-          _SubNavItem(icon: Icons.oil_barrel_rounded, label: 'Crude Oil & Energy (MCX)'),
-          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Natural Gas (MCX)'),
-          _SubNavItem(icon: Icons.monetization_on_rounded, label: 'Gold & Bullion (MCX)'),
-          _SubNavItem(icon: Icons.diamond_rounded, label: 'Silver & Base Metals'),
+          _SubNavItem(icon: Icons.apps_rounded, label: 'All Commodities (24 MCX/NSE)'),
+          _SubNavItem(icon: Icons.oil_barrel_rounded, label: 'Crude Oil & Natural Gas'),
+          _SubNavItem(icon: Icons.monetization_on_rounded, label: 'Gold & Silver Bullion'),
+          _SubNavItem(icon: Icons.diamond_rounded, label: 'Nickel, Zinc & Base Metals'),
+          _SubNavItem(icon: Icons.grass_rounded, label: 'Agri & Spices (MCX/NCDEX)'),
           _SubNavItem(icon: Icons.link_rounded, label: 'Commodity Option Chain'),
         ],
       ),
 
-      // 7. Tools & Accounts
+      // 6. Tools & Accounts
       _NavItem(
         icon: Icons.construction_rounded,
         label: 'Tools & Accounts',
@@ -297,7 +289,7 @@ class _MainDashboardState extends State<MainDashboard> {
 
   void _navigateToBrokers() {
     setState(() {
-      _currentSelection = const _NavSelection(6, 0);
+      _currentSelection = const _NavSelection(5, 0);
       _bodyKey = UniqueKey();
     });
   }
@@ -347,51 +339,47 @@ class _MainDashboardState extends State<MainDashboard> {
       case 2: // 3. Trade Market (StockGro Social Trading & Arena)
         return TradeMarketStockGroView(initialTabIndex: subIdx);
 
-      case 3: // 4. Trade Dashboard (was Trading Workspace)
+      case 3: // 4. Trade Options (Unified Trading & F&O Options Terminal)
         switch (subIdx) {
           case 0:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
           case 1:
-            return const MarketWatchView();
+            return const OptionsChainView(initialTabIndex: 0);
           case 2:
-            return const ChartsView();
+            return const OptionsChainView(initialTabIndex: 1);
           case 3:
-            return const OrdersView();
+            return const MarketWatchView();
           case 4:
-            return const PositionsView();
+            return const ChartsView();
           case 5:
+            return const OrdersView();
+          case 6:
+            return const PositionsView();
+          case 7:
             return const HoldingsView();
           default:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
         }
 
-      case 4: // 5. Option Chain
-        switch (subIdx) {
-          case 0:
-            return const OptionsChainView(initialTabIndex: 0);
-          case 1:
-            return const OptionsChainView(initialTabIndex: 1);
-          default:
-            return const OptionsChainView(initialTabIndex: 0);
-        }
-
-      case 5: // 6. Commodity (MCX & NSE Derivatives Terminal)
+      case 4: // 5. Commodity (All 24 MCX, NCDEX & NSE Derivatives)
         switch (subIdx) {
           case 0:
             return const CommodityMarketView(initialCommodityIndex: 0);
           case 1:
-            return const CommodityMarketView(initialCommodityIndex: 1);
+            return const CommodityMarketView(initialCommodityIndex: 0, initialCategory: 'Energy');
           case 2:
-            return const CommodityMarketView(initialCommodityIndex: 2);
+            return const CommodityMarketView(initialCommodityIndex: 2, initialCategory: 'Bullion');
           case 3:
-            return const CommodityMarketView(initialCommodityIndex: 3);
+            return const CommodityMarketView(initialCommodityIndex: 12, initialCategory: 'Base Metals');
           case 4:
+            return const CommodityMarketView(initialCommodityIndex: 18, initialCategory: 'Agri & Spices');
+          case 5:
             return const CommodityMarketView(initialCommodityIndex: 0, initialShowOptionChain: true);
           default:
             return const CommodityMarketView(initialCommodityIndex: 0);
         }
 
-      case 6: // 7. Tools & Accounts
+      case 5: // 6. Tools & Accounts
         switch (subIdx) {
           case 0:
             return const ChildAccountsTab();
@@ -1298,13 +1286,13 @@ class _MainDashboardState extends State<MainDashboard> {
       infyPrice: _infyLivePrice,
       onOpenCharts: () {
         setState(() {
-          _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+          _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
           _bodyKey = UniqueKey();
         });
       },
       onOpenOptionChain: () {
         setState(() {
-          _currentSelection = const _NavSelection(4, 0); // Option Chain
+          _currentSelection = const _NavSelection(3, 1); // F&O Strikes in Trade Options
           _bodyKey = UniqueKey();
         });
       },
@@ -3100,7 +3088,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 ),
               ),
               const SizedBox(height: 14),
-              Text('All manual orders placed in MarketWatch, Charts, Option Chain, Commodity or incoming webhooks replicate across all ${CopyTradingEngine().totalAccountsCount - 1} connected child brokers automatically according to their individual multipliers.', style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
+              Text('All manual orders placed in Trade Options, MarketWatch, Charts, Commodity or incoming webhooks replicate across all ${CopyTradingEngine().totalAccountsCount - 1} connected child brokers automatically according to their individual multipliers.', style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
               const SizedBox(height: 20),
               Align(
                 alignment: Alignment.centerRight,
@@ -3535,12 +3523,12 @@ class _MainDashboardState extends State<MainDashboard> {
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
                                   setState(() {
-                                    _currentSelection = const _NavSelection(4, 0); // Option chain
+                                    _currentSelection = const _NavSelection(3, 1); // Trade Options (F&O Strikes)
                                     _bodyKey = UniqueKey();
                                   });
                                 },
                                 icon: const Icon(Icons.table_chart_rounded, size: 16, color: Color(0xFF38BDF8)),
-                                label: const Text('Open Option Chain (F&O)', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 12)),
+                                label: const Text('Open Trade Options (F&O)', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 12)),
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Color(0xFF38BDF8)),
                                   padding: const EdgeInsets.symmetric(vertical: 11),
@@ -3553,7 +3541,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
                                   setState(() {
-                                    _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+                                    _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
                                     _bodyKey = UniqueKey();
                                   });
                                 },
@@ -3595,12 +3583,12 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(4, 0); // Option Chain
+                                _currentSelection = const _NavSelection(3, 2); // Multi-Strike OI & Greeks in Trade Options
                                 _bodyKey = UniqueKey();
                               });
                             },
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), padding: const EdgeInsets.symmetric(vertical: 12)),
-                            child: const Text('View Implied Volatility (IV) on Option Chain', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: const Text('View Implied Volatility (IV) in Trade Options', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ] else ...[
@@ -3659,7 +3647,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(3, 2); // Charts in Trade Dashboard
+                                _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
                                 _bodyKey = UniqueKey();
                               });
                             },
@@ -4750,27 +4738,34 @@ class _SideSubmenuFlyout extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Sub items list
-            ...List.generate(groupItem.children.length, (subIdx) {
-              final sub = groupItem.children[subIdx];
-              final isSelected = currentSelection.topIndex == groupIndex &&
-                  currentSelection.subIndex == subIdx;
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: (MediaQuery.sizeOf(context).height - 100).clamp(240.0, 560.0),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sub items list
+                ...List.generate(groupItem.children.length, (subIdx) {
+                  final sub = groupItem.children[subIdx];
+                  final isSelected = currentSelection.topIndex == groupIndex &&
+                      currentSelection.subIndex == subIdx;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.5),
-                child: _FlyoutSubItemTile(
-                  icon: sub.icon,
-                  label: sub.label,
-                  isSelected: isSelected,
-                  onTap: () => onSubTap(subIdx),
-                ),
-              );
-            }),
-          ],
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.5),
+                    child: _FlyoutSubItemTile(
+                      icon: sub.icon,
+                      label: sub.label,
+                      isSelected: isSelected,
+                      onTap: () => onSubTap(subIdx),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -5236,7 +5231,7 @@ class _AutoTraderSupportFloatingButton extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               const Text(
-                'Chat',
+                'Copilot',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -5288,11 +5283,11 @@ class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
   ];
 
   final List<String> _quickChips = [
+    "📊 Trade Options (F&O)",
+    "🛢️ Nickel, Zinc & Crude",
     "⚡ Parent-Children Trading",
     "🔑 Link Broker Account",
-    "⏱️ Order Latency (<15ms)",
     "💳 Renew / Pay Online",
-    "🛡️ Risk Limits & Circuits",
     "📞 Human Desk Contact",
   ];
 
@@ -5381,6 +5376,31 @@ class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
           "• Emergency Square-Off: One-click panic button liquidates all open positions across all connected brokers instantaneously.";
     }
 
+    if (lower.contains('nickel') || lower.contains('zinc') || lower.contains('copper') || lower.contains('alum') || lower.contains('lead') || lower.contains('gold') || lower.contains('silver') || lower.contains('crude') || lower.contains('commodity') || lower.contains('mcx')) {
+      return "🛢️ MCX & NSE Commodity Terminal (24 Contracts):\n\n"
+          "• Energy: Crude Oil, Crude Oil Mini, Natural Gas, NatGas Mini\n"
+          "• Bullion: Gold, Gold Mini, Gold Guinea, Gold Petal, Silver, Silver Mini, Silver Micro\n"
+          "• Base Metals: Nickel (₹1,428.50), Zinc (₹284.20), Zinc Mini, Copper, Aluminium, Lead, Steel Rebar\n"
+          "• Agri & Spices: Cotton Candy, Mentha Oil, Jeera, Turmeric, Guar Seed, Castor Seed\n\n"
+          "Open 'Commodity' in the sidebar to view Future Chains, ITM/ATM/OTM options & 1-click multi-broker trades!";
+    }
+
+    if (lower.contains('option') || lower.contains('nifty') || lower.contains('banknifty') || lower.contains('strike') || lower.contains('greek') || lower.contains('trade options')) {
+      return "📊 Trade Options Terminal (F&O + Workspace):\n\n"
+          "• 'Trade Dashboard' and 'Option Chain' are now unified into 'Trade Options' in the left sidebar.\n"
+          "• View F&O Strikes (Calls/Puts), Multi-Strike OI & Greeks, Option Markets, Live Charts, Orders, Positions & Holdings from one menu!\n"
+          "• Want deep strike analysis? Also open 'Trade Market -> Panchayagnam AI Copilot'.";
+    }
+
+    if (lower.contains('hi') || lower.contains('hello') || lower.contains('hey') || lower.contains('namaste') || lower.contains('help')) {
+      return "👋 Welcome to Panchayagnam Copilot!\n\n"
+          "I can guide you on:\n"
+          "• 📊 Trade Options (F&O strikes, OI, Greeks & Orders)\n"
+          "• 🛢️ Commodities (Crude Oil, Gold, Silver, Nickel, Zinc & more)\n"
+          "• ⚡ Parent-Children Multi-Broker Copy Trading\n"
+          "• 🔑 Linking Dhan, AngelOne, Zerodha, Upstox & 30+ brokers";
+    }
+
     if (lower.contains('contact') || lower.contains('human') || lower.contains('phone') || lower.contains('call') || lower.contains('email') || lower.contains('number') || lower.contains('desk')) {
       return "📞 Panchayagnam Human Support Desk:\n\n"
           "• Direct Phone: +91 9390076827\n"
@@ -5389,19 +5409,25 @@ class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
           "Senior technical engineers are standing by to assist with IP whitelisting and broker auth!";
     }
 
-    return "🤖 Panchayagnam Trading AI:\n\n"
-        "I'm here to assist with all platform operations including Auto Strategies, Options Chain Greeks, Backtesting, and Multi-Broker Routing.\n\n"
-        "For urgent account verification or authorization, our Human Desk is available at 9390076827 or support@panchayagnam.com.";
+    return "🤖 Panchayagnam Copilot:\n\n"
+        "You asked: \"$q\"\n\n"
+        "You can explore 'Trade Options' for F&O strikes & positions, 'Commodity' for Nickel/Zinc/Crude/Gold/Silver, or 'Trade Market -> Panchayagnam AI Copilot' for live quantitative trade synthesis.\n\n"
+        "For direct desk help, contact 9390076827 or support@panchayagnam.com.";
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final dialogWidth = math.min(520.0, screenSize.width - 24);
+    final dialogHeight = math.min(640.0, screenSize.height - 48);
+
     return Dialog(
       backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: 520,
-        height: 640,
+        width: dialogWidth,
+        height: dialogHeight,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -5490,6 +5516,7 @@ class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
 
             // Emergency Human Support Contact Strip
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFFECFDF5),
@@ -5497,18 +5524,33 @@ class _AIChatSupportDialogState extends State<_AIChatSupportDialog> {
                   bottom: BorderSide(color: const Color(0xFF10B981).withOpacity(0.25)),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.phone_in_talk_rounded, size: 14, color: Color(0xFF047857)),
-                      SizedBox(width: 6),
-                      Text('9390076827', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF065F46))),
-                      SizedBox(width: 12),
-                      Icon(Icons.email_outlined, size: 14, color: Color(0xFF047857)),
-                      SizedBox(width: 6),
-                      Text('support@panchayagnam.com', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF065F46))),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 4,
+                    children: const [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.phone_in_talk_rounded, size: 14, color: Color(0xFF047857)),
+                          SizedBox(width: 5),
+                          Text('9390076827', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF065F46))),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.email_outlined, size: 14, color: Color(0xFF047857)),
+                          SizedBox(width: 5),
+                          Text('support@panchayagnam.com', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF065F46))),
+                        ],
+                      ),
                     ],
                   ),
                   Container(

@@ -7,10 +7,10 @@ import '../../../service/copy_trading_engine.dart';
 import '../../../service/theme_mode_service.dart';
 
 /// CommodityMarketView
-/// Panchayagnam MCX & NSE Commodity Derivatives Terminal
+/// Panchayagnam MCX, NCDEX & NSE Commodity Derivatives Terminal
 /// Inspired by Angel One's clean Future Chain + Options Watchlist (ITM/ATM/OTM)
 /// upgraded to institutional trading-floor standards:
-/// - 9 Commodities: Crude Oil, Natural Gas, Gold, Silver, Crude Oil Mini, Gold Mini, Silver Mini, Copper, Zinc
+/// - 24 Commodities across Energy, Bullion, Base Metals (Nickel, Zinc, Copper, Aluminium, Lead, Steel) & Agri
 /// - Exchange selector (MCX | NSE) & Expiry selector (Nov | Dec | Jan)
 /// - Live 1.1s Future Chain card with embedded sparkline, Day Range bar, Bid/Ask pressure, CHARTS & OPTION CHAIN
 /// - MCX Expiry Term Curve (Nov/Dec/Jan) + Lot Economics & Tick Value Calculator
@@ -19,11 +19,13 @@ import '../../../service/theme_mode_service.dart';
 class CommodityMarketView extends StatefulWidget {
   final int initialCommodityIndex;
   final bool initialShowOptionChain;
+  final String? initialCategory;
 
   const CommodityMarketView({
     super.key,
     this.initialCommodityIndex = 0,
     this.initialShowOptionChain = false,
+    this.initialCategory,
   });
 
   @override
@@ -37,10 +39,12 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   DateTime _now = DateTime.now();
 
   late int _selectedCommodityIdx;
+  String _selectedCategory = 'ALL'; // ALL | Energy | Bullion | Base Metals | Agri & Spices
   String _selectedExchange = 'MCX'; // MCX | NSE
   String _selectedExpiry = 'Nov'; // Nov | Dec | Jan
   String _optionTypeMode = 'CALL'; // CALL | PUT | BOTH
   String _strikeFilter = '';
+  String _commodityFilter = '';
   int _calcLots = 1;
 
   late List<Map<String, dynamic>> _commodities;
@@ -48,8 +52,15 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
   @override
   void initState() {
     super.initState();
-    _selectedCommodityIdx = widget.initialCommodityIndex.clamp(0, 8);
     _initCommodityUniverse();
+    _selectedCommodityIdx = widget.initialCommodityIndex.clamp(0, _commodities.length - 1);
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      _selectedCategory = widget.initialCategory!;
+      final firstMatch = _commodities.indexWhere((c) => c['category'] == _selectedCategory);
+      if (firstMatch != -1 && widget.initialCommodityIndex == 0) {
+        _selectedCommodityIdx = firstMatch;
+      }
+    }
     _startLiveTicks();
 
     if (widget.initialShowOptionChain) {
@@ -61,7 +72,9 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
 
   void _initCommodityUniverse() {
     _commodities = [
+      // ── Energy ──
       {
+        'category': 'Energy',
         'tabName': 'Crude Oil',
         'symbol': 'CRUDEOIL',
         'unit': '100 bbl',
@@ -84,6 +97,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': {8150: 314.80, 8200: 287.30, 8250: 264.70, 8300: 241.70, 8350: 217.40},
       },
       {
+        'category': 'Energy',
         'tabName': 'Natural Gas',
         'symbol': 'NATURALGAS',
         'unit': '1250 mmBtu',
@@ -106,6 +120,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Bullion',
         'tabName': 'Gold',
         'symbol': 'GOLD',
         'unit': '1 Kg (₹/10g)',
@@ -128,6 +143,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Bullion',
         'tabName': 'Silver',
         'symbol': 'SILVER',
         'unit': '30 Kg',
@@ -150,6 +166,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Energy',
         'tabName': 'Crude Oil Mini',
         'symbol': 'CRUDEOILM',
         'unit': '10 bbl',
@@ -172,6 +189,30 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': {8150: 316.20, 8200: 288.50, 8250: 265.10, 8300: 242.40, 8350: 218.00},
       },
       {
+        'category': 'Energy',
+        'tabName': 'NatGas Mini',
+        'symbol': 'NATGASMINI',
+        'unit': '250 mmBtu',
+        'lot': 250,
+        'tickPerPoint': 250.0,
+        'marginPerLot': 24200.0,
+        'spot': 248.60,
+        'prevClose': 242.40,
+        'high': 253.10,
+        'low': 240.90,
+        'oi': '19.4L',
+        'vol': '51.2K',
+        'pcr': 0.99,
+        'step': 5,
+        'atm': 250,
+        'ivBase': 45.8,
+        'flash': 0,
+        'buyPressure': 0.58,
+        'spark': [0.74, 0.66, 0.70, 0.58, 0.50, 0.47, 0.42, 0.36, 0.30, 0.25, 0.20, 0.16],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Bullion',
         'tabName': 'Gold Mini',
         'symbol': 'GOLDM',
         'unit': '100 g (₹/10g)',
@@ -194,6 +235,53 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Bullion',
+        'tabName': 'Gold Guinea',
+        'symbol': 'GOLDGUINEA',
+        'unit': '8 g (₹/8g)',
+        'lot': 1,
+        'tickPerPoint': 1.0,
+        'marginPerLot': 5200.0,
+        'spot': 61280.00,
+        'prevClose': 61020.00,
+        'high': 61490.00,
+        'low': 60880.00,
+        'oi': '6.4L',
+        'vol': '15.2K',
+        'pcr': 1.18,
+        'step': 500,
+        'atm': 61500,
+        'ivBase': 15.4,
+        'flash': 0,
+        'buyPressure': 0.63,
+        'spark': [0.70, 0.64, 0.60, 0.53, 0.49, 0.44, 0.39, 0.33, 0.28, 0.22, 0.18, 0.14],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Bullion',
+        'tabName': 'Gold Petal',
+        'symbol': 'GOLDPETAL',
+        'unit': '1 g (₹/1g)',
+        'lot': 1,
+        'tickPerPoint': 1.0,
+        'marginPerLot': 680.0,
+        'spot': 7685.00,
+        'prevClose': 7648.00,
+        'high': 7710.00,
+        'low': 7625.00,
+        'oi': '9.8L',
+        'vol': '38.4K',
+        'pcr': 1.25,
+        'step': 100,
+        'atm': 7700,
+        'ivBase': 14.9,
+        'flash': 0,
+        'buyPressure': 0.67,
+        'spark': [0.73, 0.67, 0.61, 0.56, 0.51, 0.46, 0.41, 0.35, 0.29, 0.24, 0.20, 0.16],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Bullion',
         'tabName': 'Silver Mini',
         'symbol': 'SILVERM',
         'unit': '5 Kg',
@@ -216,6 +304,31 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Bullion',
+        'tabName': 'Silver Micro',
+        'symbol': 'SILVERMIC',
+        'unit': '1 Kg',
+        'lot': 1,
+        'tickPerPoint': 1.0,
+        'marginPerLot': 8650.0,
+        'spot': 91195.00,
+        'prevClose': 90440.00,
+        'high': 91740.00,
+        'low': 90060.00,
+        'oi': '21.3L',
+        'vol': '49.6K',
+        'pcr': 1.15,
+        'step': 500,
+        'atm': 91000,
+        'ivBase': 23.0,
+        'flash': 0,
+        'buyPressure': 0.60,
+        'spark': [0.76, 0.70, 0.62, 0.59, 0.52, 0.45, 0.37, 0.32, 0.26, 0.20, 0.17, 0.12],
+        'presetCalls': <int, double>{},
+      },
+      // ── Base Metals ──
+      {
+        'category': 'Base Metals',
         'tabName': 'Copper',
         'symbol': 'COPPER',
         'unit': '2500 Kg',
@@ -238,6 +351,30 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'presetCalls': <int, double>{},
       },
       {
+        'category': 'Base Metals',
+        'tabName': 'Nickel',
+        'symbol': 'NICKEL',
+        'unit': '1500 Kg',
+        'lot': 1500,
+        'tickPerPoint': 1500.0,
+        'marginPerLot': 178000.0,
+        'spot': 1428.50,
+        'prevClose': 1412.80,
+        'high': 1441.20,
+        'low': 1406.00,
+        'oi': '11.8L',
+        'vol': '18.4K',
+        'pcr': 1.08,
+        'step': 20,
+        'atm': 1420,
+        'ivBase': 24.5,
+        'flash': 0,
+        'buyPressure': 0.61,
+        'spark': [0.74, 0.69, 0.64, 0.60, 0.55, 0.49, 0.43, 0.38, 0.33, 0.29, 0.24, 0.19],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Base Metals',
         'tabName': 'Zinc',
         'symbol': 'ZINC',
         'unit': '5000 Kg',
@@ -257,6 +394,237 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         'flash': 0,
         'buyPressure': 0.53,
         'spark': [0.66, 0.63, 0.59, 0.57, 0.52, 0.49, 0.46, 0.42, 0.39, 0.35, 0.31, 0.28],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Base Metals',
+        'tabName': 'Zinc Mini',
+        'symbol': 'ZINCMINI',
+        'unit': '1000 Kg',
+        'lot': 1000,
+        'tickPerPoint': 1000.0,
+        'marginPerLot': 26800.0,
+        'spot': 284.35,
+        'prevClose': 282.00,
+        'high': 286.60,
+        'low': 280.30,
+        'oi': '5.9L',
+        'vol': '11.4K',
+        'pcr': 1.01,
+        'step': 5,
+        'atm': 285,
+        'ivBase': 18.4,
+        'flash': 0,
+        'buyPressure': 0.54,
+        'spark': [0.65, 0.62, 0.58, 0.55, 0.51, 0.48, 0.45, 0.41, 0.38, 0.34, 0.30, 0.27],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Base Metals',
+        'tabName': 'Aluminium',
+        'symbol': 'ALUMINIUM',
+        'unit': '5000 Kg',
+        'lot': 5000,
+        'tickPerPoint': 5000.0,
+        'marginPerLot': 108000.0,
+        'spot': 242.80,
+        'prevClose': 240.95,
+        'high': 244.90,
+        'low': 239.60,
+        'oi': '8.6L',
+        'vol': '12.1K',
+        'pcr': 1.05,
+        'step': 5,
+        'atm': 245,
+        'ivBase': 17.8,
+        'flash': 0,
+        'buyPressure': 0.57,
+        'spark': [0.69, 0.65, 0.61, 0.57, 0.53, 0.49, 0.45, 0.41, 0.37, 0.33, 0.28, 0.24],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Base Metals',
+        'tabName': 'Lead',
+        'symbol': 'LEAD',
+        'unit': '5000 Kg',
+        'lot': 5000,
+        'tickPerPoint': 5000.0,
+        'marginPerLot': 89500.0,
+        'spot': 186.40,
+        'prevClose': 185.10,
+        'high': 188.20,
+        'low': 184.40,
+        'oi': '4.8L',
+        'vol': '6.7K',
+        'pcr': 0.94,
+        'step': 5,
+        'atm': 185,
+        'ivBase': 16.5,
+        'flash': 0,
+        'buyPressure': 0.51,
+        'spark': [0.64, 0.61, 0.58, 0.55, 0.52, 0.49, 0.47, 0.44, 0.41, 0.38, 0.35, 0.32],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Base Metals',
+        'tabName': 'Steel Rebar',
+        'symbol': 'STEELREBAR',
+        'unit': '5 MT',
+        'lot': 5,
+        'tickPerPoint': 5.0,
+        'marginPerLot': 28500.0,
+        'spot': 46850.00,
+        'prevClose': 46520.00,
+        'high': 47120.00,
+        'low': 46340.00,
+        'oi': '3.9L',
+        'vol': '5.4K',
+        'pcr': 1.02,
+        'step': 500,
+        'atm': 47000,
+        'ivBase': 15.2,
+        'flash': 0,
+        'buyPressure': 0.56,
+        'spark': [0.68, 0.64, 0.60, 0.56, 0.52, 0.48, 0.44, 0.40, 0.36, 0.32, 0.29, 0.25],
+        'presetCalls': <int, double>{},
+      },
+      // ── Agri & Spices ──
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Cotton Candy',
+        'symbol': 'COTTONCNDY',
+        'unit': '48 Candy',
+        'lot': 48,
+        'tickPerPoint': 48.0,
+        'marginPerLot': 94000.0,
+        'spot': 56420.00,
+        'prevClose': 56080.00,
+        'high': 56750.00,
+        'low': 55920.00,
+        'oi': '3.2L',
+        'vol': '4.1K',
+        'pcr': 1.06,
+        'step': 500,
+        'atm': 56500,
+        'ivBase': 19.0,
+        'flash': 0,
+        'buyPressure': 0.58,
+        'spark': [0.71, 0.67, 0.63, 0.59, 0.54, 0.50, 0.46, 0.41, 0.37, 0.32, 0.27, 0.23],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Mentha Oil',
+        'symbol': 'MENTHAOIL',
+        'unit': '360 Kg',
+        'lot': 360,
+        'tickPerPoint': 360.0,
+        'marginPerLot': 44500.0,
+        'spot': 938.50,
+        'prevClose': 931.20,
+        'high': 945.00,
+        'low': 928.40,
+        'oi': '2.7L',
+        'vol': '3.8K',
+        'pcr': 1.03,
+        'step': 10,
+        'atm': 940,
+        'ivBase': 17.5,
+        'flash': 0,
+        'buyPressure': 0.55,
+        'spark': [0.68, 0.64, 0.60, 0.57, 0.53, 0.49, 0.46, 0.42, 0.39, 0.35, 0.30, 0.26],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Jeera',
+        'symbol': 'JEERAUNJHA',
+        'unit': '3 MT (₹/100kg)',
+        'lot': 30,
+        'tickPerPoint': 30.0,
+        'marginPerLot': 68000.0,
+        'spot': 24680.00,
+        'prevClose': 24410.00,
+        'high': 24890.00,
+        'low': 24320.00,
+        'oi': '4.4L',
+        'vol': '5.9K',
+        'pcr': 1.11,
+        'step': 200,
+        'atm': 24600,
+        'ivBase': 25.4,
+        'flash': 0,
+        'buyPressure': 0.62,
+        'spark': [0.75, 0.69, 0.64, 0.59, 0.53, 0.47, 0.41, 0.36, 0.31, 0.26, 0.21, 0.17],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Turmeric',
+        'symbol': 'TMCFGRNZM',
+        'unit': '5 MT (₹/100kg)',
+        'lot': 50,
+        'tickPerPoint': 50.0,
+        'marginPerLot': 61000.0,
+        'spot': 13920.00,
+        'prevClose': 13780.00,
+        'high': 14060.00,
+        'low': 13690.00,
+        'oi': '3.8L',
+        'vol': '4.6K',
+        'pcr': 1.07,
+        'step': 200,
+        'atm': 14000,
+        'ivBase': 23.1,
+        'flash': 0,
+        'buyPressure': 0.59,
+        'spark': [0.72, 0.66, 0.61, 0.57, 0.51, 0.47, 0.42, 0.37, 0.32, 0.28, 0.24, 0.20],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Guar Seed',
+        'symbol': 'GUARSEED10',
+        'unit': '5 MT (₹/100kg)',
+        'lot': 50,
+        'tickPerPoint': 50.0,
+        'marginPerLot': 38500.0,
+        'spot': 5340.00,
+        'prevClose': 5295.00,
+        'high': 5385.00,
+        'low': 5270.00,
+        'oi': '6.1L',
+        'vol': '9.2K',
+        'pcr': 1.02,
+        'step': 50,
+        'atm': 5350,
+        'ivBase': 21.0,
+        'flash': 0,
+        'buyPressure': 0.56,
+        'spark': [0.70, 0.65, 0.61, 0.56, 0.52, 0.48, 0.44, 0.39, 0.35, 0.31, 0.27, 0.22],
+        'presetCalls': <int, double>{},
+      },
+      {
+        'category': 'Agri & Spices',
+        'tabName': 'Castor Seed',
+        'symbol': 'CASTOR',
+        'unit': '5 MT (₹/100kg)',
+        'lot': 50,
+        'tickPerPoint': 50.0,
+        'marginPerLot': 42000.0,
+        'spot': 6415.00,
+        'prevClose': 6370.00,
+        'high': 6460.00,
+        'low': 6345.00,
+        'oi': '5.3L',
+        'vol': '7.4K',
+        'pcr': 1.04,
+        'step': 50,
+        'atm': 6400,
+        'ivBase': 19.8,
+        'flash': 0,
+        'buyPressure': 0.57,
+        'spark': [0.69, 0.64, 0.60, 0.55, 0.51, 0.47, 0.43, 0.39, 0.34, 0.30, 0.26, 0.21],
         'presetCalls': <int, double>{},
       },
     ];
@@ -628,13 +996,13 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 205,
-                height: 35,
+                width: 245,
+                height: 36,
                 child: TextField(
                   controller: _searchCtrl,
                   style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
-                    hintText: 'Filter strike e.g. 8250...',
+                    hintText: 'Search Nickel, Zinc, Gold or 8250...',
                     hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5),
                     prefixIcon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFF38BDF8)),
                     filled: true,
@@ -642,17 +1010,41 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF334155))),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF334155))),
-                    suffixIcon: _strikeFilter.isNotEmpty
+                    suffixIcon: (_strikeFilter.isNotEmpty || _commodityFilter.isNotEmpty)
                         ? IconButton(
                             icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
                             onPressed: () {
                               _searchCtrl.clear();
-                              setState(() => _strikeFilter = '');
+                              setState(() {
+                                _strikeFilter = '';
+                                _commodityFilter = '';
+                              });
                             },
                           )
                         : null,
                   ),
-                  onChanged: (v) => setState(() => _strikeFilter = v),
+                  onChanged: (v) {
+                    final q = v.trim();
+                    setState(() {
+                      if (q.isEmpty) {
+                        _strikeFilter = '';
+                        _commodityFilter = '';
+                      } else if (RegExp(r'^[0-9]+$').hasMatch(q)) {
+                        _strikeFilter = q;
+                        _commodityFilter = '';
+                      } else {
+                        _strikeFilter = '';
+                        _commodityFilter = q.toLowerCase();
+                        _selectedCategory = 'ALL';
+                        final matchIdx = _commodities.indexWhere((c) =>
+                            c['tabName'].toString().toLowerCase().contains(_commodityFilter) ||
+                            c['symbol'].toString().toLowerCase().contains(_commodityFilter));
+                        if (matchIdx != -1) {
+                          _selectedCommodityIdx = matchIdx;
+                        }
+                      }
+                    });
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -698,11 +1090,17 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
           children: [
             _stripMetric('WTI CRUDE', '\$71.42 (+0.64%)', const Color(0xFF10B981)),
             _stripDivider(textSub),
-            _stripMetric('BRENT CRUDE', '\$75.10 (+0.52%)', const Color(0xFF10B981)),
-            _stripDivider(textSub),
             _stripMetric('COMEX GOLD', '\$2,684.50 (+0.43%)', const Color(0xFF10B981)),
             _stripDivider(textSub),
             _stripMetric('COMEX SILVER', '\$31.42 (+0.85%)', const Color(0xFF10B981)),
+            _stripDivider(textSub),
+            _stripMetric('LME NICKEL', '\$16,240 (+1.12%)', const Color(0xFF10B981)),
+            _stripDivider(textSub),
+            _stripMetric('LME ZINC', '\$3,045 (+0.88%)', const Color(0xFF10B981)),
+            _stripDivider(textSub),
+            _stripMetric('LME COPPER', '\$9,480 (+0.74%)', const Color(0xFF10B981)),
+            _stripDivider(textSub),
+            _stripMetric('LME ALUMINIUM', '\$2,612 (+0.54%)', const Color(0xFF10B981)),
             _stripDivider(textSub),
             _stripMetric('HENRY HUB NATGAS', '\$2.88 (+2.10%)', const Color(0xFF10B981)),
             _stripDivider(textSub),
@@ -736,66 +1134,168 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
       );
 
   Widget _buildCommodityTabsBar(bool isDark, Color cardBg, Color borderCol, Color textMain, Color textSub) {
+    final categories = ['ALL', 'Energy', 'Bullion', 'Base Metals', 'Agri & Spices'];
+    final visibleIndices = <int>[];
+    for (int i = 0; i < _commodities.length; i++) {
+      final c = _commodities[i];
+      final matchesCat = _selectedCategory == 'ALL' || c['category'] == _selectedCategory;
+      final matchesSearch = _commodityFilter.isEmpty ||
+          c['tabName'].toString().toLowerCase().contains(_commodityFilter) ||
+          c['symbol'].toString().toLowerCase().contains(_commodityFilter);
+      if (matchesCat && matchesSearch) {
+        visibleIndices.add(i);
+      }
+    }
+
     return Container(
       width: double.infinity,
       color: cardBg,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(_commodities.length, (idx) {
-            final item = _commodities[idx];
-            final active = _selectedCommodityIdx == idx;
-            final spot = (item['spot'] as num).toDouble();
-            final prev = (item['prevClose'] as num).toDouble();
-            final pct = ((spot - prev) / prev) * 100;
-            final isUp = spot >= prev;
-
-            return Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: InkWell(
-                onTap: () => setState(() => _selectedCommodityIdx = idx),
-                borderRadius: BorderRadius.circular(10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFF2563EB).withOpacity(isDark ? 0.25 : 0.1)
-                        : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: active ? const Color(0xFF38BDF8) : borderCol,
-                      width: active ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['tabName'] as String,
-                        style: TextStyle(
-                          color: active ? (isDark ? Colors.white : const Color(0xFF1D4ED8)) : textMain,
-                          fontSize: 13,
-                          fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category filter bar
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: categories.map((cat) {
+                final count = cat == 'ALL'
+                    ? _commodities.length
+                    : _commodities.where((c) => c['category'] == cat).length;
+                final active = _selectedCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = cat;
+                        final firstMatch = cat == 'ALL'
+                            ? 0
+                            : _commodities.indexWhere((c) => c['category'] == cat);
+                        if (firstMatch != -1 &&
+                            cat != 'ALL' &&
+                            _commodities[_selectedCommodityIdx]['category'] != cat) {
+                          _selectedCommodityIdx = firstMatch;
+                        }
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? const Color(0xFF059669)
+                            : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: active ? const Color(0xFF10B981) : borderCol,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '₹${_formatIndianPrice(spot)} (${isUp ? '+' : ''}${pct.toStringAsFixed(2)}%)',
+                      child: Text(
+                        '$cat ($count)',
                         style: TextStyle(
-                          color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          color: active ? Colors.white : textSub,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
-        ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Commodity cards strip
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: visibleIndices.isEmpty
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'No matching commodity found. Clear search to view all ${_commodities.length} MCX commodities.',
+                          style: TextStyle(color: textSub, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ]
+                  : visibleIndices.map((idx) {
+                      final item = _commodities[idx];
+                      final active = _selectedCommodityIdx == idx;
+                      final spot = (item['spot'] as num).toDouble();
+                      final prev = (item['prevClose'] as num).toDouble();
+                      final pct = ((spot - prev) / prev) * 100;
+                      final isUp = spot >= prev;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: InkWell(
+                          onTap: () => setState(() => _selectedCommodityIdx = idx),
+                          borderRadius: BorderRadius.circular(10),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? const Color(0xFF2563EB).withOpacity(isDark ? 0.25 : 0.1)
+                                  : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: active ? const Color(0xFF38BDF8) : borderCol,
+                                width: active ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      item['tabName'] as String,
+                                      style: TextStyle(
+                                        color: active ? (isDark ? Colors.white : const Color(0xFF1D4ED8)) : textMain,
+                                        fontSize: 13,
+                                        fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF334155).withOpacity(isDark ? 0.6 : 0.12),
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                      child: Text(
+                                        item['symbol'] as String,
+                                        style: TextStyle(
+                                          color: textSub,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '₹${_formatIndianPrice(spot)} (${isUp ? '+' : ''}${pct.toStringAsFixed(2)}%)',
+                                  style: TextStyle(
+                                    color: isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1812,9 +2312,13 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                   children: [
                     const Icon(Icons.table_chart_rounded, color: Color(0xFF10B981), size: 22),
                     const SizedBox(width: 10),
-                    Text('$sym ($_selectedExchange · $_selectedExpiry) Commodity Option Chain',
-                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w900)),
-                    const Spacer(),
+                    Expanded(
+                      child: Text(
+                        '$sym ($_selectedExchange · $_selectedExpiry) Commodity Option Chain',
+                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w900),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
                   ],
                 ),

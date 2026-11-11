@@ -998,7 +998,7 @@ class _PositionsViewState extends State<PositionsView> {
                     const SizedBox(height: 12),
                     const Text('No Open Positions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('Your portfolio is currently 100% square. Place a trade from MarketWatch or Option Chain to open a multi-broker position.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    Text('Your portfolio is currently 100% square. Place a trade from Trade Options or MarketWatch to open a multi-broker position.', style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
                   ],
                 ),
               )
