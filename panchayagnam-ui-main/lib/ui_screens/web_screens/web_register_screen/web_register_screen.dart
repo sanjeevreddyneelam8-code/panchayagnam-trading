@@ -23,20 +23,93 @@ class _WebRegisterScreenState extends State<WebRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 850;
     return Scaffold(
       backgroundColor: AppColors.scaffold,
-      body: Row(
-        children: [
-          Expanded(flex: 55, child: _LeftPanel()),
-          Expanded(
-            flex: 45,
-            child: Center(
-              child: _RightPanel(
-                obscureMpin: _obscureMpin,
-                onToggleMpin: () =>
-                    setState(() => _obscureMpin = !_obscureMpin),
+      body: isMobile
+          ? SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _MobileTopBanner(),
+                    _RightPanel(
+                      obscureMpin: _obscureMpin,
+                      onToggleMpin: () =>
+                          setState(() => _obscureMpin = !_obscureMpin),
+                    ),
+                  ],
+                ),
               ),
+            )
+          : Row(
+              children: [
+                Expanded(flex: 55, child: _LeftPanel()),
+                Expanded(
+                  flex: 45,
+                  child: Center(
+                    child: _RightPanel(
+                      obscureMpin: _obscureMpin,
+                      onToggleMpin: () =>
+                          setState(() => _obscureMpin = !_obscureMpin),
+                    ),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+}
+
+class _MobileTopBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF022C22), Color(0xFF064E3B), Color(0xFF031E18)],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF059669)],
+              ),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Center(
+              child: Icon(Icons.auto_graph_rounded, color: Colors.white, size: 19),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PANCHAYAGNAM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              Text(
+                'Create your algorithmic trading account',
+                style: TextStyle(
+                  color: Color(0xFFD1FAE5),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -274,8 +347,9 @@ class _RightPanelState extends State<_RightPanel> {
   bool _nameValid = false;
   bool _emailValid = false;
   bool _phoneValid = false;
+  String? _autoFilledOtpBanner;
 
-  bool get _canSendOtp => _nameValid && _emailValid && _phoneValid;
+  bool get _canSendOtp => _phoneValid;
 
   @override
   void initState() {
@@ -288,11 +362,11 @@ class _RightPanelState extends State<_RightPanel> {
   void _onFieldsChanged() {
     final name = _nameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
-    final phone = _phoneCtrl.text;
+    final phone = _phoneCtrl.text.trim();
 
-    final nameOk = name.length >= 3 && RegExp(r'^[a-zA-Z ]+$').hasMatch(name);
+    final nameOk = name.length >= 3 && RegExp(r'^[a-zA-Z .]+$').hasMatch(name);
     final emailOk = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-    final phoneOk = phone.length == 10;
+    final phoneOk = phone.length == 10 && RegExp(r'^[0-9]+$').hasMatch(phone);
 
     if (nameOk != _nameValid ||
         emailOk != _emailValid ||
@@ -306,13 +380,25 @@ class _RightPanelState extends State<_RightPanel> {
   }
 
   void _sendOtp(BuildContext blocContext) {
+    final phone = _phoneCtrl.text.trim();
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(blocContext).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your 10-digit mobile number first to receive OTP.'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
     setState(() => _loadingAction = _LoadingAction.otp);
     blocContext.read<AuthBloc>().add(
       SendOtpRequested(
-        phoneNumber: _phoneCtrl.text.trim(),
+        phoneNumber: phone,
         codeReqFor: 'Registration',
       ),
-    );///
+    );
   }
 
   void _startTimer() {
@@ -355,17 +441,29 @@ class _RightPanelState extends State<_RightPanel> {
       listener: (context, state) {
         // ── OTP sent successfully ────────────────────────────────────────────
         if (state is OtpSentSuccess) {
+          final extractedOtp =
+              RegExp(r'\b(\d{6})\b').firstMatch(state.message)?.group(1);
           setState(() {
             _otpSent = true;
             _canResend = false;
             _timerSeconds = 60;
-            _loadingAction = _LoadingAction.none; // reset loader
-            _otpCtrl.clear();
+            _loadingAction = _LoadingAction.none;
+            if (extractedOtp != null) {
+              _otpCtrl.text = extractedOtp;
+              _autoFilledOtpBanner = extractedOtp;
+            } else {
+              _otpCtrl.clear();
+              _autoFilledOtpBanner = null;
+            }
           });
           _startTimer();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
+              content: Text(
+                extractedOtp != null
+                    ? 'Verification OTP auto-filled: $extractedOtp'
+                    : state.message,
+              ),
               backgroundColor: const Color(0xFF059669),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -376,6 +474,7 @@ class _RightPanelState extends State<_RightPanel> {
         }
         // ── Registration success ─────────────────────────────────────────────
         else if (state is RegisterSuccess) {
+          final registeredPhone = _phoneCtrl.text.trim();
           setState(() => _loadingAction = _LoadingAction.none); // reset loader
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -392,7 +491,7 @@ class _RightPanelState extends State<_RightPanel> {
             MaterialPageRoute(
               builder: (_) => BlocProvider(
                 create: (_) => AuthBloc(),
-                child: const SignInScreen(),
+                child: SignInScreen(initialPhone: registeredPhone),
               ),
             ),
           );
@@ -418,9 +517,16 @@ class _RightPanelState extends State<_RightPanel> {
         final isRegisterLoading =
             state is AuthLoading && _loadingAction == _LoadingAction.register;
 
+        final isCompact = MediaQuery.sizeOf(context).width < 850;
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 40),
-          child: Form(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 20 : 56,
+            vertical: isCompact ? 24 : 40,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,21 +614,38 @@ class _RightPanelState extends State<_RightPanel> {
                         ),
                       )
                     else
-                      TextButton(
-                        onPressed: _canSendOtp ? () => _sendOtp(context) : null,
-                        style: TextButton.styleFrom(
-                          foregroundColor: _canSendOtp
+                      TextButton.icon(
+                        onPressed: () => _sendOtp(context),
+                        icon: Icon(
+                          Icons.sms_outlined,
+                          size: 15,
+                          color: _canSendOtp
                               ? const Color(0xFF059669)
-                              : const Color(0xFFD1D5DB),
+                              : const Color(0xFF9CA3AF),
                         ),
-                        child: Text(
+                        label: Text(
                           'Send OTP',
                           style: TextStyle(
                             color: _canSendOtp
                                 ? const Color(0xFF059669)
-                                : const Color(0xFFD1D5DB),
+                                : const Color(0xFF9CA3AF),
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: _canSendOtp
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF9CA3AF),
+                          backgroundColor: _canSendOtp
+                              ? const Color(0xFFECFDF5)
+                              : const Color(0xFFF3F4F6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -635,6 +758,8 @@ class _RightPanelState extends State<_RightPanel> {
               ],
             ),
           ),
+            ),
+          ),
         );
       },
     );
@@ -657,7 +782,7 @@ class _RightPanelState extends State<_RightPanel> {
       controller: _nameCtrl,
       keyboardType: TextInputType.name,
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z ]')),
+        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z .]')),
       ],
       style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       decoration: _inputDecoration(
@@ -733,21 +858,39 @@ class _RightPanelState extends State<_RightPanel> {
             return null;
           },
         ),
-        if (_otpSent && _otpCtrl.text.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
-              const SizedBox(width: 4),
-              Text(
-                'Verification code ready: ${_otpCtrl.text}',
-                style: const TextStyle(
-                  fontSize: 12,
+        if (_otpSent) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 15,
                   color: Color(0xFF059669),
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _autoFilledOtpBanner != null
+                        ? 'Verification OTP auto-filled: ${_otpCtrl.text} (SMS Gateway in Trial Mode)'
+                        : _otpCtrl.text.isNotEmpty
+                            ? 'Verification code ready: ${_otpCtrl.text}'
+                            : 'OTP sent to ${_phoneCtrl.text.trim()}. Please enter the 6-digit code.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF047857),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],

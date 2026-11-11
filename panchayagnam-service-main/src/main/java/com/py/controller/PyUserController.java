@@ -220,7 +220,11 @@ public class PyUserController {
             log.error("Login failed for phone={}: {}", requestDto.getPhoneNumber(), e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(PyApiResponseDto.failure("Login failed"));
+                    .body(PyApiResponseDto.failure(
+                            e.getMessage() != null && !e.getMessage().isBlank()
+                                    ? e.getMessage()
+                                    : "Invalid phone number or MPIN"
+                    ));
         }
     }
 

@@ -45,10 +45,22 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
   }
 
   void _sendOtp(BuildContext blocContext) {
+    final phone = _phoneCtrl.text.trim();
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(blocContext).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your registered 10-digit mobile number first.'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
     setState(() => _loadingAction = _ForgotLoadingAction.otp);
     blocContext.read<AuthBloc>().add(
       SendOtpRequested(
-        phoneNumber: _phoneCtrl.text.trim(),
+        phoneNumber: phone,
         codeReqFor: 'Reset',
       ),
     );
@@ -85,69 +97,72 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F0FB),
-      body: Row(
-        children: [
-          Expanded(flex: 55, child: _LeftPanel()),
-          Expanded(
-            flex: 45,
-            child: BlocConsumer<AuthBloc, AuthState>(
-              listener: (context, state) {
-                // ── OTP sent successfully ──────────────────────────────────
-                if (state is OtpSentSuccess) {
-                  setState(() {
-                    _otpSent = true;
-                    _canResend = false;
-                    _loadingAction = _ForgotLoadingAction.none;
-                  });
-                  _startTimer();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: const Color(0xFF7C3AED),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
-                  // Navigate to reset screen once OTP is sent
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) => AuthBloc(),
-                        child: WebResetMpinScreen(
-                          phoneNumber: _phoneCtrl.text.trim(),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                // ── Auth error ─────────────────────────────────────────────
-                else if (state is AuthError) {
-                  setState(() => _loadingAction = _ForgotLoadingAction.none);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: const Color(0xFFEF4444),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                final isOtpLoading = state is AuthLoading &&
-                    _loadingAction == _ForgotLoadingAction.otp;
+    final isMobile = MediaQuery.sizeOf(context).width < 850;
+    final formPanel = BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // ── OTP sent successfully ──────────────────────────────────
+        if (state is OtpSentSuccess) {
+          final extractedOtp =
+              RegExp(r'\b(\d{6})\b').firstMatch(state.message)?.group(1);
+          setState(() {
+            _otpSent = true;
+            _canResend = false;
+            _loadingAction = _ForgotLoadingAction.none;
+          });
+          _startTimer();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                extractedOtp != null
+                    ? 'Reset OTP ready & auto-filled: $extractedOtp'
+                    : state.message,
+              ),
+              backgroundColor: const Color(0xFF7C3AED),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+          // Navigate to reset screen once OTP is sent
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider(
+                create: (_) => AuthBloc(),
+                child: WebResetMpinScreen(
+                  phoneNumber: _phoneCtrl.text.trim(),
+                  initialOtp: extractedOtp,
+                ),
+              ),
+            ),
+          );
+        }
+        // ── Auth error ─────────────────────────────────────────────
+        else if (state is AuthError) {
+          setState(() => _loadingAction = _ForgotLoadingAction.none);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isOtpLoading = state is AuthLoading &&
+            _loadingAction == _ForgotLoadingAction.otp;
 
-                return Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 56, vertical: 40),
-                    child: Form(
-                      key: _formKey,
+        return Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 56, vertical: isMobile ? 24 : 40),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Form(
+                key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -297,24 +312,37 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                     ),
                                   )
                                 else
-                                  TextButton(
-                                    onPressed: _phoneValid
-                                        ? () => _sendOtp(context)
-                                        : null,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: _phoneValid
+                                  TextButton.icon(
+                                    onPressed: () => _sendOtp(context),
+                                    icon: Icon(
+                                      Icons.sms_outlined,
+                                      size: 15,
+                                      color: _phoneValid
                                           ? const Color(0xFF7C3AED)
-                                          : const Color(0xFFD1D5DB),
+                                          : const Color(0xFF9CA3AF),
                                     ),
-                                    child: Text(
+                                    label: Text(
                                       'Send OTP',
                                       style: TextStyle(
                                         color: _phoneValid
                                             ? const Color(0xFF7C3AED)
-                                            : const Color(0xFFD1D5DB),
+                                            : const Color(0xFF9CA3AF),
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
                                       ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: _phoneValid
+                                          ? const Color(0xFF7C3AED)
+                                          : const Color(0xFF9CA3AF),
+                                      backgroundColor: _phoneValid
+                                          ? const Color(0xFFEDE9FE)
+                                          : const Color(0xFFF3F4F6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
                                     ),
                                   ),
                             ],
@@ -323,12 +351,61 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+              );
+            },
+          );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F0FB),
+      body: isMobile
+          ? SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 18),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                        ),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PANCHAYAGNAM',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                          Text(
+                            'Reset your 4-digit trading MPIN',
+                            style: TextStyle(
+                              color: Color(0xFFEDE9FE),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    formPanel,
+                  ],
+                ),
+              ),
+            )
+          : Row(
+              children: [
+                Expanded(flex: 55, child: _LeftPanel()),
+                Expanded(flex: 45, child: formPanel),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

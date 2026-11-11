@@ -11,6 +11,13 @@ import '../models/demat_account.dart';
 import '../models/fetch_demat_accounts_response.dart';
 import '../models/py_user.dart';
 
+class ServerUnreachableException implements Exception {
+  final String message;
+  ServerUnreachableException(this.message);
+  @override
+  String toString() => message;
+}
+
 class ServiceClass {
   static const String _baseUrl = ApiUrls.baseUrl;
   static const Duration _timeout = Duration(seconds: 75);
@@ -19,30 +26,66 @@ class ServiceClass {
 
   ServiceClass({http.Client? client}) : _client = client ?? http.Client();
 
+  String _normalizePhone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length >= 10) {
+      return digits.substring(digits.length - 10);
+    }
+    return digits;
+  }
+
+  Map<String, dynamic>? _decodeMapSafe(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return null;
+  }
+
+  bool _isConnectivityError(Object e) {
+    if (e is TimeoutException || e is SocketException || e is ServerUnreachableException) {
+      return true;
+    }
+    final s = e.toString();
+    return s.contains('ClientException') ||
+        s.contains('XMLHttpRequest') ||
+        s.contains('Failed host lookup') ||
+        s.contains('Connection refused') ||
+        s.contains('Network is unreachable');
+  }
+
   Future<Map<String, dynamic>> sendOtp({
     required String phoneNumber,
     required String codeReqFor,
   }) async {
+    final cleanPhone = _normalizePhone(phoneNumber);
     try {
       final response = await _client.post(
         Uri.parse('$_baseUrl/api/v1/pyauth/send-otp'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phoneNumber': phoneNumber, "codeReqFor": codeReqFor}),
+        body: jsonEncode({'phoneNumber': cleanPhone, "codeReqFor": codeReqFor}),
       ).timeout(_timeout);
 
-      final data = jsonDecode(response.body);
+      final data = _decodeMapSafe(response.body);
+      if (response.statusCode >= 500 || data == null) {
+        throw ServerUnreachableException(
+          'Panchayagnam server is temporarily waking up (${response.statusCode}). Switching to Trial OTP mode.',
+        );
+      }
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (data['success'] == true) return data;
         throw Exception(data['message'] ?? 'Failed to send OTP');
       }
       throw Exception(data['message'] ?? 'Failed to send OTP (${response.statusCode})');
-    } on TimeoutException {
-      throw Exception('Server request timed out. Please try again later.');
     } catch (e) {
-      if (e is Exception && !e.toString().contains('ClientException') && !e.toString().contains('XMLHttpRequest')) {
-        rethrow;
+      if (_isConnectivityError(e)) {
+        if (e is ServerUnreachableException) rethrow;
+        throw ServerUnreachableException(
+          'Unable to reach Panchayagnam server right now. Switching to Trial OTP mode.',
+        );
       }
-      throw Exception('Unable to reach Panchayagnam server. Please verify your connection.');
+      rethrow;
     }
   }
 
@@ -80,32 +123,39 @@ class ServiceClass {
     required String mpin,
     required String otp,
   }) async {
+    final cleanPhone = _normalizePhone(phoneNumber);
     try {
       final response = await _client.post(
         Uri.parse('$_baseUrl/api/v1/pyauth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'fullName': fullName,
-          'email': email,
-          'phoneNumber': phoneNumber,
-          'mpin': mpin,
-          'otp': otp,
+          'fullName': fullName.trim(),
+          'email': email.trim(),
+          'phoneNumber': cleanPhone,
+          'mpin': mpin.trim(),
+          'otp': otp.trim(),
         }),
       ).timeout(_timeout);
 
-      final data = jsonDecode(response.body);
+      final data = _decodeMapSafe(response.body);
+      if (response.statusCode >= 500 || data == null) {
+        throw ServerUnreachableException(
+          'Panchayagnam server is temporarily waking up (${response.statusCode}). Completing offline registration.',
+        );
+      }
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (data['success'] == true) return data;
         throw Exception(data['message'] ?? 'Registration failed');
       }
       throw Exception(data['message'] ?? 'Registration failed (${response.statusCode})');
-    } on TimeoutException {
-      throw Exception('Server request timed out. Please try again later.');
     } catch (e) {
-      if (e is Exception && !e.toString().contains('ClientException') && !e.toString().contains('XMLHttpRequest')) {
-        rethrow;
+      if (_isConnectivityError(e)) {
+        if (e is ServerUnreachableException) rethrow;
+        throw ServerUnreachableException(
+          'Unable to reach Panchayagnam server. Please check your connection.',
+        );
       }
-      throw Exception('Unable to reach Panchayagnam server. Please verify your connection.');
+      rethrow;
     }
   }
 
@@ -113,33 +163,38 @@ class ServiceClass {
     required String phoneNumber,
     required String mpin,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/pyauth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phoneNumber': phoneNumber, 'mpin': mpin}),
-    );
+    final cleanPhone = _normalizePhone(phoneNumber);
+    try {
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/api/v1/pyauth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phoneNumber': cleanPhone, 'mpin': mpin.trim()}),
+      ).timeout(_timeout);
 
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      if (data['success'] == true) return data;
-      throw Exception(data['message'] ?? 'Login failed');
+      final data = _decodeMapSafe(response.body);
+      if (response.statusCode >= 500 || data == null) {
+        throw ServerUnreachableException(
+          'Server unavailable (${response.statusCode}). Checking local credentials.',
+        );
+      }
+      if (response.statusCode == 200) {
+        if (data['success'] == true) return data;
+        throw Exception(data['message'] ?? 'Invalid phone number or MPIN');
+      }
+      throw Exception(data['message'] ?? 'Invalid phone number or MPIN');
+    } catch (e) {
+      if (_isConnectivityError(e)) {
+        if (e is ServerUnreachableException) rethrow;
+        throw ServerUnreachableException(
+          'Unable to reach Panchayagnam server right now.',
+        );
+      }
+      rethrow;
     }
-    throw Exception(data['message'] ?? 'Login failed');
   }
 
   Future<Map<String, dynamic>> forgotMpin({required String phoneNumber}) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/pyauth/forgot-mpin'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phoneNumber': phoneNumber}),
-    );
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      if (data['success'] == true) return data;
-      throw Exception(data['message'] ?? 'Failed to send OTP');
-    }
-    throw Exception(data['message'] ?? 'Failed to send OTP');
+    return sendOtp(phoneNumber: phoneNumber, codeReqFor: 'Reset');
   }
 
   Future<Map<String, dynamic>> resetMpin({
@@ -147,22 +202,38 @@ class ServiceClass {
     required String otp,
     required String newMpin,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/pyauth/reset-mpin'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'phoneNumber': phoneNumber,
-        'otp': otp,
-        'newMpin': newMpin,
-      }),
-    );
+    final cleanPhone = _normalizePhone(phoneNumber);
+    try {
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/api/v1/pyauth/reset-mpin'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'phoneNumber': cleanPhone,
+          'otp': otp.trim(),
+          'newMpin': newMpin.trim(),
+        }),
+      ).timeout(_timeout);
 
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      if (data['success'] == true) return data;
-      throw Exception(data['message'] ?? 'Failed to reset MPIN');
+      final data = _decodeMapSafe(response.body);
+      if (response.statusCode >= 500 || data == null) {
+        throw ServerUnreachableException(
+          'Server unavailable (${response.statusCode}).',
+        );
+      }
+      if (response.statusCode == 200) {
+        if (data['success'] == true) return data;
+        throw Exception(data['message'] ?? 'Failed to reset MPIN');
+      }
+      throw Exception(data['message'] ?? 'Failed to reset MPIN (${response.statusCode})');
+    } catch (e) {
+      if (_isConnectivityError(e)) {
+        if (e is ServerUnreachableException) rethrow;
+        throw ServerUnreachableException(
+          'Unable to reach Panchayagnam server right now.',
+        );
+      }
+      rethrow;
     }
-    throw Exception(data['message'] ?? 'Failed to reset MPIN');
   }
 
   Future<Map<String, dynamic>> raiseAdminRequestApi({

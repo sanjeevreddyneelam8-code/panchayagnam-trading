@@ -13,7 +13,9 @@ import '../../../reusable_widets/web_forgot_screen.dart';
 import '../web_register_screen/web_register_screen.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  final String? initialPhone;
+
+  const SignInScreen({super.key, this.initialPhone});
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -56,32 +58,107 @@ class _SignInScreenState extends State<SignInScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 850;
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Row(
-        children: [
-          // Left Panel (AutoTrader Hero) - 52% width
-          Expanded(flex: 52, child: _LeftHeroPanel()),
-          // Right Panel (Clean Sign In Form) - 48% width
-          Expanded(
-            flex: 48,
-            child: AnimatedBuilder(
-              animation: _entryController,
-              builder: (context, child) => Opacity(
-                opacity: _rightPanelFade.value,
-                child: Transform.translate(
-                  offset: Offset(_rightPanelSlide.value, 0),
-                  child: child,
+      body: isMobile
+          ? SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _MobileSignInBanner(),
+                    _RightSignInPanel(
+                      obscurePassword: _obscurePassword,
+                      initialPhone: widget.initialPhone,
+                      onTogglePassword: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ],
                 ),
               ),
-              child: Center(
-                child: _RightSignInPanel(
-                  obscurePassword: _obscurePassword,
-                  onTogglePassword: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
+            )
+          : Row(
+              children: [
+                // Left Panel (AutoTrader Hero) - 52% width
+                Expanded(flex: 52, child: _LeftHeroPanel()),
+                // Right Panel (Clean Sign In Form) - 48% width
+                Expanded(
+                  flex: 48,
+                  child: AnimatedBuilder(
+                    animation: _entryController,
+                    builder: (context, child) => Opacity(
+                      opacity: _rightPanelFade.value,
+                      child: Transform.translate(
+                        offset: Offset(_rightPanelSlide.value, 0),
+                        child: child,
+                      ),
+                    ),
+                    child: Center(
+                      child: _RightSignInPanel(
+                        obscurePassword: _obscurePassword,
+                        initialPhone: widget.initialPhone,
+                        onTogglePassword: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
+    );
+  }
+}
+
+class _MobileSignInBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF064E3B), Color(0xFF022C22), Color(0xFF011610)],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF059669)],
+              ),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Center(
+              child: Icon(Icons.auto_graph_rounded, color: Colors.white, size: 19),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PANCHAYAGNAM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              Text(
+                'Institutional Multi-Broker Copy Trading',
+                style: TextStyle(
+                  color: Color(0xFFA7F3D0),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -391,10 +468,12 @@ class _AutoTraderGridPainter extends CustomPainter {
 
 class _RightSignInPanel extends StatefulWidget {
   final bool obscurePassword;
+  final String? initialPhone;
   final VoidCallback onTogglePassword;
 
   const _RightSignInPanel({
     required this.obscurePassword,
+    this.initialPhone,
     required this.onTogglePassword,
   });
 
@@ -406,6 +485,15 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
   final _formKey = GlobalKey<FormState>();
   final _loginIdCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialPhone != null && widget.initialPhone!.trim().isNotEmpty) {
+      final digits = widget.initialPhone!.replaceAll(RegExp(r'[^0-9]'), '');
+      _loginIdCtrl.text = digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
+    }
+  }
 
   @override
   void dispose() {
@@ -457,13 +545,17 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
+        final isCompact = MediaQuery.sizeOf(context).width < 850;
         return Container(
           color: Colors.white,
           child: Stack(
             children: [
               Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 32),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 20 : 56,
+                    vertical: isCompact ? 24 : 32,
+                  ),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: Form(
@@ -566,14 +658,14 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                             keyboardType: TextInputType.number,
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(6),
+                              LengthLimitingTextInputFormatter(4),
                             ],
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
                                 return 'Please enter your MPIN';
                               }
-                              if (v.trim().length < 4) {
-                                return 'MPIN must be at least 4 digits';
+                              if (v.trim().length != 4) {
+                                return 'MPIN must be exactly 4 digits';
                               }
                               return null;
                             },

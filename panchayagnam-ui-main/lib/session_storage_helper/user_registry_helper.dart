@@ -45,6 +45,70 @@ class RegisteredUser {
 
 class UserRegistryHelper {
   static const String _storageKey = 'panchayagnam_registered_users_db_v2';
+  static const String _otpStorageKey = 'panchayagnam_pending_otps_v1';
+
+  /// Normalizes any Indian mobile input (e.g. "+91 98765 43210", "09876543210")
+  /// down to its canonical 10-digit form when 10 or more digits are present.
+  static String normalizePhone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length >= 10) {
+      return digits.substring(digits.length - 10);
+    }
+    return digits;
+  }
+
+  /// Extracts a 6-digit OTP code from server trial/demo status messages.
+  static String? extractOtp(String? message) {
+    if (message == null || message.isEmpty) return null;
+    final match = RegExp(r'\b(\d{6})\b').firstMatch(message);
+    return match?.group(1);
+  }
+
+  static String generateTrialOtp() {
+    final code = 100000 + (DateTime.now().millisecondsSinceEpoch % 899999);
+    return code.toString();
+  }
+
+  static void savePendingOtp(String phoneNumber, String otp) {
+    final normalized = normalizePhone(phoneNumber);
+    if (normalized.isEmpty || otp.trim().isEmpty) return;
+    try {
+      final raw = html.window.localStorage[_otpStorageKey];
+      final Map<String, dynamic> otps = raw != null && raw.trim().isNotEmpty
+          ? Map<String, dynamic>.from(jsonDecode(raw) as Map)
+          : {};
+      otps[normalized] = {
+        'otp': otp.trim(),
+        'expiresAt': DateTime.now()
+            .add(const Duration(minutes: 10))
+            .millisecondsSinceEpoch,
+      };
+      html.window.localStorage[_otpStorageKey] = jsonEncode(otps);
+    } catch (_) {}
+  }
+
+  static bool verifyPendingOtp(String phoneNumber, String otp) {
+    final normalized = normalizePhone(phoneNumber);
+    final entered = otp.trim();
+    if (entered.length != 6) return false;
+    try {
+      final raw = html.window.localStorage[_otpStorageKey];
+      if (raw == null || raw.trim().isEmpty) return false;
+      final otps = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      final entry = otps[normalized];
+      if (entry is Map) {
+        final savedOtp = (entry['otp'] ?? '').toString().trim();
+        final expiresAt = entry['expiresAt'] is int
+            ? entry['expiresAt'] as int
+            : int.tryParse(entry['expiresAt']?.toString() ?? '') ?? 0;
+        if (savedOtp == entered &&
+            DateTime.now().millisecondsSinceEpoch <= expiresAt) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
 
   // Seed / Administrator account
   static final Map<String, RegisteredUser> _seedUsers = {
@@ -66,7 +130,23 @@ class UserRegistryHelper {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         for (final entry in decoded.entries) {
           if (entry.value is Map) {
-            users[entry.key] = RegisteredUser.fromJson(Map<String, dynamic>.from(entry.value));
+            final parsed = RegisteredUser.fromJson(
+              Map<String, dynamic>.from(entry.value),
+            );
+            final key = normalizePhone(
+              parsed.phoneNumber.isNotEmpty ? parsed.phoneNumber : entry.key,
+            );
+            if (key.isNotEmpty) {
+              users[key] = RegisteredUser(
+                phoneNumber: key,
+                mpin: parsed.mpin,
+                fullName: parsed.fullName,
+                email: parsed.email,
+                role: parsed.role,
+                userId: parsed.userId,
+                registeredAt: parsed.registeredAt,
+              );
+            }
           }
         }
       }
@@ -76,12 +156,23 @@ class UserRegistryHelper {
 
   static RegisteredUser? findUser(String phoneNumber) {
     final users = getAllUsers();
-    return users[phoneNumber.trim()];
+    final key = normalizePhone(phoneNumber);
+    return users[key] ?? users[phoneNumber.trim()];
   }
 
   static void saveUser(RegisteredUser user) {
     final users = getAllUsers();
-    users[user.phoneNumber.trim()] = user;
+    final key = normalizePhone(user.phoneNumber);
+    final normalizedUser = RegisteredUser(
+      phoneNumber: key.isNotEmpty ? key : user.phoneNumber.trim(),
+      mpin: user.mpin.trim(),
+      fullName: user.fullName.trim(),
+      email: user.email.trim(),
+      role: user.role,
+      userId: user.userId,
+      registeredAt: user.registeredAt,
+    );
+    users[normalizedUser.phoneNumber] = normalizedUser;
     final jsonMap = users.map((k, v) => MapEntry(k, v.toJson()));
     try {
       html.window.localStorage[_storageKey] = jsonEncode(jsonMap);
@@ -90,17 +181,18 @@ class UserRegistryHelper {
 
   static bool updateMpin(String phoneNumber, String newMpin) {
     final users = getAllUsers();
-    final user = users[phoneNumber.trim()];
+    final key = normalizePhone(phoneNumber);
+    final user = users[key] ?? users[phoneNumber.trim()];
     if (user != null) {
       final updated = RegisteredUser(
-        phoneNumber: user.phoneNumber,
+        phoneNumber: key.isNotEmpty ? key : user.phoneNumber,
         mpin: newMpin.trim(),
         fullName: user.fullName,
         email: user.email,
         role: user.role,
         userId: user.userId,
       );
-      users[user.phoneNumber] = updated;
+      users[updated.phoneNumber] = updated;
       final jsonMap = users.map((k, v) => MapEntry(k, v.toJson()));
       try {
         html.window.localStorage[_storageKey] = jsonEncode(jsonMap);
