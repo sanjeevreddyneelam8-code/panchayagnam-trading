@@ -35,10 +35,12 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             } else if (rawUrl.startsWith("jdbc:postgresql://")) {
                 overrides.put("spring.datasource.url", rawUrl);
                 overrides.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
+                overrides.put("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
                 overrides.put("spring.jpa.hibernate.ddl-auto", "update");
             } else if (rawUrl.startsWith("jdbc:mysql://")) {
                 overrides.put("spring.datasource.url", rawUrl);
                 overrides.put("spring.datasource.driver-class-name", "com.mysql.cj.jdbc.Driver");
+                overrides.put("spring.jpa.database-platform", "org.hibernate.dialect.MySQLDialect");
                 overrides.put("spring.jpa.hibernate.ddl-auto", "update");
             }
         }
@@ -71,6 +73,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                     + (query != null && !query.isBlank() ? "?" + query : "");
             overrides.put("spring.datasource.url", jdbc);
             overrides.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
+            overrides.put("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
             overrides.put("spring.jpa.hibernate.ddl-auto", "update");
             applyUserInfoIfAbsent(uri.getRawUserInfo(), env, overrides);
         } catch (Exception ignored) {
@@ -89,6 +92,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                     + (query != null && !query.isBlank() ? "?" + query : "");
             overrides.put("spring.datasource.url", jdbc);
             overrides.put("spring.datasource.driver-class-name", "com.mysql.cj.jdbc.Driver");
+            overrides.put("spring.jpa.database-platform", "org.hibernate.dialect.MySQLDialect");
             overrides.put("spring.jpa.hibernate.ddl-auto", "update");
             applyUserInfoIfAbsent(uri.getRawUserInfo(), env, overrides);
         } catch (Exception ignored) {
