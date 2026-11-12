@@ -28,6 +28,10 @@ spring:
       pool:
         size: 1
 
+app:
+  security:
+    public-docs-enabled: true
+
 trading:
   paper-trading:
     enabled: true

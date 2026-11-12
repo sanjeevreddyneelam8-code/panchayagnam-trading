@@ -16,10 +16,10 @@ class AppRoutes {
 //testjjkjk
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.root,
-  debugLogDiagnostics: true,
+  debugLogDiagnostics: false,
   redirect: (context, state) {
     final token = html.window.sessionStorage['auth_token']?.trim();
-    final isLoggedIn = token != null && token.isNotEmpty;
+    final isLoggedIn = token != null && token.split('.').length == 3;
 
     final location = state.uri.toString();
 

@@ -25,7 +25,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/group-trade-log")
-@CrossOrigin(origins = "*")
 @Tag(name = "Group Trade Log",
      description = "Fetch trade execution history per group — BUY & SELL lifecycle in one record per broker+stock")
 public class PyGroupTradeLogController {

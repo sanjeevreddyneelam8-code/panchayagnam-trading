@@ -22,7 +22,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
-@CrossOrigin(origins = "*")
 public class PyRoleUpgradeController {
 
     private static final Logger log = LogManager.getLogger(PyRoleUpgradeController.class);

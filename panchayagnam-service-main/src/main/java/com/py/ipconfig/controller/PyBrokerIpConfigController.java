@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pyconfig")
-@CrossOrigin(origins = "*")
 @Tag(name = "pyconfig", description = "User to handle Configuration related apis")
 public class PyBrokerIpConfigController {
 

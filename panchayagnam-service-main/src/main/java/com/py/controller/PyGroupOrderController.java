@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/group-order")
-@CrossOrigin(origins = "*")
 @Tag(name = "Group Order", description = "Place group buy/sell orders parallely")
 public class PyGroupOrderController {
 

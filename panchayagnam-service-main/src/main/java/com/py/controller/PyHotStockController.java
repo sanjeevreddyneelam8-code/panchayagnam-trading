@@ -22,7 +22,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 @RestController
 @RequestMapping("/api/v1/hot-stocks")
-@CrossOrigin(origins = "*")
 @Tag(name = "Hot Stocks", description = "Hot Stock recommendations — Add, Update, Delete, Fetch")
 public class PyHotStockController {
 

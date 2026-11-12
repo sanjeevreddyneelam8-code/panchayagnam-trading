@@ -14,7 +14,6 @@ import com.py.tradeaudit.service.TradeAuditService;
 
 @RestController
 @RequestMapping("/api/audit")
-@CrossOrigin(origins = "*")
 @Tag(name = "Trade Audit", description = "Audit trail for buy/sell orders, positions, and group summaries")
 public class TradeAuditController {
 

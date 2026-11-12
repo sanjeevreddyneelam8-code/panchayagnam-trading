@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
-@CrossOrigin(origins = "*")
 @Tag(name = "Dashboard", description = "Dashboard statistics for Super Admin")
 public class PyDashboardController {
 

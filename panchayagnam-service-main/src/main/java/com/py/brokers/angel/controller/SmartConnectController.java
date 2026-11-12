@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/smart")
-@CrossOrigin(origins = "*")
 @Tag(name = "Angel SmartConnect", description = "Angel Broking SmartConnect APIs for trading, market data, GTT, and more")
 public class SmartConnectController {
 

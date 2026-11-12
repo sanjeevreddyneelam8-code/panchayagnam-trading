@@ -49,7 +49,6 @@ import org.apache.logging.log4j.Logger;
 
 @RestController
 @RequestMapping("/pyBrokerApi")
-@CrossOrigin(origins = "*")
 @Tag(name = "PyBroker", description = "Unified broker operations — AngelOne & Motilal Oswal")
 public class PyBrokerController {
 
@@ -332,20 +331,21 @@ public class PyBrokerController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equalsIgnoreCase(auth.getName())) {
-            return;
+            throw new SecurityException("Unauthorized: Authentication is required to access demat accounts");
         }
 
         Long authenticatedUserId = resolveAuthenticatedUserId();
-        if (authenticatedUserId != null && authenticatedUserId > 0) {
-            Optional<PyUser> userOpt = pyUserRepository.findById(authenticatedUserId);
-            if (userOpt.isPresent() && userOpt.get().getRole() == PyUser.Role.SUPER_ADMIN) {
-                return;
-            }
-            if (account.getPyUser() != null && !account.getPyUser().getId().equals(authenticatedUserId)) {
-                log.warn("Security rejection: authenticated user {} attempted to access demat account {} owned by pyUser {}",
-                        authenticatedUserId, accId, account.getPyUser().getId());
-                throw new SecurityException("Unauthorized: Account " + accId + " does not belong to authenticated user");
-            }
+        if (authenticatedUserId == null || authenticatedUserId <= 0) {
+            throw new SecurityException("Unauthorized: Unable to verify authenticated user identity");
+        }
+        Optional<PyUser> userOpt = pyUserRepository.findById(authenticatedUserId);
+        if (userOpt.isPresent() && userOpt.get().getRole() == PyUser.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (account.getPyUser() == null || !account.getPyUser().getId().equals(authenticatedUserId)) {
+            log.warn("Security rejection: authenticated user {} attempted to access demat account {} owned by pyUser {}",
+                    authenticatedUserId, accId, account.getPyUser() != null ? account.getPyUser().getId() : null);
+            throw new SecurityException("Unauthorized: Account " + accId + " does not belong to authenticated user");
         }
     }
 
@@ -355,20 +355,21 @@ public class PyBrokerController {
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equalsIgnoreCase(auth.getName())) {
-            return;
+            throw new SecurityException("Unauthorized: Authentication is required");
         }
 
         Long authenticatedUserId = resolveAuthenticatedUserId();
-        if (authenticatedUserId != null && authenticatedUserId > 0) {
-            Optional<PyUser> userOpt = pyUserRepository.findById(authenticatedUserId);
-            if (userOpt.isPresent() && userOpt.get().getRole() == PyUser.Role.SUPER_ADMIN) {
-                return;
-            }
-            if (!pyUserId.equals(authenticatedUserId)) {
-                log.warn("Security rejection: authenticated user {} attempted to access resources for pyUser {}",
-                        authenticatedUserId, pyUserId);
-                throw new SecurityException("Unauthorized: Cannot access or modify accounts for another user");
-            }
+        if (authenticatedUserId == null || authenticatedUserId <= 0) {
+            throw new SecurityException("Unauthorized: Unable to verify authenticated user identity");
+        }
+        Optional<PyUser> userOpt = pyUserRepository.findById(authenticatedUserId);
+        if (userOpt.isPresent() && userOpt.get().getRole() == PyUser.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (!pyUserId.equals(authenticatedUserId)) {
+            log.warn("Security rejection: authenticated user {} attempted to access resources for pyUser {}",
+                    authenticatedUserId, pyUserId);
+            throw new SecurityException("Unauthorized: Cannot access or modify accounts for another user");
         }
     }
 

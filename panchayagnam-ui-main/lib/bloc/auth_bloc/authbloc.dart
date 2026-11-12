@@ -1,16 +1,21 @@
 import 'package:bloc/bloc.dart';
 import '../../service/service_class.dart';
+import '../../service/static_ip_service.dart';
 import '../../session_storage_helper/session_storage_helper.dart';
 import '../../session_storage_helper/user_registry_helper.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  static const String _serverWakingMessage =
+      'Server is waking up — please wait 20 seconds and try again.';
+
   final ServiceClass serviceClass;
 
   AuthBloc({ServiceClass? authRepository})
     : serviceClass = authRepository ?? ServiceClass(),
       super(AuthInitial()) {
+    UserRegistryHelper.purgeLegacySensitiveStorage();
     on<SendOtpRequested>(_onSendOtp);
     on<RegisterRequested>(_onRegister);
     on<LoginRequested>(_onLogin);
@@ -37,10 +42,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         codeReqFor: event.codeReqFor,
       );
       final rawMsg = (result['message'] ?? '').toString().trim();
-      final extracted = UserRegistryHelper.extractOtp(rawMsg);
-      if (extracted != null) {
-        UserRegistryHelper.savePendingOtp(phone, extracted);
-      }
       emit(
         OtpSentSuccess(
           message: rawMsg.isNotEmpty
@@ -49,13 +50,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on ServerUnreachableException {
-      final trialOtp = UserRegistryHelper.generateTrialOtp();
-      UserRegistryHelper.savePendingOtp(phone, trialOtp);
-      emit(
-        OtpSentSuccess(
-          message: 'Trial OTP: $trialOtp (Auto-filled below — server offline fallback)',
-        ),
-      );
+      emit(const AuthError(message: _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -96,16 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final userId = parsedUserId ??
           (int.tryParse(phone.substring(phone.length - 4)) ?? 1001);
 
-      UserRegistryHelper.saveUser(
-        RegisteredUser(
-          phoneNumber: phone,
-          mpin: mpin,
-          fullName: fullName.isNotEmpty ? fullName : 'Trader ${phone.substring(phone.length - 4)}',
-          email: email.isNotEmpty ? email : '$phone@panchayagnam.com',
-          role: 'PRO_TRADER',
-          userId: userId,
-        ),
-      );
+      UserRegistryHelper.purgeLegacySensitiveStorage();
 
       emit(
         RegisterSuccess(
@@ -116,35 +102,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on ServerUnreachableException {
-      final validOfflineOtp =
-          UserRegistryHelper.verifyPendingOtp(phone, otp) || otp == '123456';
-      if (!validOfflineOtp) {
-        emit(
-          const AuthError(
-            message: 'Invalid or expired OTP. Please tap "Send OTP" again.',
-          ),
-        );
-        return;
-      }
-
-      final fallbackId = int.tryParse(phone.substring(phone.length - 4)) ?? 1001;
-      UserRegistryHelper.saveUser(
-        RegisteredUser(
-          phoneNumber: phone,
-          mpin: mpin,
-          fullName: fullName.isNotEmpty ? fullName : 'Trader ${phone.substring(phone.length - 4)}',
-          email: email.isNotEmpty ? email : '$phone@panchayagnam.com',
-          role: 'PRO_TRADER',
-          userId: fallbackId,
-        ),
-      );
-
-      emit(
-        RegisterSuccess(
-          message: 'Account registered! You can now sign in with your 4-digit MPIN.',
-          userId: fallbackId,
-        ),
-      );
+      emit(const AuthError(message: _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -152,6 +110,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLogin(LoginRequested event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
+    UserRegistryHelper.purgeLegacySensitiveStorage();
     final phone = UserRegistryHelper.normalizePhone(event.phoneNumber);
     final mpin = event.mpin.trim();
 
@@ -176,10 +135,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final data = Map<String, dynamic>.from(rawData);
 
       final userId = int.tryParse((data['userId'] ?? '').toString()) ?? 1001;
-      final rawToken = (data['token'] ?? '').toString().trim();
-      final token = rawToken.isNotEmpty
-          ? rawToken
-          : 'jwt_token_${DateTime.now().millisecondsSinceEpoch}_$userId';
+      final token = (data['token'] ?? '').toString().trim();
+      if (token.isEmpty || token.split('.').length != 3) {
+        throw Exception(
+          'Authentication server did not issue a valid security token. Please try again.',
+        );
+      }
       final rawName = (data['fullName'] ?? '').toString().trim();
       final fullName = rawName.isNotEmpty ? rawName : 'Trader';
       final rawEmail = (data['email'] ?? '').toString().trim();
@@ -194,17 +155,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       final expiresInDays = int.tryParse((data['expiresInDays'] ?? '').toString()) ?? 30;
       final noOfClients = int.tryParse((data['noOfClients'] ?? '').toString()) ?? 0;
-
-      UserRegistryHelper.saveUser(
-        RegisteredUser(
-          phoneNumber: phoneNumber,
-          mpin: mpin,
-          fullName: fullName,
-          email: email,
-          role: role,
-          userId: userId,
-        ),
-      );
 
       SessionStorageHelper.setString('auth_token', token);
       SessionStorageHelper.setString('user_role', role);
@@ -226,45 +176,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on ServerUnreachableException {
-      _fallbackLocalLogin(phone, mpin, emit);
+      emit(const AuthError(message: _serverWakingMessage));
     } catch (e) {
       final serverMsg = e.toString().replaceFirst('Exception: ', '').trim();
-      final registered = UserRegistryHelper.findUser(phone);
-
-      // Allow seamless login for seed/offline-created accounts even when
-      // backend reports "User not found" or generic failure, if MPIN matches locally.
-      final canUseLocalMatch = registered != null &&
-          registered.mpin == mpin &&
-          (phone == '9390076827' ||
-              serverMsg.toLowerCase().contains('not found') ||
-              serverMsg.toLowerCase() == 'login failed');
-
-      if (canUseLocalMatch) {
-        _emitLocalLoginSuccess(registered, emit);
-        return;
-      }
-
-      if (registered == null &&
-          (serverMsg.isEmpty ||
-              serverMsg.toLowerCase() == 'login failed' ||
-              serverMsg.toLowerCase() == 'invalid phone number or mpin')) {
-        emit(
-          const AuthError(
-            message: 'Mobile number or MPIN is incorrect. New user? Tap "Sign Up" below to register first.',
-          ),
-        );
-        return;
-      }
-
-      if (registered != null && registered.mpin != mpin) {
-        emit(
-          const AuthError(
-            message: 'Invalid MPIN. Please enter the 4-digit MPIN you registered with, or tap Forgot MPIN.',
-          ),
-        );
-        return;
-      }
-
       emit(
         AuthError(
           message: serverMsg.isNotEmpty
@@ -275,73 +189,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _fallbackLocalLogin(
-    String phone,
-    String mpin,
-    Emitter<AuthState> emit,
-  ) {
-    final registered = UserRegistryHelper.findUser(phone);
-    if (registered == null) {
-      emit(
-        const AuthError(
-          message: 'Mobile number not registered. Please click "Sign Up" below to register your account.',
-        ),
-      );
-      return;
-    }
-
-    if (registered.mpin != mpin) {
-      emit(
-        const AuthError(
-          message: 'Invalid MPIN. Please enter the 4-digit MPIN you registered with, or reset it.',
-        ),
-      );
-      return;
-    }
-
-    _emitLocalLoginSuccess(registered, emit);
-  }
-
-  void _emitLocalLoginSuccess(
-    RegisteredUser registered,
-    Emitter<AuthState> emit,
-  ) {
-    final token = 'jwt_token_${DateTime.now().millisecondsSinceEpoch}_${registered.userId}';
-    SessionStorageHelper.setString('auth_token', token);
-    SessionStorageHelper.setString('user_role', registered.role);
-    SessionStorageHelper.setString('user_fullName', registered.fullName);
-    SessionStorageHelper.setString('user_email', registered.email);
-    SessionStorageHelper.setString('user_phoneNumber', registered.phoneNumber);
-    SessionStorageHelper.setInt('user_id', registered.userId);
-    SessionStorageHelper.setInt('expiresInDays', 30);
-    SessionStorageHelper.setString('expiredFlag', 'false');
-    SessionStorageHelper.setString('noOfClients', '20');
-
-    emit(
-      LoginSuccess(
-        token: token,
-        fullName: registered.fullName,
-        email: registered.email,
-        phoneNumber: registered.phoneNumber,
-        role: registered.role,
-        userId: registered.userId,
-      ),
-    );
-  }
-
   Future<void> _onForgotMpin(
     ForgotMpinRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
     final phone = UserRegistryHelper.normalizePhone(event.phoneNumber);
+    if (phone.length != 10) {
+      emit(const AuthError(message: 'Please enter a valid 10-digit mobile number.'));
+      return;
+    }
+
     try {
       final result = await serviceClass.forgotMpin(phoneNumber: phone);
       final rawMsg = (result['message'] ?? '').toString().trim();
-      final extracted = UserRegistryHelper.extractOtp(rawMsg);
-      if (extracted != null) {
-        UserRegistryHelper.savePendingOtp(phone, extracted);
-      }
       emit(
         ForgotMpinOtpSent(
           message: rawMsg.isNotEmpty ? rawMsg : 'OTP sent to registered phone number',
@@ -349,23 +210,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on ServerUnreachableException {
-      final user = UserRegistryHelper.findUser(phone);
-      if (user != null) {
-        final code = UserRegistryHelper.generateTrialOtp();
-        UserRegistryHelper.savePendingOtp(phone, code);
-        emit(
-          ForgotMpinOtpSent(
-            message: 'Trial OTP: $code (Server offline fallback)',
-            phoneNumber: phone,
-          ),
-        );
-        return;
-      }
-      emit(
-        const AuthError(
-          message: 'Mobile number not registered. Please sign up to create an account.',
-        ),
-      );
+      emit(const AuthError(message: _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -380,6 +225,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final newMpin = event.newMpin.trim();
     final otp = event.otp.trim();
 
+    if (phone.length != 10) {
+      emit(const AuthError(message: 'Please enter a valid 10-digit mobile number.'));
+      return;
+    }
     if (newMpin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(newMpin)) {
       emit(const AuthError(message: 'New MPIN must be exactly 4 digits.'));
       return;
@@ -391,7 +240,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         otp: otp,
         newMpin: newMpin,
       );
-      UserRegistryHelper.updateMpin(phone, newMpin);
+      UserRegistryHelper.purgeLegacySensitiveStorage();
       emit(
         ResetMpinSuccess(
           message: (result['message'] ?? '').toString().trim().isNotEmpty
@@ -400,30 +249,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on ServerUnreachableException {
-      final validOfflineOtp =
-          UserRegistryHelper.verifyPendingOtp(phone, otp) || otp == '123456';
-      if (!validOfflineOtp) {
-        emit(
-          const AuthError(
-            message: 'Invalid or expired OTP. Please request a fresh OTP.',
-          ),
-        );
-        return;
-      }
-      final updated = UserRegistryHelper.updateMpin(phone, newMpin);
-      if (updated) {
-        emit(
-          const ResetMpinSuccess(
-            message: 'MPIN updated successfully! You can now log in with your new 4-digit MPIN.',
-          ),
-        );
-        return;
-      }
-      emit(
-        const AuthError(
-          message: 'Mobile number not found. Please verify your number or register.',
-        ),
-      );
+      emit(const AuthError(message: _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -431,6 +257,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLogout(LogoutRequested event, Emitter<AuthState> emit) async {
     SessionStorageHelper.clear();
+    StaticIpService.lock();
+    UserRegistryHelper.purgeLegacySensitiveStorage();
     emit(LogoutSuccess());
   }
 

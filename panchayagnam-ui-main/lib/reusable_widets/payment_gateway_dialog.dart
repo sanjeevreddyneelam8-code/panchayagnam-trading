@@ -140,15 +140,11 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     final now = DateTime.now().millisecondsSinceEpoch;
     final generatedTxn = 'TXN_PY_${now.toString().substring(now.toString().length - 8)}';
 
-    // Update session storage and local storage for static IP & subscription
+    // Update session-scoped static IP & subscription state
     try {
       html.window.sessionStorage['expiresInDays'] = '365';
       html.window.sessionStorage['expiredFlag'] = 'false';
-      html.window.localStorage['has_paid_static_ip'] = 'true';
-      html.window.sessionStorage['has_paid_static_ip'] = 'true';
-      html.window.localStorage['static_ip_unlocked'] = 'true';
       html.window.sessionStorage['static_ip_unlocked'] = 'true';
-      html.window.localStorage['static_ip_days'] = '30';
     } catch (_) {}
 
     StaticIpService.unlock(plan: _selectedPlan, txnId: generatedTxn);

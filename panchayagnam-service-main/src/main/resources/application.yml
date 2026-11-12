@@ -35,7 +35,7 @@ springdoc:
     doc-expansion: none
 
 jwt:
-  secret: ${JWT_SECRET:panchayagnam_secret_key_2024_super_secure_key_256bit}
+  secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 smartapi:
@@ -61,6 +61,12 @@ twilio:
   enabled: ${TWILIO_ENABLED:false}
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://sanjeevreddyneelam8-code.github.io,http://localhost:*,http://127.0.0.1:*}
+  security:
+    public-docs-enabled: ${PUBLIC_DOCS_ENABLED:false}
+  admin:
+    setup-secret: ${ADMIN_SETUP_SECRET:}
   crypto:
     broker-encryption-key: ${BROKER_ENCRYPTION_KEY:}
     allow-legacy-plaintext: ${ALLOW_LEGACY_PLAINTEXT:true}

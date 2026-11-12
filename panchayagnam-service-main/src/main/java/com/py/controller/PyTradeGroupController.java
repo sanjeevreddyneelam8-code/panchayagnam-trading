@@ -18,7 +18,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/trade-group")
-@CrossOrigin(origins = "*")
 @Tag(name = "Trade Group", description = "Trade Group operations — Create, Update, Delete, Add/Remove Members")
 public class PyTradeGroupController {
 

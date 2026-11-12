@@ -13,11 +13,21 @@ class StaticIpService {
   static final ValueNotifier<bool> isUnlockedNotifier =
       ValueNotifier<bool>(_checkIsUnlocked());
 
-  static bool _checkIsUnlocked() {
+  static void _purgeLegacyLocalStorage() {
     try {
-      final local = html.window.localStorage[storageKey];
+      html.window.localStorage.remove(storageKey);
+      html.window.localStorage.remove('static_ip_unlocked');
+      html.window.localStorage.remove('static_ip_days');
+      html.window.localStorage.remove('static_ip_plan');
+      html.window.localStorage.remove('static_ip_txn_id');
+    } catch (_) {}
+  }
+
+  static bool _checkIsUnlocked() {
+    _purgeLegacyLocalStorage();
+    try {
       final session = html.window.sessionStorage[storageKey];
-      return local == 'true' || session == 'true';
+      return session == 'true';
     } catch (_) {
       return false;
     }
@@ -27,7 +37,7 @@ class StaticIpService {
 
   static int get daysRemaining {
     try {
-      final days = html.window.localStorage['static_ip_days'];
+      final days = html.window.sessionStorage['static_ip_days'];
       if (days != null && int.tryParse(days) != null) {
         return int.parse(days);
       }
@@ -35,28 +45,29 @@ class StaticIpService {
     return isUnlocked ? 30 : 0;
   }
 
-  /// Mark Dedicated Static IP as unlocked & paid
+  /// Mark Dedicated Static IP as unlocked for the active browser session only.
   static void unlock({String plan = 'Dedicated Static IP', String? txnId}) {
+    _purgeLegacyLocalStorage();
     try {
-      html.window.localStorage[storageKey] = 'true';
       html.window.sessionStorage[storageKey] = 'true';
-      html.window.localStorage['static_ip_days'] = '30';
-      html.window.localStorage['static_ip_plan'] = plan;
+      html.window.sessionStorage['static_ip_days'] = '30';
+      html.window.sessionStorage['static_ip_plan'] = plan;
       if (txnId != null) {
-        html.window.localStorage['static_ip_txn_id'] = txnId;
+        html.window.sessionStorage['static_ip_txn_id'] = txnId;
       }
     } catch (_) {}
     isUnlockedNotifier.value = true;
   }
 
-  /// Lock Dedicated Static IP (used for test mode or reset)
+  /// Lock Dedicated Static IP (used on logout, test mode, or reset).
   static void lock() {
+    _purgeLegacyLocalStorage();
     try {
-      html.window.localStorage.remove(storageKey);
       html.window.sessionStorage.remove(storageKey);
-      html.window.localStorage.remove('static_ip_days');
-      html.window.localStorage.remove('static_ip_plan');
-      html.window.localStorage.remove('static_ip_txn_id');
+      html.window.sessionStorage.remove('static_ip_unlocked');
+      html.window.sessionStorage.remove('static_ip_days');
+      html.window.sessionStorage.remove('static_ip_plan');
+      html.window.sessionStorage.remove('static_ip_txn_id');
     } catch (_) {}
     isUnlockedNotifier.value = false;
   }

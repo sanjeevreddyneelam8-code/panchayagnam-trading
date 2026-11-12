@@ -8,17 +8,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/pyauth")
-@CrossOrigin(origins = "*")
 @Tag(name = "Authentication", description = "User registration, login, and OTP management APIs")
 public class PyUserController {
 
@@ -29,6 +32,22 @@ public class PyUserController {
 
     @Autowired
     private com.py.common.util.TwilioOtpService twilioOtpService;
+
+    @Value("${app.admin.setup-secret:}")
+    private String adminSetupSecret;
+
+    private boolean isAuthorizedAdminSetup(String providedToken) {
+        if (adminSetupSecret == null || adminSetupSecret.trim().isEmpty()) {
+            return true; // Authenticated SUPER_ADMIN/ADMIN role verified by Spring Security
+        }
+        if (providedToken == null || providedToken.isBlank()) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                adminSetupSecret.trim().getBytes(StandardCharsets.UTF_8),
+                providedToken.trim().getBytes(StandardCharsets.UTF_8)
+        );
+    }
 
     @GetMapping("/health")
     @Operation(summary = "Lightweight Service Health Check", description = "Instant zero-dependency HTTP 200 ping for cloud load balancers")
@@ -52,6 +71,7 @@ public class PyUserController {
     }
 
     @GetMapping("/fast2sms-check")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Safe Fast2SMS Connection Check", description = "Verifies Fast2SMS authorization key using wallet balance endpoint with 0 spend and 0 SMS sent.")
     public ResponseEntity<PyApiResponseDto<String>> checkFast2SmsStatus() {
         String result = twilioOtpService.checkFast2SmsWalletBalance();
@@ -59,11 +79,13 @@ public class PyUserController {
     }
 
     @PostMapping("/admin/setup-fast2sms")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Configure Fast2SMS Runtime Key", description = "Securely configures and persists Fast2SMS API key without exposing in source code")
     public ResponseEntity<PyApiResponseDto<String>> configureFast2Sms(
+            @RequestHeader(value = "X-Admin-Setup-Token", required = false) String headerToken,
             @RequestBody java.util.Map<String, Object> payload) {
-        String setupToken = (String) payload.get("setupToken");
-        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+        String setupToken = headerToken != null ? headerToken : (String) payload.get("setupToken");
+        if (!isAuthorizedAdminSetup(setupToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
         }
         String apiKey = (String) payload.get("apiKey");
@@ -74,6 +96,7 @@ public class PyUserController {
     }
 
     @GetMapping("/twilio-check")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Safe Twilio Connection Check", description = "Verifies Twilio credentials and connection status.")
     public ResponseEntity<PyApiResponseDto<String>> checkTwilioStatus() {
         String result = twilioOtpService.checkTwilioStatus();
@@ -81,11 +104,13 @@ public class PyUserController {
     }
 
     @PostMapping("/admin/setup-twilio")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Configure Twilio Runtime Credentials", description = "Securely configures and persists Twilio credentials on the backend.")
     public ResponseEntity<PyApiResponseDto<String>> configureTwilio(
+            @RequestHeader(value = "X-Admin-Setup-Token", required = false) String headerToken,
             @RequestBody java.util.Map<String, Object> payload) {
-        String setupToken = (String) payload.get("setupToken");
-        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+        String setupToken = headerToken != null ? headerToken : (String) payload.get("setupToken");
+        if (!isAuthorizedAdminSetup(setupToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
         }
         String accountSid = (String) payload.get("accountSid");
@@ -103,6 +128,7 @@ public class PyUserController {
     }
 
     @GetMapping("/2factor-check")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Safe 2Factor.in Connection Check", description = "Verifies 2Factor.in API key and available SMS credits with 0 SMS sent.")
     public ResponseEntity<PyApiResponseDto<String>> checkTwoFactorStatus() {
         String result = twilioOtpService.checkTwoFactorBalance();
@@ -110,11 +136,13 @@ public class PyUserController {
     }
 
     @PostMapping("/admin/setup-2factor")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Operation(summary = "Configure 2Factor.in Runtime Key", description = "Securely configures and persists 2Factor API key without exposing in source code")
     public ResponseEntity<PyApiResponseDto<String>> configureTwoFactor(
+            @RequestHeader(value = "X-Admin-Setup-Token", required = false) String headerToken,
             @RequestBody java.util.Map<String, Object> payload) {
-        String setupToken = (String) payload.get("setupToken");
-        if (!"panchayagnam_fast2sms_secure_init_2026".equals(setupToken)) {
+        String setupToken = headerToken != null ? headerToken : (String) payload.get("setupToken");
+        if (!isAuthorizedAdminSetup(setupToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(PyApiResponseDto.failure("Unauthorized setup request"));
         }
         String apiKey = (String) payload.get("apiKey");
