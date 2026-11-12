@@ -10,6 +10,7 @@ import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/auth_state.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../reusable_widets/web_forgot_screen.dart';
+import '../../../service/service_class.dart';
 import '../web_register_screen/web_register_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _SignInScreenState extends State<SignInScreen>
   @override
   void initState() {
     super.initState();
+    ServiceClass.warmUpBackend();
     _entryController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),

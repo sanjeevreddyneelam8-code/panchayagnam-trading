@@ -8,7 +8,7 @@ import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   static const String _serverWakingMessage =
-      'Server is waking up — please wait 20 seconds and try again.';
+      'Unable to reach the server right now. Please check your internet connection and tap again.';
 
   final ServiceClass serviceClass;
 
@@ -49,8 +49,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               : 'OTP sent successfully to your mobile number. Please check your SMS inbox.',
         ),
       );
-    } on ServerUnreachableException {
-      emit(const AuthError(message: _serverWakingMessage));
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -101,8 +102,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           userId: userId,
         ),
       );
-    } on ServerUnreachableException {
-      emit(const AuthError(message: _serverWakingMessage));
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -175,8 +177,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           userId: userId,
         ),
       );
-    } on ServerUnreachableException {
-      emit(const AuthError(message: _serverWakingMessage));
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
     } catch (e) {
       final serverMsg = e.toString().replaceFirst('Exception: ', '').trim();
       emit(
@@ -209,8 +212,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           phoneNumber: phone,
         ),
       );
-    } on ServerUnreachableException {
-      emit(const AuthError(message: _serverWakingMessage));
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
@@ -248,8 +252,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               : 'MPIN reset successfully! Please sign in with your new MPIN.',
         ),
       );
-    } on ServerUnreachableException {
-      emit(const AuthError(message: _serverWakingMessage));
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
     } catch (e) {
       emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }

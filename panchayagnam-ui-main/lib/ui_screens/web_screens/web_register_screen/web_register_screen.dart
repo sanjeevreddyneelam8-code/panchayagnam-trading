@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/auth_state.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
+import '../../../service/service_class.dart';
 import '../web_login_screen/web_login_screen.dart';
 
 // Tracks which button triggered the AuthLoading state
@@ -354,6 +355,7 @@ class _RightPanelState extends State<_RightPanel> {
   @override
   void initState() {
     super.initState();
+    ServiceClass.warmUpBackend();
     _nameCtrl.addListener(_onFieldsChanged);
     _emailCtrl.addListener(_onFieldsChanged);
     _phoneCtrl.addListener(_onFieldsChanged);

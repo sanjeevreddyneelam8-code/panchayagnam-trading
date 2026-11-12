@@ -1,0 +1,26 @@
+name: Keep Backend Warm
+
+on:
+  schedule:
+    # Ping Render every 10 minutes so the free-tier API stays warm and avoids cold-start delays
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wake and verify backend health endpoint
+        run: |
+          HEALTH_URL="${{ vars.API_BASE_URL || secrets.API_BASE_URL || 'https://panchayagnam-api.onrender.com' }}/api/v1/pyauth/health"
+          for attempt in 1 2 3 4; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 60 "$HEALTH_URL" || echo "000")
+            echo "Attempt $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Backend health check failed after 4 attempts"
+          exit 1
