@@ -657,7 +657,7 @@ public class TwilioOtpService {
             }
 
             // Attempt 2: Fast2SMS Quick SMS via GET Query Parameters (fallback)
-            if (statusCode != 200) {
+            {
                 String encodedMsg = java.net.URLEncoder.encode(messageText, java.nio.charset.StandardCharsets.UTF_8);
                 String getUrl = targetUrl + "?route=q&message=" + encodedMsg + "&numbers=" + phone10;
 
@@ -684,7 +684,7 @@ public class TwilioOtpService {
             }
 
             // Attempt 3: Fast2SMS OTP Route with variables_values (URL Encoded fallback)
-            if (statusCode != 200) {
+            {
                 String otpUrl = targetUrl + "?route=otp&variables_values=" + otp + "&numbers=" + phone10;
                 java.net.http.HttpRequest otpRequest = java.net.http.HttpRequest.newBuilder()
                         .uri(java.net.URI.create(otpUrl))
@@ -803,6 +803,7 @@ public class TwilioOtpService {
         Instant expiresAt = Instant.now().plus(Duration.ofMinutes(expiryMinutes));
 
         // 1. Primary SMS Channel: Fast2SMS (DLT-Free Quick SMS Route for India)
+        String fast2SmsFailure = null;
         if (isFast2SmsEnabled() && isFast2SmsConfigured()) {
             String otp = generateOtp();
             OtpEntry entry = new OtpEntry(otp, expiresAt, codeReqFor);
@@ -816,7 +817,8 @@ public class TwilioOtpService {
                     return true;
                 }
             } catch (Exception e) {
-                logger.warn("Fast2SMS gateway error for {}: {}", maskPhoneNumber(formatted), e.getMessage());
+                fast2SmsFailure = e.getMessage();
+                logger.warn("Fast2SMS gateway error for {}: {}", maskPhoneNumber(formatted), fast2SmsFailure);
             }
         }
 
@@ -827,6 +829,8 @@ public class TwilioOtpService {
             if (sendTwoFactorOtp(formatted, entry)) {
                 return true;
             }
+        } else if (fast2SmsFailure != null) {
+            throw new RuntimeException(fast2SmsFailure);
         } else if (isFast2SmsConfigured()) {
             // Safe Dry-Run Mode: Fast2SMS API key is present, but FAST2SMS_ENABLED=false
             String otp = generateOtp();

@@ -256,6 +256,32 @@ public class PyUserController {
         }
     }
 
+    // ── LOGIN WITH OTP ───────────────────────────────────────────
+    @PostMapping("/login-otp")
+    @Operation(
+            summary = "User Login with SMS OTP",
+            description = "Login with phone number and verified 6-digit SMS OTP. Returns JWT token on success.",
+            tags = {"Authentication"}
+    )
+    public ResponseEntity<PyApiResponseDto<PyLoginResponseDto>> loginWithOtp(
+            @Valid @RequestBody PyOtpLoginRequestDto requestDto) {
+        log.info("POST /login-otp | phone={}", requestDto.getPhoneNumber());
+        try {
+            PyLoginResponseDto response = pyUserService.loginWithOtp(requestDto);
+            log.info("OTP Login successful | userId={}, role={}", response.getUserId(), response.getRole());
+            return ResponseEntity.ok(PyApiResponseDto.success("Login successful", response));
+        } catch (RuntimeException e) {
+            log.error("OTP Login failed for phone={}: {}", requestDto.getPhoneNumber(), e.getMessage(), e);
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(PyApiResponseDto.failure(
+                            e.getMessage() != null && !e.getMessage().isBlank()
+                                    ? e.getMessage()
+                                    : "Invalid phone number or OTP"
+                    ));
+        }
+    }
+
     // ── FORGOT MPIN - RESET MPIN ─────────────────────────────────
     @PostMapping("/reset-mpin")
     @Operation(

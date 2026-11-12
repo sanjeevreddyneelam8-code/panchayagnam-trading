@@ -20,12 +20,9 @@ USER pyapp
 COPY --from=builder /app/target/panchayagnam-service-*.jar /app/app.jar
 
 ENV PORT=8083 \
-    SPRING_PROFILES_ACTIVE=h2 \
-    TWILIO_ENABLED=false \
-    FAST2SMS_ENABLED=false \
     PAPER_TRADING_ENABLED=true \
     JAVA_OPTS="-Xms64m -Xmx220m -XX:MaxMetaspaceSize=110m -XX:ReservedCodeCacheSize=32m -Xss256k -XX:+UseSerialGC"
 
 EXPOSE 8083
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar --server.port=${PORT:-8083} --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-h2} --spring.h2.console.enabled=false --twilio.enabled=${TWILIO_ENABLED:-false} --fast2sms.enabled=${FAST2SMS_ENABLED:-false} --trading.paper-trading.enabled=${PAPER_TRADING_ENABLED:-true} --app.scrip-master.enabled=false"]
+ENTRYPOINT ["sh", "-c", "PROFILE=\"${SPRING_PROFILES_ACTIVE:-}\"; if [ -z \"$PROFILE\" ]; then if [ -n \"${SPRING_DATASOURCE_URL:-${DATABASE_URL:-}}\" ]; then PROFILE=prod; else PROFILE=h2; fi; fi; exec java $JAVA_OPTS -jar /app/app.jar --server.port=${PORT:-8083} --spring.profiles.active=$PROFILE --spring.h2.console.enabled=false --trading.paper-trading.enabled=${PAPER_TRADING_ENABLED:-true} --app.scrip-master.enabled=false"]

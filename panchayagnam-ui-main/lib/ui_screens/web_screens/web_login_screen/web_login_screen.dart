@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:easy_trade_web/constants/colors.dart';
@@ -487,6 +488,14 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
   final _formKey = GlobalKey<FormState>();
   final _loginIdCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _otpCtrl = TextEditingController();
+
+  bool _useOtpLogin = false;
+  bool _otpSent = false;
+  bool _sendingOtp = false;
+  String? _otpNotice;
+  int _resendSeconds = 0;
+  Timer? _otpTimer;
 
   @override
   void initState() {
@@ -499,20 +508,68 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
 
   @override
   void dispose() {
+    _otpTimer?.cancel();
     _loginIdCtrl.dispose();
     _passwordCtrl.dispose();
+    _otpCtrl.dispose();
     super.dispose();
+  }
+
+  void _startOtpTimer() {
+    _otpTimer?.cancel();
+    _resendSeconds = 60;
+    _otpTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_resendSeconds <= 1) {
+        t.cancel();
+        setState(() => _resendSeconds = 0);
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
+
+  void _sendLoginOtp(BuildContext blocContext) {
+    final phone = _loginIdCtrl.text.trim();
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(blocContext).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your registered 10-digit mobile number first.'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+    setState(() => _sendingOtp = true);
+    blocContext.read<AuthBloc>().add(
+      SendOtpRequested(phoneNumber: phone, codeReqFor: 'Login'),
+    );
   }
 
   void _submitLogin() {
     if (!_formKey.currentState!.validate()) return;
-    String phone = _loginIdCtrl.text.trim();
-    String mpin = _passwordCtrl.text.trim();
+    final phone = _loginIdCtrl.text.trim();
+
+    if (_useOtpLogin) {
+      setState(() => _sendingOtp = false);
+      context.read<AuthBloc>().add(
+        LoginWithOtpRequested(
+          phoneNumber: phone,
+          otp: _otpCtrl.text.trim(),
+        ),
+      );
+      return;
+    }
 
     context.read<AuthBloc>().add(
       LoginRequested(
         phoneNumber: phone,
-        mpin: mpin,
+        mpin: _passwordCtrl.text.trim(),
       ),
     );
   }
@@ -531,7 +588,31 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
             userId: state.userId,
           );
           context.go(AppRoutes.dashboard);
+        } else if (state is OtpSentSuccess) {
+          final extractedOtp =
+              RegExp(r'\b(\d{6})\b').firstMatch(state.message)?.group(1);
+          setState(() {
+            _otpSent = true;
+            _sendingOtp = false;
+            if (extractedOtp != null) {
+              _otpCtrl.text = extractedOtp;
+              _otpNotice = 'Verification OTP auto-filled: $extractedOtp (Trial Mode)';
+            } else {
+              _otpCtrl.clear();
+              _otpNotice = 'OTP sent via SMS to ${_loginIdCtrl.text.trim()}. Enter the 6-digit code.';
+            }
+          });
+          _startOtpTimer();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_otpNotice ?? state.message),
+              backgroundColor: const Color(0xFF059669),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
         } else if (state is AuthError) {
+          setState(() => _sendingOtp = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -599,7 +680,98 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
+
+                          // Mode Toggle: MPIN vs SMS OTP
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: isLoading
+                                        ? null
+                                        : () => setState(() => _useOtpLogin = false),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: !_useOtpLogin
+                                            ? Colors.white
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: !_useOtpLogin
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.05),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          'MPIN Login',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: !_useOtpLogin
+                                                ? const Color(0xFF064E3B)
+                                                : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: isLoading
+                                        ? null
+                                        : () => setState(() => _useOtpLogin = true),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: _useOtpLogin
+                                            ? Colors.white
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: _useOtpLogin
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.05),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          'OTP Login (SMS)',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: _useOtpLogin
+                                                ? const Color(0xFF064E3B)
+                                                : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
 
                           // Mobile Number Input
                           TextFormField(
@@ -653,95 +825,224 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                           ),
                           const SizedBox(height: 18),
 
-                          // MPIN Password Input
-                          TextFormField(
-                            controller: _passwordCtrl,
-                            obscureText: widget.obscurePassword,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(4),
-                            ],
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return 'Please enter your MPIN';
-                              }
-                              if (v.trim().length != 4) {
-                                return 'MPIN must be exactly 4 digits';
-                              }
-                              return null;
-                            },
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF064E3B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Enter 4-digit MPIN',
-                              hintStyle: const TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 13.5,
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.lock_outline_rounded,
-                                size: 18,
-                                color: Color(0xFF059669),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                              suffixIcon: InkWell(
-                                onTap: widget.onTogglePassword,
-                                borderRadius: BorderRadius.circular(8),
-                                child: Icon(
-                                  widget.obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  color: const Color(0xFF94A3B8),
-                                  size: 19,
-                                ),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Forgot or Reset Password?
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => BlocProvider(
-                                      create: (_) => AuthBloc(),
-                                      child: const WebForgotMpinScreen(),
-                                    ),
-                                  ),
-                                );
+                          if (!_useOtpLogin) ...[
+                            // MPIN Password Input
+                            TextFormField(
+                              controller: _passwordCtrl,
+                              obscureText: widget.obscurePassword,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(4),
+                              ],
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Please enter your MPIN';
+                                }
+                                if (v.trim().length != 4) {
+                                  return 'MPIN must be exactly 4 digits';
+                                }
+                                return null;
                               },
-                              child: const Text(
-                                'Forgot or Reset Password?',
-                                style: TextStyle(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF064E3B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Enter 4-digit MPIN',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 13.5,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 18,
                                   color: Color(0xFF059669),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                                suffixIcon: InkWell(
+                                  onTap: widget.onTogglePassword,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Icon(
+                                    widget.obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: const Color(0xFF94A3B8),
+                                    size: 19,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
                                 ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 12),
+
+                            // Forgot or Reset Password?
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider(
+                                        create: (_) => AuthBloc(),
+                                        child: const WebForgotMpinScreen(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Forgot or Reset Password?',
+                                  style: TextStyle(
+                                    color: Color(0xFF059669),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // Send OTP Row
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: (isLoading && _sendingOtp)
+                                  ? const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 6),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFF059669),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Sending OTP...',
+                                            style: TextStyle(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF059669),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : TextButton.icon(
+                                      onPressed: (_resendSeconds > 0 || isLoading)
+                                          ? null
+                                          : () => _sendLoginOtp(context),
+                                      icon: const Icon(Icons.sms_outlined, size: 16),
+                                      label: Text(
+                                        _resendSeconds > 0
+                                            ? 'Resend in ${_resendSeconds}s'
+                                            : (_otpSent ? 'Resend OTP' : 'Send OTP'),
+                                        style: const TextStyle(fontWeight: FontWeight.w700),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: const Color(0xFF059669),
+                                      ),
+                                    ),
+                            ),
+                            TextFormField(
+                              controller: _otpCtrl,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              validator: (v) {
+                                if (!_useOtpLogin) return null;
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Please enter the 6-digit OTP';
+                                }
+                                if (v.trim().length != 6) {
+                                  return 'OTP must be exactly 6 digits';
+                                }
+                                return null;
+                              },
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF064E3B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Enter 6-digit SMS OTP',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 13.5,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.password_rounded,
+                                  size: 18,
+                                  color: Color(0xFF059669),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
+                                ),
+                              ),
+                            ),
+                            if (_otpNotice != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_outline,
+                                      size: 15,
+                                      color: Color(0xFF059669),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        _otpNotice!,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF047857),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                           const SizedBox(height: 24),
 
                           // Sign In Button
@@ -759,8 +1060,8 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: isLoading
-                                  ? SizedBox(
+                              child: (isLoading && !_sendingOtp)
+                                  ? const SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
@@ -768,9 +1069,9 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text(
-                                      'Sign In',
-                                      style: TextStyle(
+                                  : Text(
+                                      _useOtpLogin ? 'Verify & Sign In' : 'Sign In',
+                                      style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,

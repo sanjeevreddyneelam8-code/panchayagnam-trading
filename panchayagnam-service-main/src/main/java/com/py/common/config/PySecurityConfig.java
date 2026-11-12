@@ -79,6 +79,7 @@ public class PySecurityConfig {
                             "/health",
                             "/api/v1/pyauth/health",
                             "/api/v1/pyauth/login",
+                            "/api/v1/pyauth/login-otp",
                             "/api/v1/pyauth/register",
                             "/api/v1/pyauth/send-otp",
                             "/api/v1/pyauth/reset-mpin",

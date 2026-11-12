@@ -35,6 +35,16 @@ class LoginRequested extends AuthEvent {
   List<Object?> get props => [phoneNumber, mpin];
 }
 
+class LoginWithOtpRequested extends AuthEvent {
+  final String phoneNumber;
+  final String otp;
+
+  const LoginWithOtpRequested({required this.phoneNumber, required this.otp});
+
+  @override
+  List<Object?> get props => [phoneNumber, otp];
+}
+
 class ForgotMpinRequested extends AuthEvent {
   final String phoneNumber;
 

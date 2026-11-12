@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,29 +58,54 @@ public class PyUserServiceImpl implements PyUserService {
     @Autowired
     private PySubscriptionRepository pySubscriptionRepository;
 
+    private String normalizePhone10(String raw) {
+        if (raw == null) return "";
+        String digits = raw.replaceAll("[^0-9]", "");
+        return digits.length() >= 10 ? digits.substring(digits.length() - 10) : digits;
+    }
+
+    private Optional<PyUser> findUserByPhoneFlexible(String rawPhone) {
+        String trimmed = rawPhone != null ? rawPhone.trim() : "";
+        String phone10 = normalizePhone10(trimmed);
+        if (!phone10.isEmpty()) {
+            Optional<PyUser> found = pyUserRepository.findByPhoneNumber(phone10);
+            if (found.isPresent()) return found;
+            found = pyUserRepository.findByPhoneNumber("+91" + phone10);
+            if (found.isPresent()) return found;
+            found = pyUserRepository.findByPhoneNumber("91" + phone10);
+            if (found.isPresent()) return found;
+        }
+        if (!trimmed.isEmpty() && !trimmed.equals(phone10)) {
+            return pyUserRepository.findByPhoneNumber(trimmed);
+        }
+        return Optional.empty();
+    }
+
     // ── REGISTER ────────────────────────────────────────────────
     @Override
     public PyUserRegisterResponseDto registerUser(PyUserRegisterRequestDto requestDto) {
-        logger.info("Register user | email={}, phone={}", requestDto.getEmail(), requestDto.getPhoneNumber());
+        String canonicalPhone = normalizePhone10(requestDto.getPhoneNumber());
+        String phoneToStore = canonicalPhone.length() == 10 ? canonicalPhone : requestDto.getPhoneNumber().trim();
+        logger.info("Register user | email={}, phone={}", requestDto.getEmail(), phoneToStore);
         if (pyUserRepository.existsByEmail(requestDto.getEmail())) {
             logger.warn("Registration failed — email already registered: {}", requestDto.getEmail());
             throw new RuntimeException("Email already registered");
         }
-        if (pyUserRepository.existsByPhoneNumber(requestDto.getPhoneNumber())) {
-            logger.warn("Registration failed — phone already registered: {}", requestDto.getPhoneNumber());
+        if (findUserByPhoneFlexible(phoneToStore).isPresent()) {
+            logger.warn("Registration failed — phone already registered: {}", phoneToStore);
             throw new RuntimeException("Phone number already registered");
         }
 
         // ✅ NEW: OTP verification using Twilio (twilio logic kept inside
         // TwilioOtpService)
-        if (!verifyOtp(requestDto.getPhoneNumber(), requestDto.getOtp())) {
+        if (!verifyOtp(phoneToStore, requestDto.getOtp())) {
             throw new RuntimeException("Invalid or expired OTP. Please try again");
         }
 
         PyUser user = new PyUser();
         user.setFullName(requestDto.getFullName());
         user.setEmail(requestDto.getEmail());
-        user.setPhoneNumber(requestDto.getPhoneNumber());
+        user.setPhoneNumber(phoneToStore);
         user.setMpin(passwordEncoder.encode(requestDto.getMpin()));
         user.setRole(PyUser.Role.USER);
         user.setIsActive(true);
@@ -115,7 +141,7 @@ public class PyUserServiceImpl implements PyUserService {
     @Override
     public PyLoginResponseDto loginUser(PyLoginRequestDto requestDto) {
         logger.info("Login attempt | phone={}", requestDto.getPhoneNumber());
-        PyUser user = pyUserRepository.findByPhoneNumber(requestDto.getPhoneNumber())
+        PyUser user = findUserByPhoneFlexible(requestDto.getPhoneNumber())
                 .orElseThrow(() -> {
                     logger.warn("Login failed — user not found | phone={}", requestDto.getPhoneNumber());
                     return new RuntimeException("User not found with this phone number");
@@ -130,6 +156,32 @@ public class PyUserServiceImpl implements PyUserService {
             throw new RuntimeException("Invalid MPIN. Please try again");
         }
 
+        return buildLoginResponse(user);
+    }
+
+    // ── LOGIN WITH OTP ───────────────────────────────────────────
+    @Override
+    public PyLoginResponseDto loginWithOtp(PyOtpLoginRequestDto requestDto) {
+        logger.info("OTP Login attempt | phone={}", requestDto.getPhoneNumber());
+        PyUser user = findUserByPhoneFlexible(requestDto.getPhoneNumber())
+                .orElseThrow(() -> {
+                    logger.warn("OTP Login failed — user not found | phone={}", requestDto.getPhoneNumber());
+                    return new RuntimeException("No account found with this mobile number. Please Sign Up first.");
+                });
+
+        if (!user.getIsActive()) {
+            logger.warn("OTP Login failed — account deactivated | userId={}", user.getId());
+            throw new RuntimeException("Your account is deactivated. Please contact support");
+        }
+        if (!verifyOtp(requestDto.getPhoneNumber(), requestDto.getOtp())) {
+            logger.warn("OTP Login failed — invalid/expired OTP | userId={}", user.getId());
+            throw new RuntimeException("Invalid or expired OTP. Please request a fresh OTP.");
+        }
+
+        return buildLoginResponse(user);
+    }
+
+    private PyLoginResponseDto buildLoginResponse(PyUser user) {
         String token = pyJwtUtil.generateToken(
                 user.getId(),
                 user.getPhoneNumber(),
@@ -174,13 +226,20 @@ public class PyUserServiceImpl implements PyUserService {
         return responseDto;
     }
 
-    // ── ✅ NEW: SEND OTP FOR REGISTRATION ────────────────────────────────────
+    // ── ✅ NEW: SEND OTP FOR REGISTRATION / LOGIN / RESET ────────────────────
     @Override
     public String sendVerificationCode(OtpRequestDto requestDto) {
         // Check if phone number is already registered for Registration requests
-        if (StringUtils.isNotEmpty(requestDto.getCodeReqFor()) && requestDto.getCodeReqFor().equals("Registration")
-                && pyUserRepository.existsByPhoneNumber(requestDto.getPhoneNumber())) {
+        if (StringUtils.isNotEmpty(requestDto.getCodeReqFor())
+                && requestDto.getCodeReqFor().equalsIgnoreCase("Registration")
+                && findUserByPhoneFlexible(requestDto.getPhoneNumber()).isPresent()) {
             throw new RuntimeException("Phone number already registered");
+        }
+        if (StringUtils.isNotEmpty(requestDto.getCodeReqFor())
+                && (requestDto.getCodeReqFor().equalsIgnoreCase("Login")
+                        || requestDto.getCodeReqFor().equalsIgnoreCase("Reset"))
+                && findUserByPhoneFlexible(requestDto.getPhoneNumber()).isEmpty()) {
+            throw new RuntimeException("No account found with this mobile number. Please Sign Up first.");
         }
 
         // Security check: Block demo OTP reset on administrative accounts
@@ -259,7 +318,7 @@ public class PyUserServiceImpl implements PyUserService {
     @Transactional
     public String resetMpin(PyResetMpinRequestDto requestDto) {
         logger.info("Reset MPIN | phone={}", requestDto.getPhoneNumber());
-        PyUser user = pyUserRepository.findByPhoneNumber(requestDto.getPhoneNumber())
+        PyUser user = findUserByPhoneFlexible(requestDto.getPhoneNumber())
                 .orElseThrow(() -> new RuntimeException("No account found with this phone number"));
 
         // Security check: Block demo OTP reset on administrative accounts

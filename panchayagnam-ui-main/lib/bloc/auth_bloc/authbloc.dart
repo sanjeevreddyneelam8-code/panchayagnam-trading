@@ -19,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SendOtpRequested>(_onSendOtp);
     on<RegisterRequested>(_onRegister);
     on<LoginRequested>(_onLogin);
+    on<LoginWithOtpRequested>(_onLoginWithOtp);
     on<ForgotMpinRequested>(_onForgotMpin);
     on<ResetMpinRequested>(_onResetMpin);
     on<LogoutRequested>(_onLogout);
@@ -130,53 +131,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         phoneNumber: phone,
         mpin: mpin,
       );
-      final rawData = result['data'];
-      if (rawData is! Map) {
-        throw Exception('Unexpected login response from server.');
-      }
-      final data = Map<String, dynamic>.from(rawData);
-
-      final userId = int.tryParse((data['userId'] ?? '').toString()) ?? 1001;
-      final token = (data['token'] ?? '').toString().trim();
-      if (token.isEmpty || token.split('.').length != 3) {
-        throw Exception(
-          'Authentication server did not issue a valid security token. Please try again.',
-        );
-      }
-      final rawName = (data['fullName'] ?? '').toString().trim();
-      final fullName = rawName.isNotEmpty ? rawName : 'Trader';
-      final rawEmail = (data['email'] ?? '').toString().trim();
-      final email = rawEmail.isNotEmpty ? rawEmail : '$phone@panchayagnam.com';
-      final normalizedPhone = UserRegistryHelper.normalizePhone(
-        (data['phoneNumber'] ?? phone).toString(),
-      );
-      final phoneNumber = normalizedPhone.isNotEmpty ? normalizedPhone : phone;
-      final rawRole = (data['role'] ?? '').toString().trim();
-      final role = rawRole.isNotEmpty ? rawRole : 'USER';
-      final expiredFlag = data['expiredFlag'] ?? false;
-
-      final expiresInDays = int.tryParse((data['expiresInDays'] ?? '').toString()) ?? 30;
-      final noOfClients = int.tryParse((data['noOfClients'] ?? '').toString()) ?? 0;
-
-      SessionStorageHelper.setString('auth_token', token);
-      SessionStorageHelper.setString('user_role', role);
-      SessionStorageHelper.setString('user_fullName', fullName);
-      SessionStorageHelper.setString('user_email', email);
-      SessionStorageHelper.setString('user_phoneNumber', phoneNumber);
-      SessionStorageHelper.setInt('user_id', userId);
-      SessionStorageHelper.setInt('expiresInDays', expiresInDays);
-      SessionStorageHelper.setString('expiredFlag', expiredFlag.toString());
-      SessionStorageHelper.setString('noOfClients', noOfClients.toString());
-      emit(
-        LoginSuccess(
-          token: token,
-          fullName: fullName,
-          email: email,
-          phoneNumber: phoneNumber,
-          role: role,
-          userId: userId,
-        ),
-      );
+      _handleAuthenticatedResponse(result, phone, emit);
     } on ServerUnreachableException catch (e) {
       final msg = e.message.trim();
       emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
@@ -190,6 +145,99 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     }
+  }
+
+  Future<void> _onLoginWithOtp(
+    LoginWithOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    UserRegistryHelper.purgeLegacySensitiveStorage();
+    final phone = UserRegistryHelper.normalizePhone(event.phoneNumber);
+    final otp = event.otp.trim();
+
+    if (phone.length != 10) {
+      emit(const AuthError(message: 'Please enter a valid 10-digit mobile number.'));
+      return;
+    }
+    if (otp.length != 6 || !RegExp(r'^\d{6}$').hasMatch(otp)) {
+      emit(const AuthError(message: 'Please enter the exact 6-digit OTP sent to your mobile.'));
+      return;
+    }
+
+    try {
+      final result = await serviceClass.loginWithOtp(
+        phoneNumber: phone,
+        otp: otp,
+      );
+      _handleAuthenticatedResponse(result, phone, emit);
+    } on ServerUnreachableException catch (e) {
+      final msg = e.message.trim();
+      emit(AuthError(message: msg.isNotEmpty ? msg : _serverWakingMessage));
+    } catch (e) {
+      final serverMsg = e.toString().replaceFirst('Exception: ', '').trim();
+      emit(
+        AuthError(
+          message: serverMsg.isNotEmpty
+              ? serverMsg
+              : 'Invalid or expired OTP. Please request a fresh OTP.',
+        ),
+      );
+    }
+  }
+
+  void _handleAuthenticatedResponse(
+    Map<String, dynamic> result,
+    String fallbackPhone,
+    Emitter<AuthState> emit,
+  ) {
+    final rawData = result['data'];
+    if (rawData is! Map) {
+      throw Exception('Unexpected login response from server.');
+    }
+    final data = Map<String, dynamic>.from(rawData);
+
+    final userId = int.tryParse((data['userId'] ?? '').toString()) ?? 1001;
+    final token = (data['token'] ?? '').toString().trim();
+    if (token.isEmpty || token.split('.').length != 3) {
+      throw Exception(
+        'Authentication server did not issue a valid security token. Please try again.',
+      );
+    }
+    final rawName = (data['fullName'] ?? '').toString().trim();
+    final fullName = rawName.isNotEmpty ? rawName : 'Trader';
+    final rawEmail = (data['email'] ?? '').toString().trim();
+    final email = rawEmail.isNotEmpty ? rawEmail : '$fallbackPhone@panchayagnam.com';
+    final normalizedPhone = UserRegistryHelper.normalizePhone(
+      (data['phoneNumber'] ?? fallbackPhone).toString(),
+    );
+    final phoneNumber = normalizedPhone.isNotEmpty ? normalizedPhone : fallbackPhone;
+    final rawRole = (data['role'] ?? '').toString().trim();
+    final role = rawRole.isNotEmpty ? rawRole : 'USER';
+    final expiredFlag = data['expiredFlag'] ?? false;
+
+    final expiresInDays = int.tryParse((data['expiresInDays'] ?? '').toString()) ?? 30;
+    final noOfClients = int.tryParse((data['noOfClients'] ?? '').toString()) ?? 0;
+
+    SessionStorageHelper.setString('auth_token', token);
+    SessionStorageHelper.setString('user_role', role);
+    SessionStorageHelper.setString('user_fullName', fullName);
+    SessionStorageHelper.setString('user_email', email);
+    SessionStorageHelper.setString('user_phoneNumber', phoneNumber);
+    SessionStorageHelper.setInt('user_id', userId);
+    SessionStorageHelper.setInt('expiresInDays', expiresInDays);
+    SessionStorageHelper.setString('expiredFlag', expiredFlag.toString());
+    SessionStorageHelper.setString('noOfClients', noOfClients.toString());
+    emit(
+      LoginSuccess(
+        token: token,
+        fullName: fullName,
+        email: email,
+        phoneNumber: phoneNumber,
+        role: role,
+        userId: userId,
+      ),
+    );
   }
 
   Future<void> _onForgotMpin(

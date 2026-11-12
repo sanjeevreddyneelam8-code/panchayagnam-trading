@@ -269,6 +269,18 @@ class ServiceClass {
     );
   }
 
+  Future<Map<String, dynamic>> loginWithOtp({
+    required String phoneNumber,
+    required String otp,
+  }) {
+    final cleanPhone = _normalizePhone(phoneNumber);
+    return _postAuthWithWakeupRetry(
+      path: '/api/v1/pyauth/login-otp',
+      payload: {'phoneNumber': cleanPhone, 'otp': otp.trim()},
+      defaultError: 'Invalid phone number or OTP',
+    );
+  }
+
   Future<Map<String, dynamic>> forgotMpin({required String phoneNumber}) async {
     return sendOtp(phoneNumber: phoneNumber, codeReqFor: 'Reset');
   }

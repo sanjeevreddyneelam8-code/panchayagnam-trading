@@ -54,7 +54,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         long windowMs;
         int limit;
-        if ("/api/v1/pyauth/login".equals(uri) || "/api/v1/pyauth/reset-mpin".equals(uri)) {
+        if ("/api/v1/pyauth/login".equals(uri)
+                || "/api/v1/pyauth/login-otp".equals(uri)
+                || "/api/v1/pyauth/reset-mpin".equals(uri)) {
             windowMs = LOGIN_WINDOW_MS;
             limit = LOGIN_MAX_REQUESTS;
         } else if ("/api/v1/pyauth/send-otp".equals(uri) || "/api/v1/pyauth/register".equals(uri)) {

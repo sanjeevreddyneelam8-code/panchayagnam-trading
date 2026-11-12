@@ -880,10 +880,10 @@ class _RightPanelState extends State<_RightPanel> {
                 Expanded(
                   child: Text(
                     _autoFilledOtpBanner != null
-                        ? 'Verification OTP auto-filled: ${_otpCtrl.text} (SMS Gateway in Trial Mode)'
+                        ? 'Verification OTP auto-filled: ${_otpCtrl.text} (Trial Mode)'
                         : _otpCtrl.text.isNotEmpty
                             ? 'Verification code ready: ${_otpCtrl.text}'
-                            : 'OTP sent to ${_phoneCtrl.text.trim()}. Please enter the 6-digit code.',
+                            : 'OTP sent via SMS to ${_phoneCtrl.text.trim()}. Please enter the 6-digit code.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF047857),
