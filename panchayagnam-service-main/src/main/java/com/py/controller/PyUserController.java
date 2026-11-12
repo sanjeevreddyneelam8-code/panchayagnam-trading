@@ -36,6 +36,9 @@ public class PyUserController {
     @Value("${app.admin.setup-secret:}")
     private String adminSetupSecret;
 
+    @Value("${spring.datasource.url:}")
+    private String datasourceUrl;
+
     private boolean isAuthorizedAdminSetup(String providedToken) {
         if (adminSetupSecret == null || adminSetupSecret.trim().isEmpty()) {
             return true; // Authenticated SUPER_ADMIN/ADMIN role verified by Spring Security
@@ -58,11 +61,16 @@ public class PyUserController {
     @GetMapping("/demo-status")
     @Operation(summary = "Check Demo OTP System Status", description = "Safe diagnostic endpoint to verify demo mode configuration")
     public ResponseEntity<java.util.Map<String, Object>> getDemoStatus() {
+        boolean persistentDb = datasourceUrl != null
+                && (datasourceUrl.startsWith("jdbc:postgresql:") || datasourceUrl.startsWith("jdbc:mysql:"));
         java.util.Map<String, Object> status = new java.util.LinkedHashMap<>();
         status.put("status", "UP");
-        status.put("version", "2026-11-07-fast2sms-secure-backend-integration");
+        status.put("version", "2026-11-12-otp-persistent-db");
+        status.put("activeProvider", twilioOtpService.getActiveProviderLabel());
+        status.put("persistentDatabase", persistentDb);
         status.put("fast2smsConfigured", twilioOtpService.isFast2SmsConfigured());
         status.put("fast2smsEnabled", twilioOtpService.isFast2SmsEnabled());
+        status.put("twoFactorConfigured", twilioOtpService.isTwoFactorConfigured());
         status.put("twilioEnabled", twilioOtpService.isTwilioEnabled());
         status.put("demoOtpEnabled", twilioOtpService.isDemoOtpEnabled());
         status.put("allowlistConfigured", !twilioOtpService.getAllowedNumbers().trim().isEmpty());

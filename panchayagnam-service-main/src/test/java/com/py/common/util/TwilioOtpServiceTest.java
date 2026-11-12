@@ -116,4 +116,27 @@ class TwilioOtpServiceTest {
         assertFalse(service.verifyOtpV2(null, "123456"));
         assertFalse(service.verifyOtpV2("9876543210", "999999"));
     }
+
+    @Test
+    @DisplayName("Do not swallow Fast2SMS failures into Demo Trial OTP when 2Factor key is unconfigured")
+    void testSendOtp_Fast2SmsFailureDoesNotFallbackToDemoWhenTwoFactorUnconfigured() {
+        TwilioOtpService service = new TwilioOtpService();
+        ReflectionTestUtils.setField(service, "fast2SmsEnabled", true);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsEnabled", true);
+        ReflectionTestUtils.setField(service, "runtimeFast2SmsApiKey", "\"test-fast2sms-key\"");
+        ReflectionTestUtils.setField(service, "fast2SmsUrl", "http://127.0.0.1:1/fast2sms-unreachable");
+        ReflectionTestUtils.setField(service, "twoFactorEnabledConfig", true);
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorEnabled", true);
+        ReflectionTestUtils.setField(service, "runtimeTwoFactorApiKey", "");
+        ReflectionTestUtils.setField(service, "twilioEnabled", false);
+        ReflectionTestUtils.setField(service, "demoOtpEnabled", true);
+        ReflectionTestUtils.setField(service, "demoOtpCode", "955338");
+
+        assertEquals("test-fast2sms-key", service.getFast2SmsApiKey());
+        assertEquals("FAST2SMS", service.getActiveProviderLabel());
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                service.sendOtpV2("9876543210", "Registration"));
+        assertTrue(ex.getMessage().contains("Fast2SMS"));
+    }
 }

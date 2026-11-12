@@ -138,21 +138,33 @@ public class TwilioOtpService {
         return false;
     }
 
+    private static String sanitizeSecret(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() >= 2 && ((trimmed.startsWith("\"") && trimmed.endsWith("\""))
+                || (trimmed.startsWith("'") && trimmed.endsWith("'")))) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        return trimmed;
+    }
+
     public String getTwoFactorApiKey() {
         if (runtimeTwoFactorApiKey != null && !runtimeTwoFactorApiKey.trim().isEmpty()) {
-            return runtimeTwoFactorApiKey.trim();
+            return sanitizeSecret(runtimeTwoFactorApiKey);
         }
         if (twoFactorApiKeyConfig != null && !twoFactorApiKeyConfig.trim().isEmpty()) {
-            return twoFactorApiKeyConfig.trim();
+            return sanitizeSecret(twoFactorApiKeyConfig);
         }
         String env = System.getenv("TWOFACTOR_API_KEY");
         if (env != null && !env.trim().isEmpty()) {
-            return env.trim();
+            return sanitizeSecret(env);
         }
         if (appSettingRepository != null) {
             try {
                 return appSettingRepository.findById("TWOFACTOR_API_KEY")
-                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .map(s -> sanitizeSecret(s.getValue()))
                         .orElse("");
             } catch (Exception ignored) {}
         }
@@ -327,23 +339,42 @@ public class TwilioOtpService {
      */
     public String getFast2SmsApiKey() {
         if (runtimeFast2SmsApiKey != null) {
-            return runtimeFast2SmsApiKey.trim();
+            return sanitizeSecret(runtimeFast2SmsApiKey);
         }
         if (fast2SmsApiKey != null && !fast2SmsApiKey.trim().isEmpty()) {
-            return fast2SmsApiKey.trim();
+            return sanitizeSecret(fast2SmsApiKey);
         }
         String env = System.getenv("FAST2SMS_API_KEY");
         if (env != null && !env.trim().isEmpty()) {
-            return env.trim();
+            return sanitizeSecret(env);
         }
         if (appSettingRepository != null) {
             try {
                 return appSettingRepository.findById("FAST2SMS_API_KEY")
-                        .map(s -> s.getValue() != null ? s.getValue().trim() : "")
+                        .map(s -> sanitizeSecret(s.getValue()))
                         .orElse("");
             } catch (Exception ignored) {}
         }
         return "";
+    }
+
+    public String getActiveProviderLabel() {
+        if (isFast2SmsEnabled() && isFast2SmsConfigured()) {
+            return "FAST2SMS";
+        }
+        if (isTwoFactorEnabled() && isTwoFactorConfigured()) {
+            return "TWOFACTOR";
+        }
+        if (isFast2SmsConfigured()) {
+            return "FAST2SMS_DRY_RUN";
+        }
+        if (isTwilioEnabled() && isTwilioConfigured()) {
+            return "TWILIO";
+        }
+        if (isDemoOtpEnabled()) {
+            return "TRIAL_DEMO";
+        }
+        return "DISABLED";
     }
 
     /**
@@ -822,14 +853,15 @@ public class TwilioOtpService {
             }
         }
 
-        // 2. Secondary SMS Channel: 2Factor.in (if enabled)
-        if (isTwoFactorEnabled()) {
+        // 2. Secondary SMS Channel: 2Factor.in (only if actually configured and enabled)
+        if (isTwoFactorEnabled() && isTwoFactorConfigured()) {
             OtpEntry entry = new OtpEntry(generateOtp(), expiresAt, codeReqFor);
             otpStore.put(formatted, entry);
             if (sendTwoFactorOtp(formatted, entry)) {
                 return true;
             }
-        } else if (fast2SmsFailure != null) {
+        }
+        if (fast2SmsFailure != null) {
             throw new RuntimeException(fast2SmsFailure);
         } else if (isFast2SmsConfigured()) {
             // Safe Dry-Run Mode: Fast2SMS API key is present, but FAST2SMS_ENABLED=false

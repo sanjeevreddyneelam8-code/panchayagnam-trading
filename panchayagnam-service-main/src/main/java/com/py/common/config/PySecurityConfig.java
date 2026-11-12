@@ -78,6 +78,7 @@ public class PySecurityConfig {
                     auth.requestMatchers(
                             "/health",
                             "/api/v1/pyauth/health",
+                            "/api/v1/pyauth/demo-status",
                             "/api/v1/pyauth/login",
                             "/api/v1/pyauth/login-otp",
                             "/api/v1/pyauth/register",
