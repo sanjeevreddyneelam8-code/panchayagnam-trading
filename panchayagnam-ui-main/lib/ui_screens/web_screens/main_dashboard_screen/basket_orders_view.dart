@@ -382,5 +382,4 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
       },
     );
   }
-  }
 }

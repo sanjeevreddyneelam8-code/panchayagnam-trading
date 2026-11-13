@@ -1164,5 +1164,4 @@ class _MarketWatchViewState extends State<MarketWatchView> {
       },
     );
   }
-  }
 }

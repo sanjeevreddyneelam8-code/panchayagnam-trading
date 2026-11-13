@@ -1612,15 +1612,14 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                 final engine = CopyTradingEngine();
                 final legsCount = _basketLegs.length;
                 for (final leg in _basketLegs.values) {
-                  engine.executeLiveOrder(
+                  engine.replicateTrade(
                     symbol: '$_underlying ${leg.strike.toInt()} ${leg.optType}',
                     side: leg.side,
-                    quantity: leg.lots * lotSize,
+                    baseQty: leg.lots * lotSize,
                     price: leg.premium,
-                    productType: 'NRML',
+                    productType: 'INTRADAY (MIS)',
                     orderType: 'MARKET',
-                    isAlgo: true,
-                    strategyTag: 'BASKET-OPTION-CHAIN',
+                    lotSize: lotSize,
                   );
                 }
                 setState(() {
