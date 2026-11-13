@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../service/theme_mode_service.dart';
 
 class BasketItem {
   final String symbol;
@@ -179,164 +180,207 @@ class _BasketOrdersViewState extends State<BasketOrdersView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeModeService.isDarkModeNotifier,
+      builder: (context, isDark, _) {
+        final cardBg = isDark ? const Color(0xFF0F1E22) : Colors.white;
+        final borderCol = isDark ? const Color(0xFF1E293B) : Colors.grey.shade200;
+        final textMain = isDark ? Colors.white : const Color(0xFF111827);
+        final textSub = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF081214) : const Color(0xFFF9FAFB),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Basket Orders', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-                    const SizedBox(height: 4),
-                    Text('Create multi-leg order baskets for single-click simulated execution.', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Stocks Basket',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: textMain),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'TRADE MARKET',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('Create equity & derivative multi-leg order baskets for single-click execution.', style: TextStyle(fontSize: 13, color: textSub)),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _showAddDialog,
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add Leg'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: _showAddDialog,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add Leg'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                const SizedBox(height: 20),
+
+                // Simulation Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF78350F).withOpacity(0.2) : const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B), size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'STOCKS BASKET EXECUTION — Multi-leg basket orders validate client-side for structure, margins and copy allocation before transmission.',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Basket Table
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderCol),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0B171A) : Colors.grey.shade50,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          border: Border(bottom: BorderSide(color: borderCol)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(flex: 3, child: Text('SYMBOL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('ACTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('EXCHANGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 1, child: Text('', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          ],
+                        ),
+                      ),
+                      if (_items.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: Text('Basket is empty. Click "Add Leg" above.', style: TextStyle(color: textSub)),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _items.length,
+                          separatorBuilder: (_, __) => Divider(height: 1, color: borderCol),
+                          itemBuilder: (ctx, i) {
+                            final item = _items[i];
+                            final isBuy = item.action == 'BUY';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(flex: 3, child: Text(item.symbol, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textMain))),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isBuy
+                                            ? (isDark ? const Color(0xFF064E3B).withOpacity(0.4) : const Color(0xFFECFDF5))
+                                            : (isDark ? const Color(0xFF7F1D1D).withOpacity(0.4) : const Color(0xFFFEF2F2)),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        item.action,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11.5,
+                                          color: isBuy ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(flex: 2, child: Text('${item.quantity}', style: TextStyle(fontSize: 13, color: textMain))),
+                                  Expanded(flex: 2, child: Text(item.orderType, style: TextStyle(fontSize: 12, color: textSub))),
+                                  Expanded(flex: 2, child: Text(item.exchange, style: TextStyle(fontSize: 12, color: textMain))),
+                                  Expanded(
+                                    flex: 1,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                                      onPressed: () => setState(() => _items.removeAt(i)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0B171A) : Colors.grey.shade50,
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                          border: Border(top: BorderSide(color: borderCol)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Total Legs: ${_items.length}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: textMain)),
+                            ElevatedButton.icon(
+                              onPressed: _items.isEmpty || _isExecuting ? null : _executePaperBasket,
+                              icon: _isExecuting
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.play_circle_filled_rounded, size: 18),
+                              label: Text(_isExecuting ? 'Transmitting...' : 'Execute Stocks Basket'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF059669),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // Paper Trading Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFFB45309), size: 18),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'PAPER TRADING SIMULATION — Multi-leg basket orders validate client-side for structure and margin simulation. No live broker or backend orders are transmitted.',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Basket Table
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Expanded(flex: 3, child: Text('SYMBOL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                        Expanded(flex: 2, child: Text('ACTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                        Expanded(flex: 2, child: Text('QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                        Expanded(flex: 2, child: Text('TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                        Expanded(flex: 2, child: Text('EXCHANGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                        Expanded(flex: 1, child: Text('', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                      ],
-                    ),
-                  ),
-                  if (_items.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Center(
-                        child: Text('Basket is empty. Click "Add Leg" above.', style: TextStyle(color: Colors.grey.shade500)),
-                      ),
-                    )
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _items.length,
-                      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
-                      itemBuilder: (ctx, i) {
-                        final item = _items[i];
-                        final isBuy = item.action == 'BUY';
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          child: Row(
-                            children: [
-                              Expanded(flex: 3, child: Text(item.symbol, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5))),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  item.action,
-                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: isBuy ? const Color(0xFF10B981) : Colors.redAccent),
-                                ),
-                              ),
-                              Expanded(flex: 2, child: Text('${item.quantity}', style: const TextStyle(fontSize: 13))),
-                              Expanded(flex: 2, child: Text(item.orderType, style: const TextStyle(fontSize: 12, color: Colors.grey))),
-                              Expanded(flex: 2, child: Text(item.exchange, style: const TextStyle(fontSize: 12))),
-                              Expanded(
-                                flex: 1,
-                                child: IconButton(
-                                  icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                                  onPressed: () => setState(() => _items.removeAt(i)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                      border: Border(top: BorderSide(color: Colors.grey.shade200)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total Legs: ${_items.length}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                        ElevatedButton.icon(
-                          onPressed: _items.isEmpty || _isExecuting ? null : _executePaperBasket,
-                          icon: _isExecuting
-                              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.play_circle_filled_rounded, size: 18),
-                          label: Text(_isExecuting ? 'Simulating...' : 'Execute Basket (Paper Mode)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
   }
 }

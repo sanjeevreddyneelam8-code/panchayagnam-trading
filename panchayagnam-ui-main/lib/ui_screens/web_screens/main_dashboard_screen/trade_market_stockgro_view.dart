@@ -1027,7 +1027,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      OutlinedButton.icon(
+                      ElevatedButton.icon(
                         onPressed: () {
                           OrderPlacementTicketDialog.show(
                             context,
@@ -1038,8 +1038,19 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                             category: 'OPTIONS',
                           );
                         },
-                        icon: const Icon(Icons.edit_note_rounded, size: 16),
-                        label: const Text('Order Pad', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        icon: const Icon(Icons.receipt_long_rounded, size: 16, color: Colors.white),
+                        label: const Text('⚡ ORDER PAD', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.white, letterSpacing: 0.5)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD97706),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: Color(0xFFFDE68A), width: 1.2),
+                          ),
+                          elevation: 3,
+                          shadowColor: const Color(0xFFD97706).withOpacity(0.5),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton.icon(
@@ -1594,16 +1605,22 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
               return Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlinedButton.icon(
+                  ElevatedButton.icon(
                     onPressed: () {
                       OrderPlacementTicketDialog.show(context, symbol: sym, side: 'BUY', ltp: ltp, lotSize: lot, category: cat);
                     },
-                    icon: const Icon(Icons.edit_note_rounded, size: 16),
-                    label: const Text('Order Pad'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textMain,
-                      side: BorderSide(color: borderCol),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    icon: const Icon(Icons.receipt_long_rounded, size: 16, color: Colors.white),
+                    label: const Text('⚡ ORDER PAD', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.white, letterSpacing: 0.5)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Color(0xFFFDE68A), width: 1.2),
+                      ),
+                      elevation: 3,
+                      shadowColor: const Color(0xFFD97706).withOpacity(0.5),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1896,50 +1913,122 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     final scanners = [
       {
         'title': 'Supertrend & EMA 9/21 Golden Crossover',
-        'desc': 'Bullish Supertrend flip with 9 EMA cutting 21 EMA from below on daily candles.',
+        'desc': 'Bullish Supertrend flip with 9 EMA cutting 21 EMA from below on daily candles with ATR confirmation.',
         'tag': 'TREND FOLLOWING',
         'strength': '94% BULLISH',
         'tagCol': const Color(0xFF10B981),
         'results': [
-          {'sym': 'TATASTEEL', 'ltp': 194.50, 'chg': '+2.26%'},
-          {'sym': 'PERSISTENT', 'ltp': 5490.00, 'chg': '+3.12%'},
-          {'sym': 'BHARTIARTL', 'ltp': 1584.00, 'chg': '+1.45%'},
+          {'sym': 'TATASTEEL', 'ltp': 194.50, 'chg': '+2.26%', 'rvol': '2.8x', 'tgt': 208.0, 'sl': 188.0},
+          {'sym': 'PERSISTENT', 'ltp': 5490.00, 'chg': '+3.12%', 'rvol': '3.1x', 'tgt': 5780.0, 'sl': 5320.0},
+          {'sym': 'BHARTIARTL', 'ltp': 1584.00, 'chg': '+1.45%', 'rvol': '2.2x', 'tgt': 1660.0, 'sl': 1540.0},
+          {'sym': 'DIXON', 'ltp': 14820.00, 'chg': '+4.20%', 'rvol': '3.9x', 'tgt': 15600.0, 'sl': 14300.0},
+          {'sym': 'BEL', 'ltp': 304.50, 'chg': '+2.85%', 'rvol': '2.5x', 'tgt': 328.0, 'sl': 292.0},
+          {'sym': 'POLYCAB', 'ltp': 6740.00, 'chg': '+2.10%', 'rvol': '2.1x', 'tgt': 7100.0, 'sl': 6520.0},
         ],
       },
       {
         'title': 'Gamma Blast & Heavy Call Unwinding',
-        'desc': 'Options where call writers are covering in panic, triggering aggressive upside gamma bursts.',
+        'desc': 'Options where call writers are covering in panic, triggering aggressive upside gamma bursts and delta expansion.',
         'tag': 'F&O SQUEEZE',
         'strength': '92% MOMENTUM',
         'tagCol': const Color(0xFFEA580C),
         'results': [
-          {'sym': 'NIFTY 24200 CE', 'ltp': 228.40, 'chg': '+18.4%'},
-          {'sym': 'COFORGE', 'ltp': 7820.00, 'chg': '+4.15%'},
-          {'sym': 'TRENT', 'ltp': 7120.00, 'chg': '+3.80%'},
+          {'sym': 'NIFTY 24200 CE', 'ltp': 228.40, 'chg': '+18.4%', 'rvol': '4.8x', 'tgt': 310.0, 'sl': 185.0},
+          {'sym': 'BANKNIFTY 51800 CE', 'ltp': 465.00, 'chg': '+24.6%', 'rvol': '5.2x', 'tgt': 620.0, 'sl': 380.0},
+          {'sym': 'COFORGE', 'ltp': 7820.00, 'chg': '+4.15%', 'rvol': '3.6x', 'tgt': 8250.0, 'sl': 7580.0},
+          {'sym': 'TRENT', 'ltp': 7120.00, 'chg': '+3.80%', 'rvol': '4.1x', 'tgt': 7600.0, 'sl': 6850.0},
+          {'sym': 'MCX', 'ltp': 6350.00, 'chg': '+5.40%', 'rvol': '4.4x', 'tgt': 6800.0, 'sl': 6050.0},
+          {'sym': 'HAL', 'ltp': 4680.00, 'chg': '+3.25%', 'rvol': '2.9x', 'tgt': 4950.0, 'sl': 4510.0},
         ],
       },
       {
-        'title': 'RSI Oversold Mean Reversion (< 30 Bounce)',
-        'desc': 'Large-cap stocks at oversold extremes turning up with bullish RSI divergence.',
-        'tag': 'MEAN REVERSION',
-        'strength': '86% BOUNCE',
-        'tagCol': const Color(0xFF38BDF8),
+        'title': '52-Week High Breakout with 2.5x Volume',
+        'desc': 'High-conviction structural breakouts clearing 52-week resistance backed by heavy institutional accumulation.',
+        'tag': 'ALL-TIME HIGH',
+        'strength': '96% BREAKOUT',
+        'tagCol': const Color(0xFF059669),
         'results': [
-          {'sym': 'ASIANPAINT', 'ltp': 2840.00, 'chg': '+1.10%'},
-          {'sym': 'LT', 'ltp': 3620.00, 'chg': '+1.80%'},
-          {'sym': 'BAJFINANCE', 'ltp': 6890.00, 'chg': '+0.95%'},
+          {'sym': 'TRENT', 'ltp': 7120.00, 'chg': '+3.80%', 'rvol': '4.2x', 'tgt': 7650.0, 'sl': 6850.0},
+          {'sym': 'BHARATFORG', 'ltp': 1620.00, 'chg': '+2.90%', 'rvol': '2.8x', 'tgt': 1740.0, 'sl': 1560.0},
+          {'sym': 'CHOLAFIN', 'ltp': 1540.00, 'chg': '+3.15%', 'rvol': '3.0x', 'tgt': 1650.0, 'sl': 1480.0},
+          {'sym': 'SUPREMEIND', 'ltp': 5980.00, 'chg': '+2.45%', 'rvol': '2.6x', 'tgt': 6350.0, 'sl': 5760.0},
+          {'sym': 'SOLARINDS', 'ltp': 11850.00, 'chg': '+4.10%', 'rvol': '3.4x', 'tgt': 12600.0, 'sl': 11350.0},
+          {'sym': 'DIXON', 'ltp': 14820.00, 'chg': '+4.20%', 'rvol': '3.9x', 'tgt': 15600.0, 'sl': 14300.0},
         ],
       },
       {
-        'title': 'Institutional Block Delivery (> 65% Delivery Vol)',
-        'desc': 'Stocks registering abnormal delivery spikes signaling quiet institutional accumulation.',
+        'title': 'Institutional Block Delivery (> 70% Delivery Vol)',
+        'desc': 'Stocks registering abnormal delivery spikes signaling quiet institutional accumulation by FIIs and DIIs.',
         'tag': 'SMART MONEY',
         'strength': '91% ACCUMULATION',
         'tagCol': const Color(0xFF8B5CF6),
         'results': [
-          {'sym': 'RELIANCE', 'ltp': 2948.50, 'chg': '+1.12%'},
-          {'sym': 'ICICIBANK', 'ltp': 1264.00, 'chg': '+0.88%'},
-          {'sym': 'TCS', 'ltp': 4180.00, 'chg': '+0.65%'},
+          {'sym': 'RELIANCE', 'ltp': 2948.50, 'chg': '+1.12%', 'rvol': '2.7x', 'tgt': 3120.0, 'sl': 2860.0},
+          {'sym': 'ICICIBANK', 'ltp': 1264.00, 'chg': '+0.88%', 'rvol': '2.4x', 'tgt': 1340.0, 'sl': 1220.0},
+          {'sym': 'TCS', 'ltp': 4180.00, 'chg': '+0.65%', 'rvol': '2.1x', 'tgt': 4420.0, 'sl': 4050.0},
+          {'sym': 'HDFCBANK', 'ltp': 1680.00, 'chg': '+1.05%', 'rvol': '2.5x', 'tgt': 1780.0, 'sl': 1625.0},
+          {'sym': 'INFY', 'ltp': 1860.00, 'chg': '+0.95%', 'rvol': '2.2x', 'tgt': 1980.0, 'sl': 1795.0},
+          {'sym': 'LT', 'ltp': 3680.00, 'chg': '+1.30%', 'rvol': '2.6x', 'tgt': 3900.0, 'sl': 3550.0},
+        ],
+      },
+      {
+        'title': 'RSI Oversold Mean Reversion (< 28 Bounce)',
+        'desc': 'Large-cap stocks at oversold extremes turning up with bullish RSI divergence and positive volume tick.',
+        'tag': 'MEAN REVERSION',
+        'strength': '88% BOUNCE',
+        'tagCol': const Color(0xFF38BDF8),
+        'results': [
+          {'sym': 'ASIANPAINT', 'ltp': 2840.00, 'chg': '+1.10%', 'rvol': '2.3x', 'tgt': 3020.0, 'sl': 2740.0},
+          {'sym': 'TITAN', 'ltp': 3420.00, 'chg': '+1.40%', 'rvol': '2.1x', 'tgt': 3650.0, 'sl': 3310.0},
+          {'sym': 'BAJFINANCE', 'ltp': 6890.00, 'chg': '+0.95%', 'rvol': '1.9x', 'tgt': 7350.0, 'sl': 6650.0},
+          {'sym': 'DIVISLAB', 'ltp': 5820.00, 'chg': '+1.85%', 'rvol': '2.5x', 'tgt': 6200.0, 'sl': 5600.0},
+          {'sym': 'NESTLEIND', 'ltp': 2280.00, 'chg': '+0.75%', 'rvol': '1.8x', 'tgt': 2420.0, 'sl': 2200.0},
+          {'sym': 'BERGEPAINT', 'ltp': 520.00, 'chg': '+1.20%', 'rvol': '2.0x', 'tgt': 560.0, 'sl': 498.0},
+        ],
+      },
+      {
+        'title': 'High RVOL Surge (> 3.5x Relative Volume)',
+        'desc': 'Intraday volume explosion far exceeding 30-day average, signaling sudden catalyst or breakout continuation.',
+        'tag': 'VOLUME SHOCKER',
+        'strength': '93% HIGH RVOL',
+        'tagCol': const Color(0xFFF59E0B),
+        'results': [
+          {'sym': 'MAZDOCK', 'ltp': 4380.00, 'chg': '+6.80%', 'rvol': '5.8x', 'tgt': 4750.0, 'sl': 4150.0},
+          {'sym': 'KAYNES', 'ltp': 5620.00, 'chg': '+5.20%', 'rvol': '4.3x', 'tgt': 6100.0, 'sl': 5350.0},
+          {'sym': 'MOTHERSON', 'ltp': 172.50, 'chg': '+4.10%', 'rvol': '3.8x', 'tgt': 190.0, 'sl': 162.0},
+          {'sym': 'CGPOWER', 'ltp': 745.00, 'chg': '+4.80%', 'rvol': '4.0x', 'tgt': 810.0, 'sl': 710.0},
+          {'sym': 'ZOMATO', 'ltp': 268.00, 'chg': '+3.90%', 'rvol': '3.7x', 'tgt': 295.0, 'sl': 252.0},
+          {'sym': 'TATACOMM', 'ltp': 1940.00, 'chg': '+3.45%', 'rvol': '3.5x', 'tgt': 2100.0, 'sl': 1850.0},
+        ],
+      },
+      {
+        'title': 'Open = Low Bullish Marubozu Momentum',
+        'desc': 'Strong buyer dominance from market bell with zero upper/lower wick rejection, indicating one-way institutional drive.',
+        'tag': 'BUYER DOMINANCE',
+        'strength': '95% TREND DAY',
+        'tagCol': const Color(0xFF10B981),
+        'results': [
+          {'sym': 'JSWSTEEL', 'ltp': 985.00, 'chg': '+2.80%', 'rvol': '2.9x', 'tgt': 1050.0, 'sl': 950.0},
+          {'sym': 'ADANIENT', 'ltp': 2980.00, 'chg': '+3.40%', 'rvol': '3.2x', 'tgt': 3200.0, 'sl': 2870.0},
+          {'sym': 'BHEL', 'ltp': 238.00, 'chg': '+4.50%', 'rvol': '3.9x', 'tgt': 260.0, 'sl': 226.0},
+          {'sym': 'INDHOTEL', 'ltp': 765.00, 'chg': '+3.10%', 'rvol': '2.7x', 'tgt': 820.0, 'sl': 735.0},
+          {'sym': 'REC', 'ltp': 540.00, 'chg': '+2.90%', 'rvol': '2.6x', 'tgt': 580.0, 'sl': 518.0},
+          {'sym': 'PFC', 'ltp': 475.00, 'chg': '+2.75%', 'rvol': '2.5x', 'tgt': 510.0, 'sl': 455.0},
+        ],
+      },
+      {
+        'title': 'Volatility Contraction Pattern (VCP) Squeeze',
+        'desc': 'Mark Minervini setup with progressive contraction of volatility (T1 -> T2 -> T3) prior to explosive breakout.',
+        'tag': 'VCP SQUEEZE',
+        'strength': '90% COMPRESSION',
+        'tagCol': const Color(0xFF6366F1),
+        'results': [
+          {'sym': 'CDSL', 'ltp': 1620.00, 'chg': '+2.40%', 'rvol': '2.4x', 'tgt': 1750.0, 'sl': 1550.0},
+          {'sym': 'ANGELONE', 'ltp': 2880.00, 'chg': '+3.10%', 'rvol': '2.8x', 'tgt': 3150.0, 'sl': 2740.0},
+          {'sym': 'TATAELXSI', 'ltp': 7150.00, 'chg': '+1.90%', 'rvol': '2.1x', 'tgt': 7650.0, 'sl': 6880.0},
+          {'sym': 'KPITTECH', 'ltp': 1580.00, 'chg': '+2.20%', 'rvol': '2.3x', 'tgt': 1710.0, 'sl': 1510.0},
+          {'sym': 'TATACHEM', 'ltp': 1080.00, 'chg': '+2.70%', 'rvol': '2.5x', 'tgt': 1180.0, 'sl': 1030.0},
+          {'sym': 'COALINDIA', 'ltp': 445.00, 'chg': '+1.80%', 'rvol': '2.0x', 'tgt': 480.0, 'sl': 428.0},
         ],
       },
     ];
@@ -2025,6 +2114,20 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                             Text('₹${_formatIndian(ltp)}', style: TextStyle(color: textMain, fontSize: 11.5)),
                             const SizedBox(width: 6),
                             Text(chg, style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w900)),
+                            if (r.containsKey('rvol')) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  r['rvol'] as String,
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
+                                ),
+                              ),
+                            ],
                             const SizedBox(width: 6),
                             const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF10B981)),
                           ],

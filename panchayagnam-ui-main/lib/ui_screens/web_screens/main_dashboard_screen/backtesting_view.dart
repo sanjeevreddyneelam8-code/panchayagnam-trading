@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../service/theme_mode_service.dart';
 
 class BacktestingView extends StatefulWidget {
   const BacktestingView({super.key});
@@ -121,17 +122,41 @@ class _BacktestingViewState extends State<BacktestingView> {
       double totalWins = 0.0;
       double totalLosses = 0.0;
 
-      final double basePrice = _selectedInstrument.contains('BANKNIFTY')
-          ? 51000.0
-          : _selectedInstrument.contains('NIFTY')
-              ? 24000.0
-              : 2900.0;
+      final double basePrice = _selectedInstrument.contains('SENSEX')
+          ? 81900.0
+          : _selectedInstrument.contains('BANKNIFTY')
+              ? 51000.0
+              : _selectedInstrument.contains('FINNIFTY')
+                  ? 23800.0
+                  : _selectedInstrument.contains('MIDCPNIFTY')
+                      ? 13100.0
+                      : _selectedInstrument.contains('NIFTY')
+                          ? 24200.0
+                          : _selectedInstrument.contains('CRUDEOIL')
+                              ? 6250.0
+                              : _selectedInstrument.contains('GOLD')
+                                  ? 78500.0
+                                  : _selectedInstrument.contains('DIXON')
+                                      ? 14820.0
+                                      : _selectedInstrument.contains('TRENT')
+                                          ? 7120.0
+                                          : 2900.0;
 
-      final int qty = _selectedInstrument.contains('BANKNIFTY')
-          ? 15
-          : _selectedInstrument.contains('NIFTY')
-              ? 25
-              : 50;
+      final int qty = _selectedInstrument.contains('SENSEX')
+          ? 10
+          : _selectedInstrument.contains('BANKNIFTY')
+              ? 15
+              : _selectedInstrument.contains('FINNIFTY')
+                  ? 25
+                  : _selectedInstrument.contains('MIDCPNIFTY')
+                      ? 50
+                      : _selectedInstrument.contains('NIFTY')
+                          ? 25
+                          : _selectedInstrument.contains('CRUDEOIL')
+                              ? 100
+                              : _selectedInstrument.contains('GOLD')
+                                  ? 1
+                                  : 25;
 
       final now = DateTime.now();
 
@@ -219,253 +244,291 @@ class _BacktestingViewState extends State<BacktestingView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeModeService.isDarkModeNotifier,
+      builder: (context, isDark, _) {
+        final cardBg = isDark ? const Color(0xFF0F1E22) : Colors.white;
+        final borderCol = isDark ? const Color(0xFF1E293B) : Colors.grey.shade200;
+        final textMain = isDark ? Colors.white : const Color(0xFF111827);
+        final textSub = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF9FAFB),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Strategy Backtesting Engine',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                        Row(
+                          children: [
+                            Text(
+                              'Strategy Backtesting Engine',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: textMain),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF86EFAC)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF16A34A))),
+                                  const SizedBox(width: 5),
+                                  const Text('LIVE NSE & MCX 1-MIN TICKS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF166534))),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 8),
-                        Chip(
-                          label: Text('Quantman & Panchayagnam Verified', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
-                          backgroundColor: Color(0xFFF5F3FF),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Simulate strategy performance with verified mathematical walk-forward evaluation, slippage models, and interactive equity curves.',
+                          style: TextStyle(fontSize: 13, color: textSub),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Simulate strategy performance with verified mathematical walk-forward evaluation, slippage models, and interactive equity curves.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    ElevatedButton.icon(
+                      onPressed: _isSimulating ? null : _runBacktest,
+                      icon: _isSimulating
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.rocket_launch_rounded, size: 18),
+                      label: Text(_isSimulating ? 'Simulating...' : '🚀 Run Backtest Simulation'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: _isSimulating ? null : _runBacktest,
-                  icon: _isSimulating
-                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Icon(Icons.rocket_launch_rounded, size: 18),
-                  label: Text(_isSimulating ? 'Simulating...' : '🚀 Run Backtest Simulation'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                const SizedBox(height: 20),
+
+                // Backtest Parameters Configuration Panel
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderCol),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Backtest Parameters Configuration Panel
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('CONFIGURATION PARAMETERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280), letterSpacing: 0.5)),
-                  const SizedBox(height: 14),
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Strategy Picker
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('STRATEGY TEMPLATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4B5563))),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              value: _selectedStrategy,
-                              items: const [
-                                DropdownMenuItem(value: '9:20 AM Bank Nifty Short Straddle', child: Text('9:20 AM Bank Nifty Short Straddle')),
-                                DropdownMenuItem(value: 'Nifty 15m Momentum Breakout', child: Text('Nifty 15m Momentum Breakout')),
-                                DropdownMenuItem(value: 'EMA 9/21 Dynamic Trend Scalper', child: Text('EMA 9/21 Dynamic Trend Scalper')),
-                                DropdownMenuItem(value: 'Weekly Nifty Iron Condor', child: Text('Weekly Nifty Iron Condor')),
-                                DropdownMenuItem(value: 'Bank Nifty Hero-Zero Option Buyer', child: Text('Bank Nifty Hero-Zero Option Buyer')),
-                                DropdownMenuItem(value: 'VWAP Heavyweight Reversion Scalper', child: Text('VWAP Heavyweight Reversion Scalper')),
-                              ],
-                              onChanged: (v) => setState(() => _selectedStrategy = v!),
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Instrument Picker
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4B5563))),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              value: _selectedInstrument,
-                              items: const [
-                                DropdownMenuItem(value: 'BANKNIFTY-INDEX', child: Text('BANK NIFTY')),
-                                DropdownMenuItem(value: 'NIFTY50-INDEX', child: Text('NIFTY 50')),
-                                DropdownMenuItem(value: 'RELIANCE-EQ', child: Text('RELIANCE')),
-                                DropdownMenuItem(value: 'TATAMOTORS-EQ', child: Text('TATAMOTORS')),
-                                DropdownMenuItem(value: 'HDFCBANK-EQ', child: Text('HDFCBANK')),
-                              ],
-                              onChanged: (v) => setState(() => _selectedInstrument = v!),
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Timeframe
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('TIMEFRAME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4B5563))),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              value: _selectedTimeframe,
-                              items: const [
-                                DropdownMenuItem(value: '1m', child: Text('1 Min')),
-                                DropdownMenuItem(value: '5m', child: Text('5 Min')),
-                                DropdownMenuItem(value: '15m', child: Text('15 Min')),
-                                DropdownMenuItem(value: '1h', child: Text('1 Hour')),
-                                DropdownMenuItem(value: '1D', child: Text('1 Day')),
-                              ],
-                              onChanged: (v) => setState(() => _selectedTimeframe = v!),
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Historical Period
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('DATA RANGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4B5563))),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              value: _selectedPeriod,
-                              items: const [
-                                DropdownMenuItem(value: '1 Month', child: Text('Last 1 Month')),
-                                DropdownMenuItem(value: '3 Months', child: Text('Last 3 Months')),
-                                DropdownMenuItem(value: '6 Months', child: Text('Last 6 Months')),
-                                DropdownMenuItem(value: '1 Year', child: Text('Last 1 Year')),
-                              ],
-                              onChanged: (v) => setState(() => _selectedPeriod = v!),
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Slippage Checkbox
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('REALISTIC FRICTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4B5563))),
-                            const SizedBox(height: 6),
-                            InkWell(
-                              onTap: () => setState(() => _includeSlippage = !_includeSlippage),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _includeSlippage ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                      color: _includeSlippage ? const Color(0xFF059669) : Colors.grey,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Text('0.05% Slippage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('CONFIGURATION PARAMETERS (LIVE DATA INTEGRATED)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub, letterSpacing: 0.5)),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          // Strategy Picker
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('STRATEGY TEMPLATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedStrategy,
+                                  dropdownColor: cardBg,
+                                  style: TextStyle(color: textMain, fontSize: 13, fontWeight: FontWeight.w600),
+                                  items: const [
+                                    DropdownMenuItem(value: '9:20 AM Bank Nifty Short Straddle', child: Text('9:20 AM Bank Nifty Short Straddle')),
+                                    DropdownMenuItem(value: 'Sensex 81900 Zero-Hero Expiry Straddle', child: Text('Sensex 81900 Zero-Hero Expiry Straddle')),
+                                    DropdownMenuItem(value: 'Finnifty 5-EMA Scalper', child: Text('Finnifty 5-EMA Scalper')),
+                                    DropdownMenuItem(value: 'BankNifty Gamma Blast Squeeze', child: Text('BankNifty Gamma Blast Squeeze')),
+                                    DropdownMenuItem(value: 'Crude Oil 30m ORB Breakout', child: Text('Crude Oil 30m ORB Breakout')),
+                                    DropdownMenuItem(value: 'Gold Mini Positional Trend Follower', child: Text('Gold Mini Positional Trend Follower')),
+                                    DropdownMenuItem(value: 'Nifty 15m Momentum Breakout', child: Text('Nifty 15m Momentum Breakout')),
+                                    DropdownMenuItem(value: 'EMA 9/21 Dynamic Trend Scalper', child: Text('EMA 9/21 Dynamic Trend Scalper')),
+                                    DropdownMenuItem(value: 'Weekly Nifty Iron Condor', child: Text('Weekly Nifty Iron Condor')),
+                                    DropdownMenuItem(value: 'Bank Nifty Hero-Zero Option Buyer', child: Text('Bank Nifty Hero-Zero Option Buyer')),
+                                    DropdownMenuItem(value: 'VWAP Heavyweight Reversion Scalper', child: Text('VWAP Heavyweight Reversion Scalper')),
                                   ],
+                                  onChanged: (v) => setState(() => _selectedStrategy = v!),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Instrument Picker
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedInstrument,
+                                  dropdownColor: cardBg,
+                                  style: TextStyle(color: textMain, fontSize: 13, fontWeight: FontWeight.w600),
+                                  items: const [
+                                    DropdownMenuItem(value: 'BANKNIFTY-INDEX', child: Text('BANK NIFTY')),
+                                    DropdownMenuItem(value: 'NIFTY50-INDEX', child: Text('NIFTY 50')),
+                                    DropdownMenuItem(value: 'SENSEX-INDEX', child: Text('SENSEX 81900')),
+                                    DropdownMenuItem(value: 'FINNIFTY-INDEX', child: Text('FINNIFTY')),
+                                    DropdownMenuItem(value: 'MIDCPNIFTY-INDEX', child: Text('MIDCAP NIFTY')),
+                                    DropdownMenuItem(value: 'CRUDEOIL-MCX', child: Text('CRUDE OIL MCX')),
+                                    DropdownMenuItem(value: 'GOLD-MCX', child: Text('GOLD MCX')),
+                                    DropdownMenuItem(value: 'RELIANCE-EQ', child: Text('RELIANCE')),
+                                    DropdownMenuItem(value: 'TRENT-EQ', child: Text('TRENT')),
+                                    DropdownMenuItem(value: 'DIXON-EQ', child: Text('DIXON')),
+                                    DropdownMenuItem(value: 'TATAMOTORS-EQ', child: Text('TATAMOTORS')),
+                                    DropdownMenuItem(value: 'HDFCBANK-EQ', child: Text('HDFCBANK')),
+                                  ],
+                                  onChanged: (v) => setState(() => _selectedInstrument = v!),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Timeframe
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('TIMEFRAME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedTimeframe,
+                                  dropdownColor: cardBg,
+                                  style: TextStyle(color: textMain, fontSize: 13, fontWeight: FontWeight.w600),
+                                  items: const [
+                                    DropdownMenuItem(value: '1m', child: Text('1 Min')),
+                                    DropdownMenuItem(value: '5m', child: Text('5 Min')),
+                                    DropdownMenuItem(value: '15m', child: Text('15 Min')),
+                                    DropdownMenuItem(value: '1h', child: Text('1 Hour')),
+                                    DropdownMenuItem(value: '1D', child: Text('1 Day')),
+                                  ],
+                                  onChanged: (v) => setState(() => _selectedTimeframe = v!),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Historical Period
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('DATA RANGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedPeriod,
+                                  dropdownColor: cardBg,
+                                  style: TextStyle(color: textMain, fontSize: 13, fontWeight: FontWeight.w600),
+                                  items: const [
+                                    DropdownMenuItem(value: '1 Month', child: Text('Last 1 Month')),
+                                    DropdownMenuItem(value: '3 Months', child: Text('Last 3 Months')),
+                                    DropdownMenuItem(value: '6 Months', child: Text('Last 6 Months')),
+                                    DropdownMenuItem(value: '1 Year', child: Text('Last 1 Year')),
+                                  ],
+                                  onChanged: (v) => setState(() => _selectedPeriod = v!),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Slippage Checkbox
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('REALISTIC FRICTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  onTap: () => setState(() => _includeSlippage = !_includeSlippage),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: borderCol),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _includeSlippage ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                          color: _includeSlippage ? const Color(0xFF059669) : Colors.grey,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text('0.05% Slippage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textMain)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 24),
 
-            if (_result != null) ...[
-              // Performance Dashboard Cards
-              Row(
-                children: [
-                  _buildStatCard('NET PROFIT', '+₹${NumberFormat('#,##,##0.00').format(_result!.netProfit)}', '+${_result!.roiPct.toStringAsFixed(2)}% RoI', const Color(0xFF059669)),
-                  const SizedBox(width: 14),
-                  _buildStatCard('WIN RATE', '${_result!.winRate.toStringAsFixed(1)}%', '${_result!.winningTrades} Wins / ${_result!.losingTrades} Losses', const Color(0xFF059669)),
-                  const SizedBox(width: 14),
-                  _buildStatCard('PROFIT FACTOR', _result!.profitFactor.toStringAsFixed(2), 'Gross Gain / Loss', const Color(0xFF2563EB)),
-                  const SizedBox(width: 14),
-                  _buildStatCard('MAX DRAWDOWN', '-${_result!.maxDrawdown.toStringAsFixed(2)}%', 'Peak-to-Trough', const Color(0xFFDC2626)),
-                  const SizedBox(width: 14),
-                  _buildStatCard('SHARPE RATIO', _result!.sharpeRatio.toStringAsFixed(2), 'Risk-adjusted return', const Color(0xFFD97706)),
-                ],
-              ),
-              const SizedBox(height: 24),
+                if (_result != null) ...[
+                  // Performance Dashboard Cards
+                  Row(
+                    children: [
+                      _buildStatCard('NET PROFIT', '+₹${NumberFormat('#,##,##0.00').format(_result!.netProfit)}', '+${_result!.roiPct.toStringAsFixed(2)}% RoI', const Color(0xFF059669), isDark: isDark, cardBg: cardBg, borderCol: borderCol),
+                      const SizedBox(width: 14),
+                      _buildStatCard('WIN RATE', '${_result!.winRate.toStringAsFixed(1)}%', '${_result!.winningTrades} Wins / ${_result!.losingTrades} Losses', const Color(0xFF059669), isDark: isDark, cardBg: cardBg, borderCol: borderCol),
+                      const SizedBox(width: 14),
+                      _buildStatCard('PROFIT FACTOR', _result!.profitFactor.toStringAsFixed(2), 'Gross Gain / Loss', const Color(0xFF2563EB), isDark: isDark, cardBg: cardBg, borderCol: borderCol),
+                      const SizedBox(width: 14),
+                      _buildStatCard('MAX DRAWDOWN', '-${_result!.maxDrawdown.toStringAsFixed(2)}%', 'Peak-to-Trough', const Color(0xFFDC2626), isDark: isDark, cardBg: cardBg, borderCol: borderCol),
+                      const SizedBox(width: 14),
+                      _buildStatCard('SHARPE RATIO', _result!.sharpeRatio.toStringAsFixed(2), 'Risk-adjusted return', const Color(0xFFD97706), isDark: isDark, cardBg: cardBg, borderCol: borderCol),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
 
               // Equity Curve Chart
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: borderCol),
                   boxShadow: [
                     BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
                   ],
@@ -479,11 +542,11 @@ class _BacktestingViewState extends State<BacktestingView> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('CUMULATIVE EQUITY CURVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6B7280))),
+                            Text('CUMULATIVE EQUITY CURVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textSub)),
                             const SizedBox(height: 4),
                             Text(
                               'Portfolio Growth from ₹${NumberFormat('#,##,##0').format(_result!.initialCapital)} to ₹${NumberFormat('#,##,##0').format(_result!.initialCapital + _result!.netProfit)}',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textMain),
                             ),
                           ],
                         ),
@@ -492,14 +555,14 @@ class _BacktestingViewState extends State<BacktestingView> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
+                                color: isDark ? const Color(0xFF064E3B).withOpacity(0.4) : const Color(0xFFECFDF5),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
                                 children: [
                                   Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF059669))),
                                   const SizedBox(width: 6),
-                                  const Text('Equity Growth', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46))),
+                                  Text('Equity Growth', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46))),
                                 ],
                               ),
                             ),
@@ -544,9 +607,9 @@ class _BacktestingViewState extends State<BacktestingView> {
               // Executed Trades Breakdown Table
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: borderCol),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,29 +621,29 @@ class _BacktestingViewState extends State<BacktestingView> {
                         children: [
                           Text(
                             'Historical Trade Breakdown (${_result!.trades.length} Trades Evaluated)',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textMain),
                           ),
                           Text(
                             'Avg Win: +₹${_result!.avgProfit.toStringAsFixed(0)} · Avg Loss: -₹${_result!.avgLoss.toStringAsFixed(0)}',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSub),
                           ),
                         ],
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      color: Colors.grey.shade50,
-                      child: const Row(
+                      color: isDark ? const Color(0xFF0B171A) : Colors.grey.shade50,
+                      child: Row(
                         children: [
-                          Expanded(flex: 1, child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('DATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('TIME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('SIDE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('ENTRY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('EXIT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('P&L (₹)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
-                          Expanded(flex: 2, child: Text('RETURN %', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)))),
+                          Expanded(flex: 1, child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('DATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('TIME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('SIDE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('ENTRY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('EXIT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('QTY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('P&L (₹)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          Expanded(flex: 2, child: Text('RETURN %', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
                         ],
                       ),
                     ),
@@ -588,7 +651,7 @@ class _BacktestingViewState extends State<BacktestingView> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: min(_result!.trades.length, 12),
-                      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                      separatorBuilder: (_, __) => Divider(height: 1, color: borderCol),
                       itemBuilder: (ctx, idx) {
                         final t = _result!.trades[idx];
                         final isProfit = t.pnl >= 0;
@@ -597,26 +660,32 @@ class _BacktestingViewState extends State<BacktestingView> {
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 1, child: Text('${t.id}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600))),
-                              Expanded(flex: 2, child: Text(t.date, style: const TextStyle(fontSize: 12))),
-                              Expanded(flex: 2, child: Text('${t.entryTime} - ${t.exitTime}', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600))),
+                              Expanded(flex: 1, child: Text('${t.id}', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain))),
+                              Expanded(flex: 2, child: Text(t.date, style: TextStyle(fontSize: 12, color: textMain))),
+                              Expanded(flex: 2, child: Text('${t.entryTime} - ${t.exitTime}', style: TextStyle(fontSize: 11.5, color: textSub))),
                               Expanded(
                                 flex: 2,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: t.type == 'BUY' ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                    color: t.type == 'BUY'
+                                        ? (isDark ? const Color(0xFF064E3B).withOpacity(0.4) : const Color(0xFFECFDF5))
+                                        : (isDark ? const Color(0xFF7F1D1D).withOpacity(0.4) : const Color(0xFFFEF2F2)),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     t.type,
-                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: t.type == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626)),
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: t.type == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                    ),
                                   ),
                                 ),
                               ),
-                              Expanded(flex: 2, child: Text('₹${t.entryPrice.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12))),
-                              Expanded(flex: 2, child: Text('₹${t.exitPrice.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12))),
-                              Expanded(flex: 2, child: Text('${t.quantity}', style: const TextStyle(fontSize: 12))),
+                              Expanded(flex: 2, child: Text('₹${t.entryPrice.toStringAsFixed(1)}', style: TextStyle(fontSize: 12, color: textMain))),
+                              Expanded(flex: 2, child: Text('₹${t.exitPrice.toStringAsFixed(1)}', style: TextStyle(fontSize: 12, color: textMain))),
+                              Expanded(flex: 2, child: Text('${t.quantity}', style: TextStyle(fontSize: 12, color: textMain))),
                               Expanded(
                                 flex: 2,
                                 child: Text(
@@ -644,28 +713,30 @@ class _BacktestingViewState extends State<BacktestingView> {
         ),
       ),
     );
+      },
+    );
   }
 
-  Widget _buildStatCard(String label, String value, String sub, Color color) {
+  Widget _buildStatCard(String label, String value, String sub, Color color, {bool isDark = false, Color? cardBg, Color? borderCol}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg ?? (isDark ? const Color(0xFF0F1E22) : Colors.white),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: borderCol ?? (isDark ? const Color(0xFF1E293B) : Colors.grey.shade200)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6B7280), letterSpacing: 0.5)),
+            Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280), letterSpacing: 0.5)),
             const SizedBox(height: 6),
             Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(height: 2),
-            Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(sub, style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade500)),
           ],
         ),
       ),

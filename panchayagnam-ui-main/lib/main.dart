@@ -1,5 +1,6 @@
 import 'package:easy_trade_web/service/ip_service.dart';
 import 'package:easy_trade_web/service/individual_drop_down_service.dart';
+import 'package:easy_trade_web/service/theme_mode_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app_route/app_route.dart';
@@ -63,11 +64,38 @@ class MyApp extends StatelessWidget {
           create: (_) => BrokerBloc(brokerService: BrokerService()),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'PANCHAYAGNAM',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Inter'),
-        routerConfig: appRouter,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: ThemeModeService.isDarkModeNotifier,
+        builder: (context, isDark, _) {
+          return MaterialApp.router(
+            title: 'PANCHAYAGNAM',
+            debugShowCheckedModeBanner: false,
+            themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+            theme: ThemeData(
+              primarySwatch: Colors.green,
+              primaryColor: const Color(0xFF059669),
+              scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+              fontFamily: 'Inter',
+              brightness: Brightness.light,
+              cardColor: Colors.white,
+              dividerColor: const Color(0xFFE2E8F0),
+            ),
+            darkTheme: ThemeData.dark().copyWith(
+              primaryColor: const Color(0xFF10B981),
+              scaffoldBackgroundColor: const Color(0xFF081214),
+              cardColor: const Color(0xFF0F1E22),
+              canvasColor: const Color(0xFF0F1E22),
+              dialogBackgroundColor: const Color(0xFF0F1E22),
+              dividerColor: const Color(0xFF162E34),
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF10B981),
+                secondary: Color(0xFF34D399),
+                surface: Color(0xFF0F1E22),
+              ),
+            ),
+            routerConfig: appRouter,
+          );
+        },
       ),
     );
   }

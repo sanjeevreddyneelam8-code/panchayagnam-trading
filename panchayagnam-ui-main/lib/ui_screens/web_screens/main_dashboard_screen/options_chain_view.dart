@@ -95,9 +95,37 @@ class OptionStrikeData {
   }
 }
 
+class BasketLegItem {
+  final double strike;
+  final String optType; // 'CE' or 'PE'
+  final String side; // 'BUY' or 'SELL'
+  final double premium;
+  int lots;
+
+  BasketLegItem({
+    required this.strike,
+    required this.optType,
+    required this.side,
+    required this.premium,
+    this.lots = 1,
+  });
+
+  String get key => '${strike.toInt()}-$optType-$side';
+}
+
 class OptionsChainView extends StatefulWidget {
   final int initialTabIndex;
-  const OptionsChainView({super.key, this.initialTabIndex = 0});
+  final VoidCallback? onNavigateToOrders;
+  final VoidCallback? onNavigateToPositions;
+  final VoidCallback? onNavigateToCharts;
+
+  const OptionsChainView({
+    super.key,
+    this.initialTabIndex = 0,
+    this.onNavigateToOrders,
+    this.onNavigateToPositions,
+    this.onNavigateToCharts,
+  });
 
   @override
   State<OptionsChainView> createState() => _OptionsChainViewState();
@@ -107,6 +135,10 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   String _underlying = 'NIFTY';
   String _expiry = '07-NOV-2026 (Weekly)';
   late int _activeSubTab; // 0: Chain, 1: Multi-Strike OI, 2: Strategy Builder
+
+  bool _basketMode = false;
+  bool _basketExpanded = false;
+  final Map<String, BasketLegItem> _basketLegs = {};
 
   final List<String> _indices = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX'];
 
@@ -336,11 +368,17 @@ class _OptionsChainViewState extends State<OptionsChainView> {
 
     return ValueListenableBuilder<bool>(
       valueListenable: ThemeModeService.isDarkModeNotifier,
-      builder: (context, isDark, _) => Scaffold(
-        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      builder: (context, isDark, _) {
+        final cardBg = isDark ? const Color(0xFF0F1E22) : Colors.white;
+        final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+        final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+        final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Top Header Row ───────────────────────────────────────────
@@ -413,7 +451,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildSubTabButton(0, 'F&O Strikes & IV', Icons.table_chart_rounded),
+                        _buildSubTabButton(0, 'Option Chain', Icons.table_chart_rounded),
                         _buildSubTabButton(1, 'Multi-Strike OI & Greeks', Icons.auto_graph_rounded),
                         _buildSubTabButton(2, 'Strategy Builder', Icons.psychology_alt_rounded),
                       ],
@@ -640,18 +678,20 @@ class _OptionsChainViewState extends State<OptionsChainView> {
             const SizedBox(height: 16),
 
             // ── Main Body: Option Chain vs OI vs Strategy Builder ─────────
-            if (_activeSubTab == 0)
-              _buildOptionChainTable()
-            else if (_activeSubTab == 1)
+            if (_activeSubTab == 0) ...[
+              _buildOptionChainTable(isDark, cardBg, borderCol, textMain, textSub),
+              _buildBasketModeBottomBar(isDark, cardBg, borderCol, textMain, textSub),
+            ] else if (_activeSubTab == 1)
               _buildMultiStrikeOiView()
             else
               _buildStrategyBuilderView(),
           ],
         ),
       ),
-    ),
     );
-  }
+  },
+);
+}
 
   Widget _buildSubTabButton(int idx, String title, IconData icon) {
     final isSelected = _activeSubTab == idx;
@@ -684,14 +724,14 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   }
 
   // ── 1. Full Option Chain Table ───────────────────────────────────────────────
-  Widget _buildOptionChainTable() {
+  Widget _buildOptionChainTable(bool isDark, Color cardBg, Color borderCol, Color textMain, Color textSub) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderCol),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 3)),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.02), blurRadius: 10, offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -703,14 +743,19 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                 flex: 6,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 9),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F2E22) : const Color(0xFFDCFCE7),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(12)),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'CALL OPTIONS (CE)',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF166534), letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
@@ -719,11 +764,16 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                 flex: 2,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 9),
-                  color: const Color(0xFFF1F5F9),
-                  child: const Center(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  child: Center(
                     child: Text(
                       'STRIKE',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF334155), letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF334155),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
@@ -732,14 +782,19 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                 flex: 6,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 9),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.only(topRight: Radius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF3B151E) : const Color(0xFFFEE2E2),
+                    borderRadius: const BorderRadius.only(topRight: Radius.circular(12)),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'PUT OPTIONS (PE)',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF991B1B), letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
@@ -750,9 +805,9 @@ class _OptionsChainViewState extends State<OptionsChainView> {
           // Authentic NSE Legend Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF131D2E) : const Color(0xFFF8FAFC),
+              border: Border(bottom: BorderSide(color: borderCol)),
             ),
             child: Row(
               children: [
@@ -760,25 +815,25 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
+                    color: isDark ? const Color(0xFF2E2210) : const Color(0xFFFFFBEB),
                     border: Border.all(color: const Color(0xFFFDE68A)),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 5),
-                const Text('In-The-Money (ITM)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
+                Text('In-The-Money (ITM)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
                 const SizedBox(width: 16),
                 Container(
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     border: Border.all(color: const Color(0xFFCBD5E1)),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 5),
-                const Text('Out-Of-The-Money (OTM)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
+                Text('Out-Of-The-Money (OTM)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub)),
                 const SizedBox(width: 16),
                 Container(
                   width: 12,
@@ -793,7 +848,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                 const Spacer(),
                 const Icon(Icons.fiber_manual_record, color: Color(0xFF16A34A), size: 10),
                 const SizedBox(width: 5),
-                const Text('LIVE STREAMING (NSE F&O TICK: 11ms)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF166534))),
+                const Text('LIVE STREAMING (NSE F&O TICK: 11ms)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
               ],
             ),
           ),
@@ -801,50 +856,66 @@ class _OptionsChainViewState extends State<OptionsChainView> {
           // Sub-Column Headers
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F5F9),
-              border: Border(bottom: BorderSide(color: Color(0xFFCBD5E1))),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF162032) : const Color(0xFFF1F5F9),
+              border: Border(bottom: BorderSide(color: borderCol)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 // Calls columns
-                Expanded(flex: 2, child: Text('OI (Lakh)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 2, child: Text('CHG %', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 2, child: Text('IV / DELTA', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 3, child: Text('LTP (₹)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF166534)))),
-                Expanded(flex: 2, child: Text('ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                Expanded(flex: 2, child: Text('OI (Lakh)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                Expanded(flex: 2, child: Text('CHG %', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                Expanded(flex: 2, child: Text('IV / DELTA', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                const Expanded(flex: 3, child: Text('LTP (₹)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)))),
+                Expanded(flex: 2, child: Text('ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
 
                 // Strike
-                Expanded(flex: 3, child: Text('STRIKE PRICE', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)))),
+                Expanded(flex: 3, child: Text('STRIKE PRICE', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: textMain))),
 
                 // Puts columns
-                Expanded(flex: 2, child: Text('ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 3, child: Text('LTP (₹)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF991B1B)))),
-                Expanded(flex: 2, child: Text('IV / DELTA', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 2, child: Text('CHG %', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                Expanded(flex: 2, child: Text('OI (Lakh)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                Expanded(flex: 2, child: Text('ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                const Expanded(flex: 3, child: Text('LTP (₹)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFFDC2626)))),
+                Expanded(flex: 2, child: Text('IV / DELTA', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                Expanded(flex: 2, child: Text('CHG %', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
+                Expanded(flex: 2, child: Text('OI (Lakh)', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSub))),
               ],
             ),
           ),
 
-          // All 19 Strike Rows with Authentic NSE Yellow ITM Shading
+          // Strike Rows
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _strikesData.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            separatorBuilder: (_, __) => Divider(height: 1, color: borderCol),
             itemBuilder: (ctx, i) {
               final s = _strikesData[i];
               final isCallItm = s.strike < _spotPrice;
               final isPutItm = s.strike > _spotPrice;
               final isAtm = s.isAtm;
 
-              // Authentic NSE Indian Market Yellow ITM Tint
-              final callSideBg = isCallItm ? const Color(0xFFFFFBEB) : Colors.white;
-              final putSideBg = isPutItm ? const Color(0xFFFFFBEB) : Colors.white;
+              // ITM Shading
+              final callSideBg = isCallItm
+                  ? (isDark ? const Color(0xFF1C2214) : const Color(0xFFFFFBEB))
+                  : cardBg;
+              final putSideBg = isPutItm
+                  ? (isDark ? const Color(0xFF27171C) : const Color(0xFFFFFBEB))
+                  : cardBg;
 
               final callChgColor = s.callChange >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
               final putChgColor = s.putChange >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+              final callBuyKey = '${s.strike.toInt()}-CE-BUY';
+              final callSellKey = '${s.strike.toInt()}-CE-SELL';
+              final isCallBuySelected = _basketLegs.containsKey(callBuyKey);
+              final isCallSellSelected = _basketLegs.containsKey(callSellKey);
+              final selectedCallLeg = isCallBuySelected ? _basketLegs[callBuyKey] : (isCallSellSelected ? _basketLegs[callSellKey] : null);
+
+              final putBuyKey = '${s.strike.toInt()}-PE-BUY';
+              final putSellKey = '${s.strike.toInt()}-PE-SELL';
+              final isPutBuySelected = _basketLegs.containsKey(putBuyKey);
+              final isPutSellSelected = _basketLegs.containsKey(putSellKey);
+              final selectedPutLeg = isPutBuySelected ? _basketLegs[putBuyKey] : (isPutSellSelected ? _basketLegs[putSellKey] : null);
 
               return Container(
                 decoration: BoxDecoration(
@@ -858,69 +929,127 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                       child: Container(
                         color: callSideBg,
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-                        child: Row(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // 1. Call OI
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                '${s.callOi}L',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-                              ),
-                            ),
-                            // 2. Call Change %
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                '${s.callChange >= 0 ? '+' : ''}${s.callChangePercent.toStringAsFixed(1)}%',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: callChgColor),
-                              ),
-                            ),
-                            // 3. Call IV / Delta
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('${s.callIv}%', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                  Text('Δ ${s.callDelta}', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
-                                ],
-                              ),
-                            ),
-                            // 4. Call LTP
-                            Expanded(
-                              flex: 3,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
-                                decoration: BoxDecoration(
-                                  color: isCallItm ? const Color(0xFFFEF3C7) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(4),
+                            Row(
+                              children: [
+                                // 1. Call OI
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '${s.callOi}L',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain),
+                                  ),
                                 ),
-                                child: Text(
-                                  '₹${s.callLtp.toStringAsFixed(2)}',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF166534)),
+                                // 2. Call Change %
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '${s.callChange >= 0 ? '+' : ''}${s.callChangePercent.toStringAsFixed(1)}%',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: callChgColor),
+                                  ),
+                                ),
+                                // 3. Call IV / Delta
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('${s.callIv}%', style: TextStyle(fontSize: 10, color: textSub)),
+                                      const Text('Δ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                    ],
+                                  ),
+                                ),
+                                // 4. Call LTP
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      color: isCallItm ? (isDark ? const Color(0xFF2D2E16) : const Color(0xFFFEF3C7)) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '₹${s.callLtp.toStringAsFixed(2)}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
+                                    ),
+                                  ),
+                                ),
+                                // 5. Call Quick Trade Buttons [ B ] [ S ]
+                                Expanded(
+                                  flex: 2,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _buildQuickActionButton(
+                                        'B',
+                                        const Color(0xFF059669),
+                                        isSelected: isCallBuySelected,
+                                        isBasketMode: _basketMode,
+                                        onTap: () {
+                                          if (_basketMode) {
+                                            setState(() {
+                                              if (isCallBuySelected) {
+                                                _basketLegs.remove(callBuyKey);
+                                              } else {
+                                                _basketLegs.remove(callSellKey);
+                                                _basketLegs[callBuyKey] = BasketLegItem(
+                                                  strike: s.strike,
+                                                  optType: 'CE',
+                                                  side: 'BUY',
+                                                  premium: s.callLtp,
+                                                );
+                                              }
+                                            });
+                                          } else {
+                                            _executeOptionOrder(side: 'BUY', optType: 'CE', strike: s.strike, premium: s.callLtp);
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(width: 3),
+                                      _buildQuickActionButton(
+                                        'S',
+                                        const Color(0xFFDC2626),
+                                        isSelected: isCallSellSelected,
+                                        isBasketMode: _basketMode,
+                                        onTap: () {
+                                          if (_basketMode) {
+                                            setState(() {
+                                              if (isCallSellSelected) {
+                                                _basketLegs.remove(callSellKey);
+                                              } else {
+                                                _basketLegs.remove(callBuyKey);
+                                                _basketLegs[callSellKey] = BasketLegItem(
+                                                  strike: s.strike,
+                                                  optType: 'CE',
+                                                  side: 'SELL',
+                                                  premium: s.callLtp,
+                                                );
+                                              }
+                                            });
+                                          } else {
+                                            _executeOptionOrder(side: 'SELL', optType: 'CE', strike: s.strike, premium: s.callLtp);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Inline Lots Stepper when selected in Basket Mode (Matching Screenshot)
+                            if (_basketMode && selectedCallLeg != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: _buildRowLotsStepper(selectedCallLeg, isDark, cardBg, borderCol, textMain),
                                 ),
                               ),
-                            ),
-                            // 5. Call Quick Trade Buttons [ B ] [ S ]
-                            Expanded(
-                              flex: 2,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildQuickActionButton('B', const Color(0xFF059669), () {
-                                    _executeOptionOrder(side: 'BUY', optType: 'CE', strike: s.strike, premium: s.callLtp);
-                                  }),
-                                  const SizedBox(width: 3),
-                                  _buildQuickActionButton('S', const Color(0xFFDC2626), () {
-                                    _executeOptionOrder(side: 'SELL', optType: 'CE', strike: s.strike, premium: s.callLtp);
-                                  }),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -932,10 +1061,10 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: isAtm ? const Color(0xFF2563EB) : const Color(0xFFF1F5F9),
+                          color: isAtm ? const Color(0xFF2563EB) : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
                           border: Border(
-                            left: BorderSide(color: isAtm ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1)),
-                            right: BorderSide(color: isAtm ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1)),
+                            left: BorderSide(color: isAtm ? const Color(0xFF1D4ED8) : borderCol),
+                            right: BorderSide(color: isAtm ? const Color(0xFF1D4ED8) : borderCol),
                           ),
                         ),
                         child: Text(
@@ -944,7 +1073,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
-                            color: isAtm ? Colors.white : const Color(0xFF0F172A),
+                            color: isAtm ? Colors.white : textMain,
                           ),
                         ),
                       ),
@@ -956,69 +1085,127 @@ class _OptionsChainViewState extends State<OptionsChainView> {
                       child: Container(
                         color: putSideBg,
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-                        child: Row(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // 7. Put Quick Trade Buttons [ B ] [ S ]
-                            Expanded(
-                              flex: 2,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildQuickActionButton('B', const Color(0xFF059669), () {
-                                    _executeOptionOrder(side: 'BUY', optType: 'PE', strike: s.strike, premium: s.putLtp);
-                                  }),
-                                  const SizedBox(width: 3),
-                                  _buildQuickActionButton('S', const Color(0xFFDC2626), () {
-                                    _executeOptionOrder(side: 'SELL', optType: 'PE', strike: s.strike, premium: s.putLtp);
-                                  }),
-                                ],
-                              ),
-                            ),
-                            // 8. Put LTP
-                            Expanded(
-                              flex: 3,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
-                                decoration: BoxDecoration(
-                                  color: isPutItm ? const Color(0xFFFEF3C7) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(4),
+                            Row(
+                              children: [
+                                // 7. Put Quick Trade Buttons [ B ] [ S ]
+                                Expanded(
+                                  flex: 2,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _buildQuickActionButton(
+                                        'B',
+                                        const Color(0xFF059669),
+                                        isSelected: isPutBuySelected,
+                                        isBasketMode: _basketMode,
+                                        onTap: () {
+                                          if (_basketMode) {
+                                            setState(() {
+                                              if (isPutBuySelected) {
+                                                _basketLegs.remove(putBuyKey);
+                                              } else {
+                                                _basketLegs.remove(putSellKey);
+                                                _basketLegs[putBuyKey] = BasketLegItem(
+                                                  strike: s.strike,
+                                                  optType: 'PE',
+                                                  side: 'BUY',
+                                                  premium: s.putLtp,
+                                                );
+                                              }
+                                            });
+                                          } else {
+                                            _executeOptionOrder(side: 'BUY', optType: 'PE', strike: s.strike, premium: s.putLtp);
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(width: 3),
+                                      _buildQuickActionButton(
+                                        'S',
+                                        const Color(0xFFDC2626),
+                                        isSelected: isPutSellSelected,
+                                        isBasketMode: _basketMode,
+                                        onTap: () {
+                                          if (_basketMode) {
+                                            setState(() {
+                                              if (isPutSellSelected) {
+                                                _basketLegs.remove(putSellKey);
+                                              } else {
+                                                _basketLegs.remove(putBuyKey);
+                                                _basketLegs[putSellKey] = BasketLegItem(
+                                                  strike: s.strike,
+                                                  optType: 'PE',
+                                                  side: 'SELL',
+                                                  premium: s.putLtp,
+                                                );
+                                              }
+                                            });
+                                          } else {
+                                            _executeOptionOrder(side: 'SELL', optType: 'PE', strike: s.strike, premium: s.putLtp);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Text(
-                                  '₹${s.putLtp.toStringAsFixed(2)}',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF991B1B)),
+                                // 8. Put LTP
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      color: isPutItm ? (isDark ? const Color(0xFF33161C) : const Color(0xFFFEF3C7)) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '₹${s.putLtp.toStringAsFixed(2)}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFDC2626)),
+                                    ),
+                                  ),
+                                ),
+                                // 9. Put IV / Delta
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('${s.putIv}%', style: TextStyle(fontSize: 10, color: textSub)),
+                                      const Text('Δ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
+                                    ],
+                                  ),
+                                ),
+                                // 10. Put Change %
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '${s.putChange >= 0 ? '+' : ''}${s.putChangePercent.toStringAsFixed(1)}%',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: putChgColor),
+                                  ),
+                                ),
+                                // 11. Put OI
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '${s.putOi}L',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Inline Lots Stepper when selected in Basket Mode (Matching Screenshot)
+                            if (_basketMode && selectedPutLeg != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _buildRowLotsStepper(selectedPutLeg, isDark, cardBg, borderCol, textMain),
                                 ),
                               ),
-                            ),
-                            // 9. Put IV / Delta
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('${s.putIv}%', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                  Text('Δ ${s.putDelta}', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
-                                ],
-                              ),
-                            ),
-                            // 10. Put Change %
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                '${s.putChange >= 0 ? '+' : ''}${s.putChangePercent.toStringAsFixed(1)}%',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: putChgColor),
-                              ),
-                            ),
-                            // 11. Put OI
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                '${s.putOi}L',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -1033,18 +1220,426 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     );
   }
 
-  Widget _buildQuickActionButton(String label, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionButton(
+    String label,
+    Color color, {
+    required VoidCallback onTap,
+    bool isSelected = false,
+    bool isBasketMode = false,
+  }) {
+    final showSolid = !isBasketMode || isSelected;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Container(
         width: 22,
         height: 22,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
+        decoration: BoxDecoration(
+          color: showSolid ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: isBasketMode ? Border.all(color: color, width: 1.2) : null,
+        ),
         child: Center(
-          child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w900)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: showSolid ? Colors.white : color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRowLotsStepper(BasketLegItem leg, bool isDark, Color cardBg, Color borderCol, Color textMain) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: cardBg,
+        border: Border.all(color: borderCol),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: leg.lots > 1
+                ? () => setState(() => leg.lots--)
+                : () => setState(() => _basketLegs.remove(leg.key)),
+            child: const Icon(Icons.remove, size: 12, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${leg.lots}',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textMain),
+          ),
+          const SizedBox(width: 4),
+          const Text('Lots', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () => setState(() => leg.lots++),
+            child: const Icon(Icons.add, size: 12, color: Color(0xFF64748B)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasketModeBottomBar(bool isDark, Color cardBg, Color borderCol, Color textMain, Color textSub) {
+    final lotSize = _lotSizes[_underlying] ?? 25;
+    final totalLots = _basketLegs.values.fold<int>(0, (sum, leg) => sum + leg.lots);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Top Basket Mode Switch Row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.shopping_bag_outlined, color: Color(0xFF2563EB), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'Basket Mode',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: textMain,
+                  ),
+                ),
+                const Spacer(),
+                Switch.adaptive(
+                  value: _basketMode,
+                  activeColor: const Color(0xFF2563EB),
+                  onChanged: (val) {
+                    setState(() {
+                      _basketMode = val;
+                      if (!val) {
+                        _basketLegs.clear();
+                        _basketExpanded = false;
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // If Basket Mode is ON and has legs selected
+          if (_basketMode && _basketLegs.isNotEmpty) ...[
+            Divider(height: 1, color: borderCol),
+            InkWell(
+              onTap: () => setState(() => _basketExpanded = !_basketExpanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    Text(
+                      '${_basketLegs.length} Strikes Selected ($totalLots Lots)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: textMain,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _basketExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      color: textSub,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Expandable drawer of selected legs
+            if (_basketExpanded)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: isDark ? const Color(0xFF0A1318) : const Color(0xFFF8FAFC),
+                child: Column(
+                  children: _basketLegs.values.map((leg) {
+                    final isBuy = leg.side == 'BUY';
+                    final legTotal = leg.premium * leg.lots * lotSize;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isBuy ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              leg.side,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w900,
+                                color: isBuy ? const Color(0xFF166534) : const Color(0xFF991B1B),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$_underlying ${leg.strike.toInt()} ${leg.optType}',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: textMain),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '₹${leg.premium.toStringAsFixed(2)} × ${leg.lots}L (₹${legTotal.toStringAsFixed(0)})',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSub),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () => setState(() => _basketLegs.remove(leg.key)),
+                            child: const Icon(Icons.close_rounded, size: 16, color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+            // Full-width PROCEED Button (Matching Screenshot)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  onPressed: _proceedBasketOrder,
+                  child: const Text(
+                    'PROCEED',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // Bottom Pill Action Strip: [ Open Orders ] [ Positions ] [ Charts ↗ ] [ ⋮ ]
+          Divider(height: 1, color: borderCol),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                _buildBottomPillButton('Open Orders', Icons.list_alt_rounded, widget.onNavigateToOrders, isDark, textMain),
+                const SizedBox(width: 8),
+                _buildBottomPillButton('Positions', Icons.account_balance_wallet_outlined, widget.onNavigateToPositions, isDark, textMain),
+                const SizedBox(width: 8),
+                _buildBottomPillButton('Charts ↗', Icons.show_chart_rounded, widget.onNavigateToCharts, isDark, textMain),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: textSub),
+                  onSelected: (val) {
+                    if (val == 'clear') {
+                      setState(() => _basketLegs.clear());
+                    } else if (val == 'refresh') {
+                      setState(() => _generateFullOptionChain());
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(value: 'refresh', child: Text('Refresh Live Chain')),
+                    const PopupMenuItem(value: 'clear', child: Text('Clear Selected Basket Legs')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomPillButton(String title, IconData icon, VoidCallback? onTap, bool isDark, Color textMain) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF2563EB)),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: textMain,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _proceedBasketOrder() {
+    if (_basketLegs.isEmpty) return;
+    final lotSize = _lotSizes[_underlying] ?? 25;
+    final totalLots = _basketLegs.values.fold<int>(0, (sum, leg) => sum + leg.lots);
+    final totalEstValue = _basketLegs.values.fold<double>(0.0, (sum, leg) => sum + (leg.premium * leg.lots * lotSize));
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Row(
+            children: const [
+              Icon(Icons.shopping_bag_rounded, color: Color(0xFF2563EB)),
+              SizedBox(width: 8),
+              Text('Confirm Basket Order', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+            ],
+          ),
+          content: SizedBox(
+            width: 440,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ready to place ${_basketLegs.length} legs ($totalLots Lots) across linked child accounts:',
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(8),
+                    children: _basketLegs.values.map((leg) {
+                      final isBuy = leg.side == 'BUY';
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isBuy ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                leg.side,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isBuy ? const Color(0xFF166534) : const Color(0xFF991B1B),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$_underlying ${leg.strike.toInt()} ${leg.optType}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${leg.lots} Lots @ ₹${leg.premium.toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total Est. Value / Margin:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    Text('₹${totalEstValue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF059669))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                final engine = CopyTradingEngine();
+                final legsCount = _basketLegs.length;
+                for (final leg in _basketLegs.values) {
+                  engine.executeLiveOrder(
+                    symbol: '$_underlying ${leg.strike.toInt()} ${leg.optType}',
+                    side: leg.side,
+                    quantity: leg.lots * lotSize,
+                    price: leg.premium,
+                    productType: 'NRML',
+                    orderType: 'MARKET',
+                    isAlgo: true,
+                    strategyTag: 'BASKET-OPTION-CHAIN',
+                  );
+                }
+                setState(() {
+                  _basketLegs.clear();
+                  _basketExpanded = false;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF059669),
+                    content: Text('✅ Basket Order placed: $legsCount legs executed across linked accounts!'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+              child: const Text('Execute Basket Now', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 

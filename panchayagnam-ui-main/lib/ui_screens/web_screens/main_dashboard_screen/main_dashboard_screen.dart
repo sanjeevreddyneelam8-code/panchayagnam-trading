@@ -215,7 +215,6 @@ class _MainDashboardState extends State<MainDashboard> {
           _SubNavItem(icon: Icons.account_balance_rounded, label: 'Trading Accounts'),
           _SubNavItem(icon: Icons.group_work_rounded, label: 'Group Accounts'),
           _SubNavItem(icon: Icons.star_rounded, label: 'Master Accounts'),
-          _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Baskets'),
         ],
       ),
 
@@ -229,6 +228,7 @@ class _MainDashboardState extends State<MainDashboard> {
           _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trade Ideas (SEBI)'),
           _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
           _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant & F&O Scanners'),
+          _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Stocks Basket'),
           _SubNavItem(icon: Icons.smart_toy_rounded, label: 'Panchayagnam AI Copilot'),
           _SubNavItem(icon: Icons.emoji_events_rounded, label: 'Alpha Leagues & Star Traders'),
           _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Virtual Practice (₹10L)'),
@@ -242,9 +242,9 @@ class _MainDashboardState extends State<MainDashboard> {
         type: _NavItemType.group,
         children: [
           _SubNavItem(icon: Icons.dashboard_rounded, label: 'Trade Overview'),
-          _SubNavItem(icon: Icons.table_chart_rounded, label: 'F&O Strikes & Premiums'),
+          _SubNavItem(icon: Icons.table_chart_rounded, label: 'Option Chain'),
+          _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Indices Market'),
           _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
-          _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Option Markets'),
           _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
           _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
           _SubNavItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions'),
@@ -330,25 +330,40 @@ class _MainDashboardState extends State<MainDashboard> {
             return const GroupOrdersTab(initialHierarchyIndex: 1);
           case 2:
             return const GroupOrdersTab(initialHierarchyIndex: 2);
-          case 3:
-            return const BasketOrdersView();
           default:
             return const GroupOrdersTab(initialHierarchyIndex: 0);
         }
 
       case 2: // 3. Trade Market (StockGro Social Trading & Arena)
-        return TradeMarketStockGroView(initialTabIndex: subIdx);
+        if (subIdx == 4) {
+          return const BasketOrdersView(); // Stocks Basket moved from Parent Children into Trade Market
+        }
+        return TradeMarketStockGroView(initialTabIndex: subIdx > 4 ? subIdx - 1 : subIdx);
 
       case 3: // 4. Trade Options (Unified Trading & F&O Options Terminal)
         switch (subIdx) {
           case 0:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
           case 1:
-            return const OptionsChainView(initialTabIndex: 0);
+            return OptionsChainView(
+              initialTabIndex: 0,
+              onNavigateToOrders: () => setState(() {
+                _currentSelection = const _NavSelection(3, 5);
+                _bodyKey = UniqueKey();
+              }),
+              onNavigateToPositions: () => setState(() {
+                _currentSelection = const _NavSelection(3, 6);
+                _bodyKey = UniqueKey();
+              }),
+              onNavigateToCharts: () => setState(() {
+                _currentSelection = const _NavSelection(3, 4);
+                _bodyKey = UniqueKey();
+              }),
+            ); // Option Chain (formerly F&O Strikes)
           case 2:
-            return const OptionsChainView(initialTabIndex: 1);
+            return const MarketWatchView(); // Indices Market (formerly Option Markets)
           case 3:
-            return const MarketWatchView();
+            return const OptionsChainView(initialTabIndex: 1); // Multi-Strike OI & Greeks (placed above Charts)
           case 4:
             return const ChartsView();
           case 5:
@@ -864,9 +879,9 @@ class _MainDashboardState extends State<MainDashboard> {
                     padding: const EdgeInsets.all(6),
                     constraints: const BoxConstraints(),
                     onPressed: () {
+                      ThemeModeService.toggle();
                       setState(() {
-                        _isDarkMode = !_isDarkMode;
-                        ThemeModeService.setDark(_isDarkMode);
+                        _isDarkMode = ThemeModeService.isDark;
                         _bodyKey = UniqueKey();
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -3583,7 +3598,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(3, 2); // Multi-Strike OI & Greeks in Trade Options
+                                _currentSelection = const _NavSelection(3, 3); // Multi-Strike OI & Greeks in Trade Options (placed above Charts)
                                 _bodyKey = UniqueKey();
                               });
                             },
@@ -3712,10 +3727,14 @@ class _MainDashboardState extends State<MainDashboard> {
         ? 0.0
         : (_sidebarCollapsed ? _kCollapsedWidth : _kExpandedWidth);
 
-    final bgColor = _isDarkMode ? const Color(0xFF081214) : AppColors.scaffold;
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeModeService.isDarkModeNotifier,
+      builder: (context, isDark, _) {
+        _isDarkMode = isDark;
+        final bgColor = isDark ? const Color(0xFF081214) : AppColors.scaffold;
 
-    return Theme(
-      data: _isDarkMode
+        return Theme(
+          data: isDark
           ? ThemeData.dark().copyWith(
               scaffoldBackgroundColor: const Color(0xFF081214),
               cardColor: const Color(0xFF0F1E22),
@@ -3854,6 +3873,8 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
     ),
+    );
+      },
     );
   }
 

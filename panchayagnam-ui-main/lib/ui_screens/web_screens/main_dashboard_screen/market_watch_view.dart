@@ -94,20 +94,120 @@ class MarketWatchView extends StatefulWidget {
 
 class _MarketWatchViewState extends State<MarketWatchView> {
   int _activeWatchlistIndex = 0;
-  final List<String> _watchlists = ['Nifty 50 & Indices', 'Banking & Financials', 'Tech, Auto & Metals'];
+  final List<String> _watchlists = ['Major Benchmark Indices', 'Sectoral Indices', 'Banking & Financials', 'F&O Heavyweights'];
 
   // Benchmark initial quotes dataset ensuring 0 gaps across all rows
   static final Map<String, MarketWatchQuote> _defaultMarketQuotes = {
-    '99926000': MarketWatchQuote(
+    '99926000': const MarketWatchQuote(
       ltp: 24150.50, change: 108.20, percentChange: 0.45,
       open: 24080.00, high: 24210.00, low: 24055.20, close: 24042.30,
       volume: 18450000, high52w: 26277.35, low52w: 18837.85, isLiveTick: true,
     ),
-    '99926009': MarketWatchQuote(
+    '99926009': const MarketWatchQuote(
       ltp: 51820.00, change: 318.50, percentChange: 0.62,
       open: 51600.00, high: 52040.00, low: 51550.00, close: 51501.50,
       volume: 12100000, high52w: 54467.35, low52w: 42105.40, isLiveTick: true,
     ),
+    '99919000': const MarketWatchQuote(
+      ltp: 79402.20, change: 342.10, percentChange: 0.43,
+      open: 79200.00, high: 79620.00, low: 79150.00, close: 79060.10,
+      volume: 8900000, high52w: 85978.25, low52w: 64831.00, isLiveTick: true,
+    ),
+    '99926037': const MarketWatchQuote(
+      ltp: 23410.00, change: 88.40, percentChange: 0.38,
+      open: 23350.00, high: 23490.00, low: 23310.00, close: 23321.60,
+      volume: 6200000, high52w: 24880.00, low52w: 19100.00, isLiveTick: true,
+    ),
+    '99926014': const MarketWatchQuote(
+      ltp: 13050.80, change: 72.10, percentChange: 0.56,
+      open: 13000.00, high: 13110.00, low: 12980.00, close: 12978.70,
+      volume: 5100000, high52w: 13420.00, low52w: 9200.00, isLiveTick: true,
+    ),
+    '99926001': const MarketWatchQuote(
+      ltp: 70845.20, change: 412.30, percentChange: 0.59,
+      open: 70500.00, high: 71100.00, low: 70420.00, close: 70432.90,
+      volume: 4850000, high52w: 77290.00, low52w: 43500.00, isLiveTick: true,
+    ), // NIFTY NEXT 50
+    '99926002': const MarketWatchQuote(
+      ltp: 25110.40, change: 115.60, percentChange: 0.46,
+      open: 25020.00, high: 25180.00, low: 24990.00, close: 24994.80,
+      volume: 8120000, high52w: 26800.00, low52w: 19100.00, isLiveTick: true,
+    ), // NIFTY 100
+    '99926003': const MarketWatchQuote(
+      ltp: 13420.80, change: 68.20, percentChange: 0.51,
+      open: 13380.00, high: 13460.00, low: 13340.00, close: 13352.60,
+      volume: 12400000, high52w: 14200.00, low52w: 9800.00, isLiveTick: true,
+    ), // NIFTY 200
+    '99926004': const MarketWatchQuote(
+      ltp: 22890.30, change: 124.50, percentChange: 0.55,
+      open: 22800.00, high: 22950.00, low: 22750.00, close: 22765.80,
+      volume: 24500000, high52w: 24100.00, low52w: 16500.00, isLiveTick: true,
+    ), // NIFTY 500
+    '99926017': const MarketWatchQuote(
+      ltp: 14.82, change: -0.34, percentChange: -2.24,
+      open: 15.16, high: 15.45, low: 14.50, close: 15.16,
+      volume: 1200000, high52w: 23.15, low52w: 9.85, isLiveTick: true,
+    ), // INDIA VIX
+    '99919012': const MarketWatchQuote(
+      ltp: 58920.00, change: 360.40, percentChange: 0.61,
+      open: 58650.00, high: 59150.00, low: 58500.00, close: 58559.60,
+      volume: 6800000, high52w: 62400.00, low52w: 48100.00, isLiveTick: true,
+    ), // BSE BANKEX
+    '99926099': const MarketWatchQuote(
+      ltp: 24220.00, change: 125.00, percentChange: 0.52,
+      open: 24120.00, high: 24260.00, low: 24080.00, close: 24095.00,
+      volume: 5200000, high52w: 26400.00, low52w: 18900.00, isLiveTick: true,
+    ), // GIFT NIFTY
+    '99926008': const MarketWatchQuote(
+      ltp: 42150.00, change: 280.50, percentChange: 0.67,
+      open: 41900.00, high: 42350.00, low: 41800.00, close: 41869.50,
+      volume: 7200000, high52w: 45200.00, low52w: 30800.00, isLiveTick: true,
+    ), // NIFTY IT
+    '99926005': const MarketWatchQuote(
+      ltp: 25480.00, change: 195.20, percentChange: 0.77,
+      open: 25300.00, high: 25600.00, low: 25250.00, close: 25284.80,
+      volume: 9100000, high52w: 27100.00, low52w: 15600.00, isLiveTick: true,
+    ), // NIFTY AUTO
+    '99926011': const MarketWatchQuote(
+      ltp: 22940.00, change: -45.00, percentChange: -0.20,
+      open: 23000.00, high: 23150.00, low: 22880.00, close: 22985.00,
+      volume: 4300000, high52w: 23900.00, low52w: 14700.00, isLiveTick: true,
+    ), // NIFTY PHARMA
+    '99926007': const MarketWatchQuote(
+      ltp: 57820.00, change: 110.00, percentChange: 0.19,
+      open: 57750.00, high: 58100.00, low: 57600.00, close: 57710.00,
+      volume: 5600000, high52w: 61200.00, low52w: 50400.00, isLiveTick: true,
+    ), // NIFTY FMCG
+    '99926010': const MarketWatchQuote(
+      ltp: 9640.00, change: 84.00, percentChange: 0.88,
+      open: 9580.00, high: 9710.00, low: 9540.00, close: 9556.00,
+      volume: 8800000, high52w: 10400.00, low52w: 6400.00, isLiveTick: true,
+    ), // NIFTY METAL
+    '99926006': const MarketWatchQuote(
+      ltp: 39850.00, change: 240.00, percentChange: 0.61,
+      open: 39650.00, high: 40050.00, low: 39500.00, close: 39610.00,
+      volume: 11200000, high52w: 43200.00, low52w: 26800.00, isLiveTick: true,
+    ), // NIFTY ENERGY
+    '99926013': const MarketWatchQuote(
+      ltp: 1045.00, change: 14.50, percentChange: 1.41,
+      open: 1032.00, high: 1058.00, low: 1028.00, close: 1030.50,
+      volume: 6700000, high52w: 1180.00, low52w: 560.00, isLiveTick: true,
+    ), // NIFTY REALTY
+    '99926015': const MarketWatchQuote(
+      ltp: 6950.00, change: 58.00, percentChange: 0.84,
+      open: 6900.00, high: 7010.00, low: 6880.00, close: 6892.00,
+      volume: 14500000, high52w: 7600.00, low52w: 4600.00, isLiveTick: true,
+    ), // NIFTY PSU BANK
+    '99926016': const MarketWatchQuote(
+      ltp: 26420.00, change: 162.00, percentChange: 0.62,
+      open: 26300.00, high: 26550.00, low: 26220.00, close: 26258.00,
+      volume: 7800000, high52w: 27800.00, low52w: 21900.00, isLiveTick: true,
+    ), // NIFTY PVT BANK
+    '99926018': const MarketWatchQuote(
+      ltp: 8850.00, change: 48.00, percentChange: 0.55,
+      open: 8810.00, high: 8910.00, low: 8780.00, close: 8802.00,
+      volume: 8300000, high52w: 9600.00, low52w: 6100.00, isLiveTick: true,
+    ), // NIFTY INFRA
     '99919000': MarketWatchQuote(
       ltp: 79402.20, change: 342.10, percentChange: 0.43,
       open: 79200.00, high: 79620.00, low: 79150.00, close: 79060.10,
@@ -250,28 +350,37 @@ class _MarketWatchViewState extends State<MarketWatchView> {
     ),
   };
 
-  // 3 Richly Populated Default Watchlists
+  // 4 Richly Populated Watchlists (Major Benchmark Indices, Sectoral Indices, Banking, Heavyweights)
   late final List<List<ScripInfo>> _watchlistTabs = [
-    // 0: Nifty 50 & Indices (16 Benchmark Scrips)
+    // 0: Major Benchmark Indices (12 Benchmark Scrips)
     [
       const ScripInfo(tradingSymbol: 'NIFTY-50', exchange: 'NSE', symbolToken: '99926000', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY 50', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'BANKNIFTY', exchange: 'NSE', symbolToken: '99926009', instrumentType: 'INDEX', lotSize: 15, name: 'BANK NIFTY', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'SENSEX', exchange: 'BSE', symbolToken: '99919000', instrumentType: 'INDEX', lotSize: 10, name: 'SENSEX', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'FINNIFTY', exchange: 'NSE', symbolToken: '99926037', instrumentType: 'INDEX', lotSize: 25, name: 'FINNIFTY', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'MIDCPNIFTY', exchange: 'NSE', symbolToken: '99926014', instrumentType: 'INDEX', lotSize: 50, name: 'MIDCPNIFTY', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'RELIANCE-EQ', exchange: 'NSE', symbolToken: '2885', instrumentType: 'EQUITY', lotSize: 1, name: 'RELIANCE', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'TCS-EQ', exchange: 'NSE', symbolToken: '11536', instrumentType: 'EQUITY', lotSize: 1, name: 'TCS', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'HDFCBANK-EQ', exchange: 'NSE', symbolToken: '1333', instrumentType: 'EQUITY', lotSize: 1, name: 'HDFCBANK', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'INFY-EQ', exchange: 'NSE', symbolToken: '1594', instrumentType: 'EQUITY', lotSize: 1, name: 'INFY', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'ICICIBANK-EQ', exchange: 'NSE', symbolToken: '4963', instrumentType: 'EQUITY', lotSize: 1, name: 'ICICIBANK', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'SBIN-EQ', exchange: 'NSE', symbolToken: '3045', instrumentType: 'EQUITY', lotSize: 1, name: 'SBIN', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'BHARTIARTL-EQ', exchange: 'NSE', symbolToken: '10604', instrumentType: 'EQUITY', lotSize: 1, name: 'BHARTIARTL', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'ITC-EQ', exchange: 'NSE', symbolToken: '1660', instrumentType: 'EQUITY', lotSize: 1, name: 'ITC', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'LT-EQ', exchange: 'NSE', symbolToken: '11483', instrumentType: 'EQUITY', lotSize: 1, name: 'LT', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'HINDUNILVR-EQ', exchange: 'NSE', symbolToken: '1394', instrumentType: 'EQUITY', lotSize: 1, name: 'HINDUNILVR', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'TATAMOTORS-EQ', exchange: 'NSE', symbolToken: '3456', instrumentType: 'EQUITY', lotSize: 1, name: 'TATAMOTORS', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-NEXT50', exchange: 'NSE', symbolToken: '99926001', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY NEXT 50', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-100', exchange: 'NSE', symbolToken: '99926002', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY 100', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-200', exchange: 'NSE', symbolToken: '99926003', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY 200', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-500', exchange: 'NSE', symbolToken: '99926004', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY 500', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'INDIA-VIX', exchange: 'NSE', symbolToken: '99926017', instrumentType: 'INDEX', lotSize: 1, name: 'INDIA VIX', tickSize: 0.01),
+      const ScripInfo(tradingSymbol: 'BSE-BANKEX', exchange: 'BSE', symbolToken: '99919012', instrumentType: 'INDEX', lotSize: 15, name: 'BSE BANKEX', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'GIFT-NIFTY', exchange: 'NSE', symbolToken: '99926099', instrumentType: 'INDEX', lotSize: 25, name: 'GIFT NIFTY', tickSize: 0.05),
     ],
-    // 1: Banking & Financials (10 Scrips)
+    // 1: Sectoral Indices (10 Sectoral Index Scrips)
+    [
+      const ScripInfo(tradingSymbol: 'NIFTY-IT', exchange: 'NSE', symbolToken: '99926008', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY IT', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-AUTO', exchange: 'NSE', symbolToken: '99926005', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY AUTO', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-PHARMA', exchange: 'NSE', symbolToken: '99926011', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY PHARMA', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-FMCG', exchange: 'NSE', symbolToken: '99926007', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY FMCG', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-METAL', exchange: 'NSE', symbolToken: '99926010', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY METAL', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-ENERGY', exchange: 'NSE', symbolToken: '99926006', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY ENERGY', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-REALTY', exchange: 'NSE', symbolToken: '99926013', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY REALTY', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-PSUBANK', exchange: 'NSE', symbolToken: '99926015', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY PSU BANK', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-PVTBANK', exchange: 'NSE', symbolToken: '99926016', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY PVT BANK', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'NIFTY-INFRA', exchange: 'NSE', symbolToken: '99926018', instrumentType: 'INDEX', lotSize: 25, name: 'NIFTY INFRA', tickSize: 0.05),
+    ],
+    // 2: Banking & Financials (10 Scrips)
     [
       const ScripInfo(tradingSymbol: 'HDFCBANK-EQ', exchange: 'NSE', symbolToken: '1333', instrumentType: 'EQUITY', lotSize: 1, name: 'HDFCBANK', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'ICICIBANK-EQ', exchange: 'NSE', symbolToken: '4963', instrumentType: 'EQUITY', lotSize: 1, name: 'ICICIBANK', tickSize: 0.05),
@@ -284,16 +393,16 @@ class _MarketWatchViewState extends State<MarketWatchView> {
       const ScripInfo(tradingSymbol: 'BAJFINANCE-EQ', exchange: 'NSE', symbolToken: '317', instrumentType: 'EQUITY', lotSize: 1, name: 'BAJFINANCE', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'BANKNIFTY', exchange: 'NSE', symbolToken: '99926009', instrumentType: 'INDEX', lotSize: 15, name: 'BANK NIFTY', tickSize: 0.05),
     ],
-    // 2: Tech, Auto & Metals (10 Scrips)
+    // 3: F&O Heavyweights (10 Scrips)
     [
+      const ScripInfo(tradingSymbol: 'RELIANCE-EQ', exchange: 'NSE', symbolToken: '2885', instrumentType: 'EQUITY', lotSize: 1, name: 'RELIANCE', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'TCS-EQ', exchange: 'NSE', symbolToken: '11536', instrumentType: 'EQUITY', lotSize: 1, name: 'TCS', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'INFY-EQ', exchange: 'NSE', symbolToken: '1594', instrumentType: 'EQUITY', lotSize: 1, name: 'INFY', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'HCLTECH-EQ', exchange: 'NSE', symbolToken: '7229', instrumentType: 'EQUITY', lotSize: 1, name: 'HCLTECH', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'WIPRO-EQ', exchange: 'NSE', symbolToken: '3787', instrumentType: 'EQUITY', lotSize: 1, name: 'WIPRO', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'TECHM-EQ', exchange: 'NSE', symbolToken: '13538', instrumentType: 'EQUITY', lotSize: 1, name: 'TECHM', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'BHARTIARTL-EQ', exchange: 'NSE', symbolToken: '10604', instrumentType: 'EQUITY', lotSize: 1, name: 'BHARTIARTL', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'LT-EQ', exchange: 'NSE', symbolToken: '11483', instrumentType: 'EQUITY', lotSize: 1, name: 'LT', tickSize: 0.05),
+      const ScripInfo(tradingSymbol: 'HINDUNILVR-EQ', exchange: 'NSE', symbolToken: '1394', instrumentType: 'EQUITY', lotSize: 1, name: 'HINDUNILVR', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'TATAMOTORS-EQ', exchange: 'NSE', symbolToken: '3456', instrumentType: 'EQUITY', lotSize: 1, name: 'TATAMOTORS', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'M&M-EQ', exchange: 'NSE', symbolToken: '20374', instrumentType: 'EQUITY', lotSize: 1, name: 'M&M', tickSize: 0.05),
-      const ScripInfo(tradingSymbol: 'MARUTI-EQ', exchange: 'NSE', symbolToken: '10999', instrumentType: 'EQUITY', lotSize: 1, name: 'MARUTI', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'TATASTEEL-EQ', exchange: 'NSE', symbolToken: '3499', instrumentType: 'EQUITY', lotSize: 1, name: 'TATASTEEL', tickSize: 0.05),
       const ScripInfo(tradingSymbol: 'JSWSTEEL-EQ', exchange: 'NSE', symbolToken: '11723', instrumentType: 'EQUITY', lotSize: 1, name: 'JSWSTEEL', tickSize: 0.05),
     ],
@@ -641,408 +750,419 @@ class _MarketWatchViewState extends State<MarketWatchView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header Row ───────────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeModeService.isDarkModeNotifier,
+      builder: (context, isDark, _) {
+        final cardBg = isDark ? const Color(0xFF0F1E22) : Colors.white;
+        final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+        final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+        final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // ── Header Row ───────────────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Panchayagnam Option Markets',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF86EFAC)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF16A34A),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'LIVE STREAMING (100% POPULATED)',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF166534),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Live quotes, real benchmark prices, depth metrics, and 1-click execution across all 8 connected Demat accounts.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-
-                // Watchlist Tabs
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: List.generate(_watchlists.length, (idx) {
-                      final isSelected = _activeWatchlistIndex == idx;
-                      return InkWell(
-                        onTap: () => _switchWatchlistTab(idx),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF059669) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Text(
-                            _watchlists[idx],
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF475569),
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Search Bar
-            SizedBox(
-              width: double.infinity,
-              child: StockSearchWidget(onScripSelected: _addScrip),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Watchlist Table Container
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Table Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                      border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                    ),
-                    child: const Row(
-                      children: [
-                        Expanded(flex: 3, child: Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 1, child: Text('EXCH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 2, child: Text('LTP (₹)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 2, child: Text('CHANGE (%)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 2, child: Text('DAY HIGH / LOW', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 2, child: Text('52W HIGH / LOW', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 2, child: Text('VOLUME', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                        Expanded(flex: 3, child: Text('1-CLICK ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                      ],
-                    ),
-                  ),
-
-                  // Table Body
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _currentWatchlist.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (ctx, i) {
-                      final item = _currentWatchlist[i];
-                      final quote = _quotes[item.symbolToken] ?? _defaultMarketQuotes[item.symbolToken];
-
-                      final double ltp = quote?.ltp ?? 1000.0;
-                      final double change = quote?.change ?? 0.0;
-                      final double pct = quote?.percentChange ?? 0.0;
-                      final bool isPos = change >= 0;
-                      final Color changeCol = isPos ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
-
-                      final double high = quote?.high ?? (ltp * 1.008);
-                      final double low = quote?.low ?? (ltp * 0.992);
-                      final double high52 = quote?.high52w ?? (ltp * 1.25);
-                      final double low52 = quote?.low52w ?? (ltp * 0.75);
-                      final int vol = quote?.volume ?? 120000;
-
-                      String volStr;
-                      if (vol >= 10000000) {
-                        volStr = '${(vol / 10000000).toStringAsFixed(1)}Cr';
-                      } else if (vol >= 100000) {
-                        volStr = '${(vol / 100000).toStringAsFixed(1)}L';
-                      } else {
-                        volStr = '${(vol / 1000).toStringAsFixed(0)}K';
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        child: Row(
+                        Row(
                           children: [
-                            // Instrument Column
-                            Expanded(
-                              flex: 3,
+                            Text(
+                              'Panchayagnam Indices Market',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: textMain,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF86EFAC)),
+                              ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    width: 4,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: changeCol,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: Color(0xFF0F172A)),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Text(
-                                          '${item.tradingSymbol} (${item.symbolToken})',
-                                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Exchange
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: item.instrumentType == 'INDEX' ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  item.exchange,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: item.instrumentType == 'INDEX' ? const Color(0xFF059669) : const Color(0xFF047857),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // LTP
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                '₹${ltp.toStringAsFixed(2)}',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: changeCol,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                            ),
-
-                            // Change & %
-                            Expanded(
-                              flex: 2,
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                  decoration: BoxDecoration(
-                                    color: changeCol.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: Text(
-                                    '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pct.toStringAsFixed(2)}%)',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: changeCol,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Day High / Low
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text('H: ₹${high.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
-                                  Text('L: ₹${low.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
-                                ],
-                              ),
-                            ),
-
-                            // 52W High / Low
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text('52H: ₹${high52.toStringAsFixed(0)}', style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
-                                  Text('52L: ₹${low52.toStringAsFixed(0)}', style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
-                                ],
-                              ),
-                            ),
-
-                            // Volume
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                volStr,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-                              ),
-                            ),
-
-                            // Actions: Quick Buy, Quick Sell, Chart
-                            Expanded(
-                              flex: 3,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Quick Buy [ B ]
-                                  InkWell(
-                                    onTap: () => _executeQuickTrade(item, 'BUY'),
-                                    borderRadius: BorderRadius.circular(5),
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF059669),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: const Center(
-                                        child: Text('B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-
-                                  // Quick Sell [ S ]
-                                  InkWell(
-                                    onTap: () => _executeQuickTrade(item, 'SELL'),
-                                    borderRadius: BorderRadius.circular(5),
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFDC2626),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: const Center(
-                                        child: Text('S', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
-                                      ),
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF16A34A),
+                                      shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-
-                                  // Chart Button
-                                  Tooltip(
-                                    message: 'Open Candlestick Chart',
-                                    child: InkWell(
-                                      onTap: () => _showScripChartModal(item),
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFEFF6FF),
-                                          borderRadius: BorderRadius.circular(5),
-                                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.show_chart_rounded, size: 13, color: Color(0xFF059669)),
-                                            SizedBox(width: 3),
-                                            Text('Chart', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
-                                          ],
-                                        ),
-                                      ),
+                                  const Text(
+                                    'LIVE STREAMING (100% POPULATED)',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF166534),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-
-                                  // Remove
-                                  IconButton(
-                                    icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
-                                    tooltip: 'Remove',
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () => _removeScrip(i),
                                   ),
                                 ],
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
+                        const SizedBox(height: 4),
+                        Text(
+                          'Live benchmark & sectoral index quotes, market breadth, depth metrics, and 1-click execution across all 8 connected Demat accounts.',
+                          style: TextStyle(fontSize: 13, color: textSub),
+                        ),
+                      ],
+                    ),
+
+                    // Watchlist Tabs
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderCol),
+                      ),
+                      child: Row(
+                        children: List.generate(_watchlists.length, (idx) {
+                          final isSelected = _activeWatchlistIndex == idx;
+                          return InkWell(
+                            onTap: () => _switchWatchlistTab(idx),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFF059669) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Text(
+                                _watchlists[idx],
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : textSub,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Search Bar
+                SizedBox(
+                  width: double.infinity,
+                  child: StockSearchWidget(onScripSelected: _addScrip),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Watchlist Table Container
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderCol),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                  child: Column(
+                    children: [
+                      // Table Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF162032) : const Color(0xFFF8FAFC),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          border: Border(bottom: BorderSide(color: borderCol)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(flex: 3, child: Text('INSTRUMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 1, child: Text('EXCH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('LTP (₹)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('CHANGE (%)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('DAY HIGH / LOW', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('52W HIGH / LOW', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 2, child: Text('VOLUME', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                            Expanded(flex: 3, child: Text('1-CLICK ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSub))),
+                          ],
+                        ),
+                      ),
+
+                      // Table Body
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _currentWatchlist.length,
+                        separatorBuilder: (_, __) => Divider(height: 1, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        itemBuilder: (ctx, i) {
+                          final item = _currentWatchlist[i];
+                          final quote = _quotes[item.symbolToken] ?? _defaultMarketQuotes[item.symbolToken];
+
+                          final double ltp = quote?.ltp ?? 1000.0;
+                          final double change = quote?.change ?? 0.0;
+                          final double pct = quote?.percentChange ?? 0.0;
+                          final bool isPos = change >= 0;
+                          final Color changeCol = isPos ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+                          final double high = quote?.high ?? (ltp * 1.008);
+                          final double low = quote?.low ?? (ltp * 0.992);
+                          final double high52 = quote?.high52w ?? (ltp * 1.25);
+                          final double low52 = quote?.low52w ?? (ltp * 0.75);
+                          final int vol = quote?.volume ?? 120000;
+
+                          String volStr;
+                          if (vol >= 10000000) {
+                            volStr = '${(vol / 10000000).toStringAsFixed(1)}Cr';
+                          } else if (vol >= 100000) {
+                            volStr = '${(vol / 100000).toStringAsFixed(1)}L';
+                          } else {
+                            volStr = '${(vol / 1000).toStringAsFixed(0)}K';
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            child: Row(
+                              children: [
+                                // Instrument Column
+                                Expanded(
+                                  flex: 3,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 4,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: changeCol,
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.name,
+                                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: textMain),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              '${item.tradingSymbol} (${item.symbolToken})',
+                                              style: TextStyle(fontSize: 10.5, color: textSub),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Exchange
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: item.instrumentType == 'INDEX' ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      item.exchange,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: item.instrumentType == 'INDEX' ? const Color(0xFF059669) : const Color(0xFF047857),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // LTP
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '₹${ltp.toStringAsFixed(2)}',
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: changeCol,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ),
+
+                                // Change & %
+                                Expanded(
+                                  flex: 2,
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: changeCol.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pct.toStringAsFixed(2)}%)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: changeCol,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Day High / Low
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text('H: ₹${high.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
+                                      Text('L: ₹${low.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+                                    ],
+                                  ),
+                                ),
+
+                                // 52W High / Low
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text('52H: ₹${high52.toStringAsFixed(0)}', style: TextStyle(fontSize: 10.5, color: textSub)),
+                                      Text('52L: ₹${low52.toStringAsFixed(0)}', style: TextStyle(fontSize: 10.5, color: textSub)),
+                                    ],
+                                  ),
+                                ),
+
+                                // Volume
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    volStr,
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
+                                  ),
+                                ),
+
+                                // Actions: Quick Buy, Quick Sell, Chart
+                                Expanded(
+                                  flex: 3,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Quick Buy [ B ]
+                                      InkWell(
+                                        onTap: () => _executeQuickTrade(item, 'BUY'),
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: Container(
+                                          width: 26,
+                                          height: 26,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF059669),
+                                            borderRadius: BorderRadius.circular(5),
+                                          ),
+                                          child: const Center(
+                                            child: Text('B', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+
+                                      // Quick Sell [ S ]
+                                      InkWell(
+                                        onTap: () => _executeQuickTrade(item, 'SELL'),
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: Container(
+                                          width: 26,
+                                          height: 26,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFDC2626),
+                                            borderRadius: BorderRadius.circular(5),
+                                          ),
+                                          child: const Center(
+                                            child: Text('S', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+
+                                      // Chart Button
+                                      Tooltip(
+                                        message: 'Open Candlestick Chart',
+                                        child: InkWell(
+                                          onTap: () => _showScripChartModal(item),
+                                          borderRadius: BorderRadius.circular(5),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                                              borderRadius: BorderRadius.circular(5),
+                                              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE)),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.show_chart_rounded, size: 13, color: Color(0xFF059669)),
+                                                SizedBox(width: 3),
+                                                Text('Chart', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+
+                                      // Remove
+                                      IconButton(
+                                        icon: Icon(Icons.close_rounded, size: 15, color: textSub),
+                                        tooltip: 'Remove',
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () => _removeScrip(i),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
   }
 }
