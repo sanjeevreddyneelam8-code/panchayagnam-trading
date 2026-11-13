@@ -45,15 +45,23 @@ jobs:
         working-directory: ./panchayagnam-ui-main
         run: flutter pub get
 
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Build Flutter Web Release
         working-directory: ./panchayagnam-ui-main
         run: |
           API_URL="${{ vars.API_BASE_URL || secrets.API_BASE_URL || 'https://panchayagnam-api.onrender.com' }}"
           WS_URL="${{ vars.WS_BASE_URL || secrets.WS_BASE_URL || 'wss://panchayagnam-api.onrender.com' }}"
-          flutter build web --release --pwa-strategy=none --base-href /${{ github.event.repository.name }}/ --dart-define=API_BASE_URL="$API_URL" --dart-define=WS_BASE_URL="$WS_URL"
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+          BASE_PATH="${{ steps.pages.outputs.base_path }}"
+          if [ -z "$BASE_PATH" ] || [ "$BASE_PATH" = "/" ]; then
+            BASE_HREF="/"
+          else
+            BASE_HREF="${BASE_PATH}/"
+          fi
+          echo "Using base-href: $BASE_HREF"
+          flutter build web --release --pwa-strategy=none --base-href "$BASE_HREF" --dart-define=API_BASE_URL="$API_URL" --dart-define=WS_BASE_URL="$WS_URL"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
