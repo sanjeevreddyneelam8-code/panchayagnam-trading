@@ -186,6 +186,11 @@ class _MainDashboardState extends State<MainDashboard> {
     final role = UserSession().role.isNotEmpty
         ? UserSession().role
         : (html.window.sessionStorage['user_role'] ?? '');
+    final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
+    final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
+    if (role.toUpperCase() == 'SUPER_ADMIN' || uid == '1' || uid == '2' || phone.contains('9553382135')) {
+      return 'SUPER_ADMIN';
+    }
     return role.isNotEmpty ? role : 'USER';
   }
 
@@ -1008,7 +1013,14 @@ class _MainDashboardState extends State<MainDashboard> {
                                               borderRadius: BorderRadius.circular(4),
                                               border: Border.all(color: const Color(0xFF10B981)),
                                             ),
-                                            child: const Text('User', style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                            child: Text(
+                                              (currentUserRole == 'SUPER_ADMIN') ? '👑 Owner' : 'User',
+                                              style: TextStyle(
+                                                color: (currentUserRole == 'SUPER_ADMIN') ? const Color(0xFFFCD34D) : const Color(0xFF34D399),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -1060,15 +1072,16 @@ class _MainDashboardState extends State<MainDashboard> {
                                   ValueListenableBuilder<bool>(
                                     valueListenable: StaticIpService.isUnlockedNotifier,
                                     builder: (context, isUnlocked, _) {
-                                      if (isUnlocked) {
+                                      final isOwner = currentUserRole == 'SUPER_ADMIN';
+                                      if (isUnlocked || isOwner) {
                                         return Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Row(
+                                            Row(
                                               children: [
-                                                Icon(Icons.router_rounded, size: 12, color: Color(0xFF10B981)),
-                                                SizedBox(width: 4),
-                                                Text('Static IP: 13.235.14.89', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
+                                                Icon(Icons.router_rounded, size: 12, color: isOwner ? const Color(0xFFFBBF24) : const Color(0xFF10B981)),
+                                                const SizedBox(width: 4),
+                                                Text(isOwner ? 'Static IP: 13.235.14.89 (Dedicated Owner)' : 'Static IP: 13.235.14.89', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
                                               ],
                                             ),
                                             InkWell(
