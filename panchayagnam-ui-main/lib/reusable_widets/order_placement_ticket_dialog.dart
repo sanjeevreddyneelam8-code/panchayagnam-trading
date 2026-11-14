@@ -1,6 +1,8 @@
+import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../service/copy_trading_engine.dart';
+import '../service/static_ip_service.dart';
 import '../service/theme_mode_service.dart';
 import 'copy_trade_receipt_dialog.dart';
 
@@ -116,6 +118,41 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   }
 
   void _executeOrder() async {
+    final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
+    final cleanPhone = (html.window.sessionStorage['user_phoneNumber'] ??
+            html.window.sessionStorage['user_phone'] ??
+            '')
+        .replaceAll(RegExp(r'\D'), '');
+    final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
+    final isOwner = role == 'SUPER_ADMIN' ||
+        cleanPhone.endsWith('9553382135') ||
+        (role != 'USER' && (uid == '1' || uid == '2'));
+
+    if (!StaticIpService.isUnlocked && !isOwner) {
+      Navigator.pop(context); // Close ticket
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Trading Disabled: Dedicated Static IP is Locked. Please activate Static IP to execute live orders.',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      StaticIpService.showPaymentOrQrDialog(context);
+      return;
+    }
+
     Navigator.pop(context); // Close ticket
 
     final engine = CopyTradingEngine();

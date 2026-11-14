@@ -213,14 +213,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     final phoneNumber = normalizedPhone.isNotEmpty ? normalizedPhone : fallbackPhone;
     final rawRole = (data['role'] ?? '').toString().trim();
-    String role = rawRole.isNotEmpty ? rawRole : 'USER';
-    if (phoneNumber.contains('9553382135') || userId == 1 || userId == 2 || rawRole.toUpperCase() == 'SUPER_ADMIN' || fullName.toLowerCase().contains('raja') || fullName.toLowerCase().contains('sanjeev')) {
-      role = 'SUPER_ADMIN';
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final isSuperAdmin = cleanPhone.endsWith('9553382135') ||
+        rawRole.toUpperCase() == 'SUPER_ADMIN' ||
+        (rawRole.toUpperCase() != 'USER' && (userId == 1 || userId == 2));
+
+    String role = isSuperAdmin ? 'SUPER_ADMIN' : (rawRole.isNotEmpty ? rawRole : 'USER');
+    if (isSuperAdmin) {
       StaticIpService.unlock(plan: 'Dedicated Owner Whitelist');
     }
-    final expiredFlag = data['expiredFlag'] ?? false;
 
-    final expiresInDays = int.tryParse((data['expiresInDays'] ?? '').toString()) ?? 30;
+    final bool expiredFlag;
+    final int expiresInDays;
+    if (isSuperAdmin) {
+      expiredFlag = false;
+      expiresInDays = 365;
+    } else {
+      final rawExpires = data['expiresInDays'];
+      expiresInDays = rawExpires != null ? (int.tryParse(rawExpires.toString()) ?? 0) : 0;
+      expiredFlag = data['expiredFlag'] ?? (expiresInDays <= 0);
+    }
     final noOfClients = int.tryParse((data['noOfClients'] ?? '').toString()) ?? 0;
 
     SessionStorageHelper.setString('auth_token', token);
