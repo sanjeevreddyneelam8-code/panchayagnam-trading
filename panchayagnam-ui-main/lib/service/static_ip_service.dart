@@ -28,17 +28,30 @@ class StaticIpService {
     try {
       final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
       final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
-      final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
-      final name = (html.window.sessionStorage['user_fullName'] ?? '').toLowerCase().trim();
-      if (role == 'SUPER_ADMIN' ||
-          uid == '1' || uid == '2' || uid.contains('1') || uid.contains('2') ||
-          phone.contains('9553382135') ||
-          name.contains('raja') ||
-          name.contains('sanjeev')) {
+      final cleanPhone = (html.window.sessionStorage['user_phoneNumber'] ??
+              html.window.sessionStorage['user_phone'] ??
+              '')
+          .replaceAll(RegExp(r'\D'), '');
+
+      // Strictly Owner only
+      final isOwner = role == 'SUPER_ADMIN' ||
+          cleanPhone.endsWith('9553382135') ||
+          (role != 'USER' && (uid == '1' || uid == '2'));
+      if (isOwner) {
         return true;
       }
+
+      // For regular clients:
+      // Only unlock if subscription was approved by owner and is active
+      final expiredFlag = html.window.sessionStorage['expiredFlag'];
+      final expiresInDays =
+          int.tryParse(html.window.sessionStorage['expiresInDays'] ?? '0') ?? 0;
+      if (expiredFlag == 'false' && expiresInDays > 0) {
+        return true;
+      }
+
       final session = html.window.sessionStorage[storageKey];
-      return session == 'true';
+      return session == 'true' && expiredFlag != 'true';
     } catch (_) {
       return false;
     }

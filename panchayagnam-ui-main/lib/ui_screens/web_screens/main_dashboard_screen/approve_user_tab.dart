@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import '../../../bloc/approve_user_to_admin_bloc/approve_users_bloc.dart';
+import '../../../app_route/user_session.dart';
 import 'dart:html' as html;
 
-import '../../../constants/colors.dart';
 
 int kSuperAdminId = 0;
 
@@ -70,8 +70,8 @@ class _ApproveUsersTabState extends State<ApproveUsersTab>
   }
 
   void _assignId() {
-    kSuperAdminId =
-        int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 0;
+    final parsed = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 0;
+    kSuperAdminId = parsed > 0 ? parsed : (UserSession().userId > 0 ? UserSession().userId : 2);
   }
 
   @override

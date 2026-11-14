@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import '../app_route/user_session.dart';
+import '../service/service_class.dart';
 import '../service/static_ip_service.dart';
 
 enum PaymentMethod { upi, card, netBanking, wallet }
@@ -135,13 +137,13 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     final utr = _upiIdCtrl.text.trim();
     final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
     final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
-    final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
-    final name = (html.window.sessionStorage['user_fullName'] ?? '').toLowerCase().trim();
+    final cleanPhone = (html.window.sessionStorage['user_phoneNumber'] ??
+            html.window.sessionStorage['user_phone'] ??
+            '')
+        .replaceAll(RegExp(r'\D'), '');
     final isOwner = role == 'SUPER_ADMIN' ||
-        uid == '1' || uid == '2' || uid.contains('1') || uid.contains('2') ||
-        phone.contains('9553382135') ||
-        name.contains('raja') ||
-        name.contains('sanjeev');
+        cleanPhone.endsWith('9553382135') ||
+        (role != 'USER' && (uid == '1' || uid == '2'));
 
     // For clients, require a valid 12-digit numeric UTR from PhonePe
     if (!isOwner) {
@@ -183,6 +185,27 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
       StaticIpService.unlock(plan: _selectedPlan, txnId: generatedTxn);
     } else {
       // CLIENT: STRICTLY PENDING OWNER APPROVAL!
+      // Send real request to backend server database so Owner sees it in Client Requests!
+      final rawUid = html.window.sessionStorage['user_id'] ?? '';
+      int pyId = int.tryParse(rawUid) ?? 0;
+      if (pyId <= 0) {
+        pyId = UserSession().userId;
+      }
+      if (pyId > 0) {
+        try {
+          await ServiceClass().raiseAdminRequestApi(
+            pyId: pyId,
+            reason: 'PhonePe UPI UTR: $generatedTxn | Plan: $_selectedPlan | Amount: ${_formatINR(_amount)}',
+            planMonths: 1,
+            requestType: 'CLIENT',
+            amount: _amount,
+            noOfClients: 1,
+          );
+        } catch (e) {
+          debugPrint('raiseAdminRequestApi notice: $e');
+        }
+      }
+
       // Keep static IP completely LOCKED until owner verifies in PhonePe
       try {
         html.window.sessionStorage['pending_payment_utr'] = generatedTxn;
@@ -991,13 +1014,13 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   Widget _buildSuccessView() {
     final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
     final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
-    final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
-    final name = (html.window.sessionStorage['user_fullName'] ?? '').toLowerCase().trim();
+    final cleanPhone = (html.window.sessionStorage['user_phoneNumber'] ??
+            html.window.sessionStorage['user_phone'] ??
+            '')
+        .replaceAll(RegExp(r'\D'), '');
     final isOwner = role == 'SUPER_ADMIN' ||
-        uid == '1' || uid == '2' || uid.contains('1') || uid.contains('2') ||
-        phone.contains('9553382135') ||
-        name.contains('raja') ||
-        name.contains('sanjeev');
+        cleanPhone.endsWith('9553382135') ||
+        (role != 'USER' && (uid == '1' || uid == '2'));
 
     return Padding(
       padding: const EdgeInsets.all(32),
