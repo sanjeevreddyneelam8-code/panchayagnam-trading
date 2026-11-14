@@ -62,8 +62,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   }
 
   // UPI fields
-  final _upiIdCtrl = TextEditingController(text: 'sanjeev@okhdfcbank');
-  String _selectedUpiApp = 'Google Pay';
+  final _upiIdCtrl = TextEditingController();
+  String _selectedUpiApp = 'PhonePe (Official)';
 
   // Card fields
   final _cardNumberCtrl = TextEditingController(text: '4532 •••• •••• 8821');
@@ -553,47 +553,60 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Dynamic UPI QR Code Box
+              // Official PhonePe Merchant QR Code Box (Pancha Yagnam Investments)
               Container(
-                width: 160,
-                height: 160,
-                padding: const EdgeInsets.all(10),
+                width: 210,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF6739B7), width: 1.5),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+                    BoxShadow(color: const Color(0xFF6739B7).withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 3)),
                   ],
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.qr_code_2_rounded, size: 90, color: Color(0xFF0F172A)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Scan with any UPI App',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
-                    ),
-                    Text(
-                      '$mins:$secs remaining',
-                      style: const TextStyle(fontSize: 9.5, color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/images/panchayagnam_payment_qr.jpg',
+                        width: 194,
+                        height: 250,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 12, color: Color(0xFFEF4444)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$mins:$secs remaining',
+                          style: const TextStyle(fontSize: 10.5, color: Color(0xFFFCA5A5), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     InkWell(
                       onTap: _triggerPayment,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF059669),
-                          borderRadius: BorderRadius.circular(4),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF059669), Color(0xFF10B981)],
+                          ),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle_rounded, size: 12, color: Colors.white),
-                            SizedBox(width: 4),
-                            Text('I Have Scanned QR', style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                            Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                            SizedBox(width: 5),
+                            Text('I Have Paid / Verify', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -602,19 +615,38 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                 ),
               ),
 
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
 
-              // UPI Apps list
+              // UPI Apps & Merchant Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Scan & Pay via UPI Apps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6739B7).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded, size: 15, color: Color(0xFF7C3AED)),
+                          SizedBox(width: 6),
+                          Text('PANCHA YAGNAM INVESTMENTS', style: TextStyle(color: Color(0xFF6D28D9), fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 0.3)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('Scan & Pay via Any UPI App', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 4),
+                    const Text('Scan the PhonePe merchant QR on the left with PhonePe, Google Pay, Paytm, BHIM, or any banking app on your mobile.', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.35)),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: ['Google Pay', 'PhonePe', 'Paytm', 'BHIM', 'CRED'].map((app) {
+                      children: ['PhonePe (Official)', 'Google Pay', 'Paytm', 'BHIM', 'CRED'].map((app) {
                         final isSel = _selectedUpiApp == app;
                         return InkWell(
                           onTap: () => setState(() => _selectedUpiApp = app),
@@ -622,21 +654,42 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSel ? const Color(0xFFEFF6FF) : Colors.white,
+                              color: isSel ? const Color(0xFFF5F3FF) : Colors.white,
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: isSel ? const Color(0xFF059669) : const Color(0xFFCBD5E1)),
+                              border: Border.all(color: isSel ? const Color(0xFF7C3AED) : const Color(0xFFCBD5E1)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.bolt, size: 14, color: Color(0xFF059669)),
+                                Icon(Icons.bolt, size: 14, color: isSel ? const Color(0xFF7C3AED) : const Color(0xFF059669)),
                                 const SizedBox(width: 4),
-                                Text(app, style: TextStyle(fontSize: 11.5, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                                Text(app, style: TextStyle(fontSize: 11.5, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? const Color(0xFF6D28D9) : const Color(0xFF1E293B))),
                               ],
                             ),
                           ),
                         );
                       }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.lock_open_rounded, size: 15, color: Color(0xFF16A34A)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Instant Activation: As soon as you scan and complete payment, your Dedicated Static IP is unlocked immediately.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF166534), fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -644,12 +697,12 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Divider(color: Color(0xFFE2E8F0)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Or enter UPI ID
-          const Text('Or enter your UPI ID', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+          // UTR or UPI ID input
+          const Text('Enter 12-Digit UPI Ref / UTR No or UPI ID (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -657,7 +710,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                 child: TextField(
                   controller: _upiIdCtrl,
                   decoration: InputDecoration(
-                    hintText: 'e.g. mobileNumber@upi / yourname@okhdfcbank',
+                    hintText: 'e.g. 431829019284 or yourname@upi',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -667,14 +720,15 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                 ),
               ),
               const SizedBox(width: 10),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _triggerPayment,
+                icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
+                label: const Text('Verify & Activate', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E293B),
+                  backgroundColor: const Color(0xFF059669),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Verify & Pay', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
