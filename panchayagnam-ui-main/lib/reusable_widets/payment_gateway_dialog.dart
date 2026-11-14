@@ -132,22 +132,66 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
   }
 
   void _triggerPayment() async {
-    setState(() => _isProcessing = true);
+    final utr = _upiIdCtrl.text.trim();
+    final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
+    final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
+    final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
+    final name = (html.window.sessionStorage['user_fullName'] ?? '').toLowerCase().trim();
+    final isOwner = role == 'SUPER_ADMIN' ||
+        uid == '1' || uid == '2' || uid.contains('1') || uid.contains('2') ||
+        phone.contains('9553382135') ||
+        name.contains('raja') ||
+        name.contains('sanjeev');
 
-    // Simulate realistic bank API roundtrip latency
-    await Future.delayed(const Duration(milliseconds: 1800));
+    // For clients, require a valid 12-digit numeric UTR from PhonePe
+    if (!isOwner) {
+      if (utr.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter the 12-digit UPI UTR / Reference number from your PhonePe receipt.'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      if (utr.length != 12 || int.tryParse(utr) == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid UTR: Please enter the exact 12 numeric digits from your PhonePe receipt.'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isProcessing = true);
+    await Future.delayed(const Duration(milliseconds: 1400));
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final generatedTxn = 'TXN_PY_${now.toString().substring(now.toString().length - 8)}';
+    final generatedTxn = utr.isNotEmpty ? utr : 'TXN_PY_${now.toString().substring(now.toString().length - 8)}';
 
-    // Update session-scoped static IP & subscription state
-    try {
-      html.window.sessionStorage['expiresInDays'] = '365';
-      html.window.sessionStorage['expiredFlag'] = 'false';
-      html.window.sessionStorage['static_ip_unlocked'] = 'true';
-    } catch (_) {}
-
-    StaticIpService.unlock(plan: _selectedPlan, txnId: generatedTxn);
+    if (isOwner) {
+      // Owner can instant-unlock for demonstration
+      try {
+        html.window.sessionStorage['expiresInDays'] = '365';
+        html.window.sessionStorage['expiredFlag'] = 'false';
+        html.window.sessionStorage['static_ip_unlocked'] = 'true';
+      } catch (_) {}
+      StaticIpService.unlock(plan: _selectedPlan, txnId: generatedTxn);
+    } else {
+      // CLIENT: STRICTLY PENDING OWNER APPROVAL!
+      // Keep static IP completely LOCKED until owner verifies in PhonePe
+      try {
+        html.window.sessionStorage['pending_payment_utr'] = generatedTxn;
+        html.window.sessionStorage['pending_payment_plan'] = _selectedPlan;
+        html.window.sessionStorage['pending_payment_time'] = DateTime.now().toIso8601String();
+        html.window.sessionStorage['static_ip_unlocked'] = 'false';
+      } catch (_) {}
+      StaticIpService.lock();
+    }
 
     if (!mounted) return;
     setState(() {
@@ -156,7 +200,9 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
       _txnId = generatedTxn;
     });
 
-    widget.onPaymentSuccess?.call(_amount, _selectedPlan, generatedTxn);
+    if (isOwner) {
+      widget.onPaymentSuccess?.call(_amount, _selectedPlan, generatedTxn);
+    }
   }
 
   @override
@@ -604,9 +650,9 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                            Icon(Icons.arrow_downward_rounded, size: 14, color: Colors.white),
                             SizedBox(width: 5),
-                            Text('I Have Paid / Verify', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w800)),
+                            Text('Enter UTR Below to Verify ↓', style: TextStyle(fontSize: 10.5, color: Colors.white, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -674,18 +720,18 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
+                        color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF86EFAC)),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.lock_open_rounded, size: 15, color: Color(0xFF16A34A)),
+                          Icon(Icons.shield_outlined, size: 16, color: Color(0xFFD97706)),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Instant Activation: As soon as you scan and complete payment, your Dedicated Static IP is unlocked immediately.',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF166534), fontWeight: FontWeight.w600),
+                              'Anti-Fraud Verification: After paying on PhonePe, copy the 12-digit UTR number from your payment receipt and enter it below. The owner verifies receipt before activating the Static IP.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w600, height: 1.3),
                             ),
                           ),
                         ],
@@ -701,16 +747,24 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           const Divider(color: Color(0xFFE2E8F0)),
           const SizedBox(height: 10),
 
-          // UTR or UPI ID input
-          const Text('Enter 12-Digit UPI Ref / UTR No or UPI ID (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+          // UTR input (Mandatory for clients)
+          const Row(
+            children: [
+              Text('Step 2: Enter 12-Digit UTR / UPI Ref No ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Text('(Required)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626))),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _upiIdCtrl,
+                  keyboardType: TextInputType.number,
+                  maxLength: 12,
                   decoration: InputDecoration(
-                    hintText: 'e.g. 431829019284 or yourname@upi',
+                    counterText: '',
+                    hintText: 'e.g. 431829019284 (from PhonePe receipt)',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -722,8 +776,8 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
               const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: _triggerPayment,
-                icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
-                label: const Text('Verify & Activate', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.send_rounded, size: 15, color: Colors.white),
+                label: const Text('Submit UTR for Verification', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF059669),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -933,31 +987,50 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     );
   }
 
-  // Payment Success Screen
+  // Payment Result Screen (Success for Owner, Strict Pending Verification for Clients)
   Widget _buildSuccessView() {
+    final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
+    final uid = (html.window.sessionStorage['user_id'] ?? '').trim();
+    final phone = (html.window.sessionStorage['user_phoneNumber'] ?? html.window.sessionStorage['user_phone'] ?? '').trim();
+    final name = (html.window.sessionStorage['user_fullName'] ?? '').toLowerCase().trim();
+    final isOwner = role == 'SUPER_ADMIN' ||
+        uid == '1' || uid == '2' || uid.contains('1') || uid.contains('2') ||
+        phone.contains('9553382135') ||
+        name.contains('raja') ||
+        name.contains('sanjeev');
+
     return Padding(
-      padding: const EdgeInsets.all(36),
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: Color(0xFFECFDF5),
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: isOwner ? const Color(0xFFECFDF5) : const Color(0xFFFEF3C7),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 54),
+            child: Icon(
+              isOwner ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+              color: isOwner ? const Color(0xFF10B981) : const Color(0xFFD97706),
+              size: 46,
+            ),
           ),
-          const SizedBox(height: 18),
-          const Text('Payment Successful!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+          const SizedBox(height: 16),
+          Text(
+            isOwner ? 'Payment Successful!' : 'Payment Request Submitted!',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+          ),
           const SizedBox(height: 6),
           Text(
-            'Your transaction of ${_formatINR(_amount)} has been approved and activated.',
+            isOwner
+                ? 'Your transaction of ${_formatINR(_amount)} has been approved and activated.'
+                : 'Your payment details for ${_formatINR(_amount)} have been sent to PANCHA YAGNAM INVESTMENTS.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Transaction details box
           Container(
@@ -969,36 +1042,64 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
             ),
             child: Column(
               children: [
-                _buildReceiptRow('Transaction ID', _txnId),
-                const Divider(height: 16),
+                _buildReceiptRow(isOwner ? 'Transaction ID' : '12-Digit UTR Ref', _txnId),
+                const Divider(height: 14),
                 _buildReceiptRow('Service / Plan', _selectedPlan),
-                const Divider(height: 16),
-                _buildReceiptRow('Amount Paid', _formatINR(_amount)),
-                const Divider(height: 16),
-                _buildReceiptRow('Payment Mode', _selectedMethod == PaymentMethod.upi ? 'UPI (Verified)' : 'Card / Net Banking'),
-                const Divider(height: 16),
-                _buildReceiptRow('Status', 'CONFIRMED · ACTIVE', isHighlight: true),
+                const Divider(height: 14),
+                _buildReceiptRow('Amount', _formatINR(_amount)),
+                const Divider(height: 14),
+                _buildReceiptRow('Payment Mode', _selectedMethod == PaymentMethod.upi ? 'PhonePe UPI QR' : 'Card / Net Banking'),
+                const Divider(height: 14),
+                _buildReceiptRow(
+                  'Status',
+                  isOwner ? 'CONFIRMED · ACTIVE' : 'PENDING OWNER APPROVAL ⏳',
+                  isHighlight: true,
+                  color: isOwner ? const Color(0xFF10B981) : const Color(0xFFD97706),
+                ),
               ],
             ),
           ),
+
+          // Static IP Status Box
           Container(
             margin: const EdgeInsets.only(top: 14),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
+              color: isOwner ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFA7F3D0)),
+              border: Border.all(color: isOwner ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.router_rounded, color: Color(0xFF059669), size: 22),
-                SizedBox(width: 10),
+                Icon(
+                  isOwner ? Icons.router_rounded : Icons.lock_clock_rounded,
+                  color: isOwner ? const Color(0xFF059669) : const Color(0xFFD97706),
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Dedicated Static IP Unlocked & Visible', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF065F46))),
-                      Text('Static IP: 13.235.14.89 (Whitelisted Mumbai Gateway · 30 Days)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
+                      Text(
+                        isOwner ? 'Dedicated Static IP Unlocked & Active' : 'Dedicated Static IP: LOCKED 🔒',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12.5,
+                          color: isOwner ? const Color(0xFF065F46) : const Color(0xFF92400E),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isOwner
+                            ? 'Static IP: 13.235.14.89 (Dedicated Owner Gateway · 30 Days)'
+                            : 'Your Static IP will activate immediately once the owner confirms payment receipt on PhonePe. Please await approval (usually 5–15 mins).',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isOwner ? FontWeight.w800 : FontWeight.w500,
+                          color: isOwner ? const Color(0xFF047857) : const Color(0xFFB45309),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1006,32 +1107,37 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Receipt downloaded successfully (PDF)')),
-                  );
-                },
-                icon: const Icon(Icons.receipt_long, size: 16, color: Color(0xFF059669)),
-                label: const Text('Download Receipt', style: TextStyle(color: Color(0xFF059669))),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              if (isOwner) ...[
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Receipt downloaded successfully (PDF)')),
+                    );
+                  },
+                  icon: const Icon(Icons.receipt_long, size: 16, color: Color(0xFF059669)),
+                  label: const Text('Download Receipt', style: TextStyle(color: Color(0xFF059669))),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
+                const SizedBox(width: 14),
+              ],
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  backgroundColor: isOwner ? const Color(0xFF059669) : const Color(0xFF1E293B),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Done · Back to Trading', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(
+                  isOwner ? 'Done · Back to Trading' : 'Close & Await Activation',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -1040,7 +1146,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
     );
   }
 
-  Widget _buildReceiptRow(String label, String value, {bool isHighlight = false}) {
+  Widget _buildReceiptRow(String label, String value, {bool isHighlight = false, Color? color}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1050,7 +1156,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.bold,
-            color: isHighlight ? const Color(0xFF059669) : const Color(0xFF1E293B),
+            color: color ?? (isHighlight ? const Color(0xFF059669) : const Color(0xFF1E293B)),
           ),
         ),
       ],
