@@ -717,7 +717,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Live NSE/BSE Indices & Sparklines', style: TextStyle(color: textMain, fontSize: 16, fontWeight: FontWeight.w900)),
-            const Text('Click any Index for Instant F&O Ticket', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+            const Text('Click any Index for All Types (Options, Futures, ETFs) & Buy', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 10),
@@ -739,16 +739,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
               final pts = (item['spark'] as List).cast<double>();
 
               return InkWell(
-                onTap: () {
-                  OrderPlacementTicketDialog.show(
-                    context,
-                    symbol: '$name FUT',
-                    side: 'BUY',
-                    ltp: price,
-                    lotSize: item['lot'] as int,
-                    category: 'F&O',
-                  );
-                },
+                onTap: () => _showIndexAllTypesModal(context, item),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: 215,
@@ -2998,6 +2989,517 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
           );
         }),
       ],
+    );
+  }
+
+  // ── All-Types Index Explorer Modal (Options, Futures, ETFs) ─────────────
+  void _showIndexAllTypesModal(BuildContext context, Map<String, dynamic> item) {
+    final name = item['name'] as String;
+    final price = (item['price'] as num).toDouble();
+    final prev = (item['prev'] as num).toDouble();
+    final diff = price - prev;
+    final pct = (diff / prev) * 100;
+    final isUp = name == 'INDIA VIX' ? diff <= 0 : diff >= 0;
+    final accent = isUp ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final lot = item['lot'] as int;
+
+    final isNifty = name.contains('NIFTY 50');
+    final isBankNifty = name.contains('BANK NIFTY');
+    final isSensex = name.contains('SENSEX');
+
+    final int step = (isBankNifty || isSensex) ? 100 : 50;
+    final int atm = ((price / step).round()) * step;
+
+    final String callSymbol = isNifty
+        ? 'NIFTY $atm CE'
+        : (isBankNifty ? 'BANKNIFTY $atm CE' : (isSensex ? 'SENSEX $atm CE' : '$name $atm CE'));
+    final String putSymbol = isNifty
+        ? 'NIFTY $atm PE'
+        : (isBankNifty ? 'BANKNIFTY $atm PE' : (isSensex ? 'SENSEX $atm PE' : '$name $atm PE'));
+
+    final double callLtp = (price * 0.007).clamp(45.0, 480.0);
+    final double putLtp = (price * 0.006).clamp(38.0, 450.0);
+
+    final String currentFut = '$name NOV FUT';
+    final double currentFutPrice = price * 1.0035;
+    final String nextFut = '$name DEC FUT';
+    final double nextFutPrice = price * 1.008;
+
+    final String etfSymbol = isNifty
+        ? 'NIFTYBEES'
+        : (isBankNifty ? 'BANKBEES' : (isSensex ? 'SENSEXBEES' : '${name.replaceAll(' ', '')}BEES'));
+    final double etfPrice = isNifty ? (price / 100.0) : (isBankNifty ? (price / 100.0) : 250.0);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: ThemeModeService.isDarkModeNotifier,
+          builder: (context, isDark, _) {
+            final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+            final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+            final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+            final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+            final innerBg = isDark ? const Color(0xFF1E293B).withOpacity(0.4) : const Color(0xFFF8FAFC);
+
+            return Dialog(
+              backgroundColor: cardBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: borderCol, width: 1.2),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header: Symbol, Price, Change, Close Button
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text('NSE BENCHMARK INDEX', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w900)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(name, style: TextStyle(color: textMain, fontSize: 19, fontWeight: FontWeight.w900)),
+                                  Text('National Stock Exchange of India • Lot $lot Qty', style: TextStyle(color: textSub, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close_rounded, color: textSub, size: 22),
+                              onPressed: () => Navigator.of(ctx).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Spot Price Row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₹${NumberFormat('#,##,##0.00').format(price)}',
+                              style: TextStyle(color: textMain, fontSize: 26, fontWeight: FontWeight.w900),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: accent, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${diff >= 0 ? "+" : ""}${diff.toStringAsFixed(2)} (${pct.toStringAsFixed(2)}%)',
+                                    style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w800),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            const Text('Market: LIVE', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Informational Banner
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.2)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 16),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Indices cannot be traded directly as single shares. Select any instrument type below to execute your trade:',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF2563EB), fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // TYPE 1: OPTIONS (CALLS & PUTS)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: innerBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: borderCol),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.table_chart_rounded, size: 16, color: Color(0xFF6366F1)),
+                                  const SizedBox(width: 6),
+                                  const Text('1. Options Contracts (Calls & Puts)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
+                                    child: Text('ATM Strike: $atm', style: const TextStyle(color: Color(0xFF6366F1), fontSize: 10.5, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // ATM Call Row
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(callSymbol, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: textMain)),
+                                        Text('LTP ₹${callLtp.toStringAsFixed(2)} • Lot $lot Qty', style: TextStyle(fontSize: 11, color: textSub)),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: callSymbol,
+                                        side: 'BUY',
+                                        ltp: callLtp,
+                                        lotSize: lot,
+                                        category: 'OPTIONS',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF059669),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('BUY CALL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: callSymbol,
+                                        side: 'SELL',
+                                        ltp: callLtp,
+                                        lotSize: lot,
+                                        category: 'OPTIONS',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('SELL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Divider(height: 1, color: borderCol.withOpacity(0.5)),
+                              const SizedBox(height: 8),
+                              // ATM Put Row
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(putSymbol, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: textMain)),
+                                        Text('LTP ₹${putLtp.toStringAsFixed(2)} • Lot $lot Qty', style: TextStyle(fontSize: 11, color: textSub)),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: putSymbol,
+                                        side: 'BUY',
+                                        ltp: putLtp,
+                                        lotSize: lot,
+                                        category: 'OPTIONS',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF059669),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('BUY PUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: putSymbol,
+                                        side: 'SELL',
+                                        ltp: putLtp,
+                                        lotSize: lot,
+                                        category: 'OPTIONS',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('SELL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // TYPE 2: INDEX FUTURES (F&O)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: innerBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: borderCol),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.trending_up_rounded, size: 16, color: Color(0xFFD97706)),
+                                  const SizedBox(width: 6),
+                                  const Text('2. Index Futures (FUT)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(color: const Color(0xFFD97706).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
+                                    child: Text('Lot: $lot Qty', style: const TextStyle(color: Color(0xFFD97706), fontSize: 10.5, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // Current Month Fut
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(currentFut, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: textMain)),
+                                        Text('Near Month • LTP ₹${currentFutPrice.toStringAsFixed(2)}', style: TextStyle(fontSize: 11, color: textSub)),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: currentFut,
+                                        side: 'BUY',
+                                        ltp: currentFutPrice,
+                                        lotSize: lot,
+                                        category: 'F&O',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF059669),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('BUY FUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: currentFut,
+                                        side: 'SELL',
+                                        ltp: currentFutPrice,
+                                        lotSize: lot,
+                                        category: 'F&O',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('SELL FUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Divider(height: 1, color: borderCol.withOpacity(0.5)),
+                              const SizedBox(height: 8),
+                              // Next Month Fut
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(nextFut, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: textMain)),
+                                        Text('Far Month • LTP ₹${nextFutPrice.toStringAsFixed(2)}', style: TextStyle(fontSize: 11, color: textSub)),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: nextFut,
+                                        side: 'BUY',
+                                        ltp: nextFutPrice,
+                                        lotSize: lot,
+                                        category: 'F&O',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF059669),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('BUY FUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: nextFut,
+                                        side: 'SELL',
+                                        ltp: nextFutPrice,
+                                        lotSize: lot,
+                                        category: 'F&O',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('SELL FUT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // TYPE 3: INDEX ETF (SPOT CASH EQUITY)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: innerBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: borderCol),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.account_balance_wallet_outlined, size: 15, color: Color(0xFF059669)),
+                                        const SizedBox(width: 5),
+                                        Text('3. $etfSymbol (Index ETF)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: textMain)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Spot Equity Delivery • LTP ₹${etfPrice.toStringAsFixed(2)} • Zero Expiry Risk', style: TextStyle(fontSize: 11, color: textSub)),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: etfSymbol,
+                                    side: 'BUY',
+                                    ltp: etfPrice,
+                                    lotSize: 1,
+                                    category: 'EQUITY',
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Text('BUY ETF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Close button
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: borderCol),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: Text('Close', style: TextStyle(color: textMain, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

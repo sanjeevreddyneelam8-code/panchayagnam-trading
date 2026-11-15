@@ -33,6 +33,7 @@ import 'charts_view.dart';
 import 'algo_strategies_view.dart';
 import 'backtesting_view.dart';
 import 'options_chain_view.dart';
+import 'stock_options_view.dart';
 import 'basket_orders_view.dart';
 import 'trading_workspace_views.dart';
 import '../web_ip_screen/home_screen.dart';
@@ -263,6 +264,7 @@ class _MainDashboardState extends State<MainDashboard> {
           _SubNavItem(icon: Icons.dashboard_rounded, label: 'Trade Overview'),
           _SubNavItem(icon: Icons.table_chart_rounded, label: 'Option Chain'),
           _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Indices Market'),
+          _SubNavItem(icon: Icons.layers_outlined, label: 'Stock Option'),
           _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
           _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
           _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
@@ -368,29 +370,44 @@ class _MainDashboardState extends State<MainDashboard> {
             return OptionsChainView(
               initialTabIndex: 0,
               onNavigateToOrders: () => setState(() {
-                _currentSelection = const _NavSelection(3, 5);
-                _bodyKey = UniqueKey();
-              }),
-              onNavigateToPositions: () => setState(() {
                 _currentSelection = const _NavSelection(3, 6);
                 _bodyKey = UniqueKey();
               }),
-              onNavigateToCharts: () => setState(() {
-                _currentSelection = const _NavSelection(3, 4);
+              onNavigateToPositions: () => setState(() {
+                _currentSelection = const _NavSelection(3, 7);
                 _bodyKey = UniqueKey();
               }),
-            ); // Option Chain (formerly F&O Strikes)
+              onNavigateToCharts: () => setState(() {
+                _currentSelection = const _NavSelection(3, 5);
+                _bodyKey = UniqueKey();
+              }),
+            ); // Option Chain (Index Option Chain)
           case 2:
             return const MarketWatchView(); // Indices Market (formerly Option Markets)
           case 3:
-            return const OptionsChainView(initialTabIndex: 1); // Multi-Strike OI & Greeks (placed above Charts)
+            return StockOptionsView(
+              onNavigateToOrders: () => setState(() {
+                _currentSelection = const _NavSelection(3, 6);
+                _bodyKey = UniqueKey();
+              }),
+              onNavigateToPositions: () => setState(() {
+                _currentSelection = const _NavSelection(3, 7);
+                _bodyKey = UniqueKey();
+              }),
+              onNavigateToCharts: () => setState(() {
+                _currentSelection = const _NavSelection(3, 5);
+                _bodyKey = UniqueKey();
+              }),
+            ); // Stock Option (NEW F&O Stock Watchlist & Stock Option Chain)
           case 4:
-            return const ChartsView();
+            return const OptionsChainView(initialTabIndex: 1); // Multi-Strike OI & Greeks (placed above Charts)
           case 5:
-            return const OrdersView();
+            return const ChartsView();
           case 6:
-            return const PositionsView();
+            return const OrdersView();
           case 7:
+            return const PositionsView();
+          case 8:
             return const HoldingsView();
           default:
             return DashboardTab(userRole: role, onNavigateToBrokers: _navigateToBrokers);
@@ -1375,7 +1392,7 @@ class _MainDashboardState extends State<MainDashboard> {
       infyPrice: _infyLivePrice,
       onOpenCharts: () {
         setState(() {
-          _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
+          _currentSelection = const _NavSelection(3, 5); // Charts in Trade Options
           _bodyKey = UniqueKey();
         });
       },
@@ -3630,7 +3647,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
                                   setState(() {
-                                    _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
+                                    _currentSelection = const _NavSelection(3, 5); // Charts in Trade Options
                                     _bodyKey = UniqueKey();
                                   });
                                 },
@@ -3672,7 +3689,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(3, 3); // Multi-Strike OI & Greeks in Trade Options (placed above Charts)
+                                _currentSelection = const _NavSelection(3, 4); // Multi-Strike OI & Greeks in Trade Options (placed above Charts)
                                 _bodyKey = UniqueKey();
                               });
                             },
@@ -3736,7 +3753,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(3, 4); // Charts in Trade Options
+                                _currentSelection = const _NavSelection(3, 5); // Charts in Trade Options
                                 _bodyKey = UniqueKey();
                               });
                             },
