@@ -50,8 +50,16 @@ class StaticIpService {
         return true;
       }
 
-      final session = html.window.sessionStorage[storageKey];
-      return session == 'true' && expiredFlag != 'true';
+      // For regular clients: never unlock from local storage flags!
+      // Must be confirmed by backend server approval.
+      try {
+        html.window.sessionStorage.remove(storageKey);
+        html.window.sessionStorage.remove('static_ip_unlocked');
+        html.window.sessionStorage.remove('static_ip_days');
+        html.window.sessionStorage.remove('static_ip_plan');
+        html.window.sessionStorage.remove('static_ip_txn_id');
+      } catch (_) {}
+      return false;
     } catch (_) {
       return false;
     }

@@ -614,22 +614,32 @@ class ServiceClass {
   }
 
   Future<Map<String, dynamic>> fetchAllRequestsApi(String client) async {
-    final response = await http.get(
-      Uri.parse(
-        '$_baseUrl/api/v1/super-admin/all-requests?requestType=${client}',
-      ),
-      headers: AuthHeaderHelper.getHeaders(),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$_baseUrl/api/v1/super-admin/all-requests?requestType=${client}',
+        ),
+        headers: AuthHeaderHelper.getHeaders(),
+      ).timeout(const Duration(seconds: 20));
 
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      if (body['success'] == true) {
-        return Map<String, dynamic>.from(body['data'] ?? {});
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          return Map<String, dynamic>.from(body['data'] ?? {});
+        } else {
+          throw Exception(body['message'] ?? 'Failed to fetch requests');
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expired. Please log out and sign in again.');
       } else {
-        throw Exception(body['message'] ?? 'Failed to fetch requests');
+        throw Exception('Server error (${response.statusCode}). Please refresh.');
       }
-    } else {
-      throw Exception('Server error: ${response.statusCode}');
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('failed to fetch') || msg.contains('clientexception') || msg.contains('timeout')) {
+        throw Exception('Server is waking up. Please click the 🔄 Refresh button in a few seconds.');
+      }
+      rethrow;
     }
   }
 

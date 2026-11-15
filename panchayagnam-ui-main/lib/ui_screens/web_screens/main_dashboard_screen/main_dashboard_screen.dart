@@ -462,6 +462,10 @@ class _MainDashboardState extends State<MainDashboard> {
     html.window.sessionStorage.remove('user_id');
     html.window.sessionStorage.remove('expiresInDays');
     html.window.sessionStorage.remove('expiredFlag');
+    html.window.sessionStorage.remove('pending_payment_utr');
+    html.window.sessionStorage.remove('pending_payment_plan');
+    html.window.sessionStorage.remove('pending_payment_time');
+    StaticIpService.lock();
 
     UserSession().clear();
 

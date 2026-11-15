@@ -191,6 +191,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
       if (pyId <= 0) {
         pyId = UserSession().userId;
       }
+      String? submitError;
       if (pyId > 0) {
         try {
           await ServiceClass().raiseAdminRequestApi(
@@ -202,8 +203,24 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
             noOfClients: 1,
           );
         } catch (e) {
-          debugPrint('raiseAdminRequestApi notice: $e');
+          final errStr = e.toString();
+          if (!errStr.toLowerCase().contains('already have a pending')) {
+            submitError = errStr.replaceAll('Exception:', '').trim();
+          }
         }
+      }
+
+      if (submitError != null && submitError.isNotEmpty) {
+        if (!mounted) return;
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Server notice: $submitError. Please wait 10 seconds and tap Submit again.'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
       }
 
       // Keep static IP completely LOCKED until owner verifies in PhonePe
