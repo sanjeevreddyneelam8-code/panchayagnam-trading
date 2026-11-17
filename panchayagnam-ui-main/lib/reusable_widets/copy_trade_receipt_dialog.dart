@@ -9,8 +9,33 @@ class CopyTradeReceiptDialog extends StatelessWidget {
 
   static void show(BuildContext context, CopyExecutionReceipt receipt) {
     final leg = receipt.legs.isNotEmpty ? receipt.legs.first : null;
-    final brokerInfo = leg != null ? ' via ${leg.broker} (${leg.clientId})' : '';
-    final orderIdInfo = leg != null ? ' • Order ID: #${leg.orderId}' : '';
+    if (receipt.tradeId == 'ERR-NO-BROKER' || leg == null || leg.broker == 'NONE' || leg.clientId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 22),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No Broker Account Connected. Please connect your broker Demat account first.',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFD97706),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final brokerInfo = ' via ${leg.broker} (${leg.clientId})';
+    final orderIdInfo = ' • Order ID: #${leg.orderId}';
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

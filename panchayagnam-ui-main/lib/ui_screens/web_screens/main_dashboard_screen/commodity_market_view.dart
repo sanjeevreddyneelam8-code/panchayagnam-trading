@@ -1643,6 +1643,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                             final count = CopyTradingEngine().totalAccountsCount;
                             return OutlinedButton.icon(
                               onPressed: () {
+                                if (!CopyTradingEngine().hasConnectedAccount) {
+                                  OrderPlacementTicketDialog.show(context, symbol: futContract, side: 'BUY', ltp: spot, lotSize: lot, category: 'COMMODITY');
+                                  return;
+                                }
                                 CopyTradingEngine().replicateTrade(symbol: futContract, side: 'BUY', baseQty: lot, price: spot);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('⚡ Replicated $futContract across all $count Connected Brokers!'), backgroundColor: const Color(0xFF059669)),
@@ -1918,6 +1922,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                           Text(st['name'] as String, style: TextStyle(color: col, fontSize: 12.5, fontWeight: FontWeight.w900)),
                           InkWell(
                             onTap: () {
+                              if (!CopyTradingEngine().hasConnectedAccount) {
+                                OrderPlacementTicketDialog.show(context, symbol: legs, side: side, ltp: price, lotSize: lot, category: 'COMMODITY');
+                                return;
+                              }
                               final count = CopyTradingEngine().totalAccountsCount;
                               CopyTradingEngine().replicateTrade(symbol: legs, side: side, baseQty: lot, price: price);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -2157,6 +2165,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
             message: 'Replicate across all ${CopyTradingEngine().totalAccountsCount} connected brokers',
             child: InkWell(
               onTap: () {
+                if (!CopyTradingEngine().hasConnectedAccount) {
+                  OrderPlacementTicketDialog.show(context, symbol: fullContract, side: 'BUY', ltp: ltp, lotSize: lot, category: 'COMMODITY');
+                  return;
+                }
                 final count = CopyTradingEngine().totalAccountsCount;
                 CopyTradingEngine().replicateTrade(symbol: fullContract, side: 'BUY', baseQty: lot, price: ltp);
                 ScaffoldMessenger.of(context).showSnackBar(

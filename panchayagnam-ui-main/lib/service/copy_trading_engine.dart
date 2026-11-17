@@ -148,6 +148,35 @@ class CopyTradingEngine extends ChangeNotifier {
     syncWithStorage();
   }
 
+  static bool isRealBrokerAccount(dynamic rawCid) {
+    if (rawCid == null) return false;
+    final cid = rawCid.toString().trim().toUpperCase();
+    if (cid.isEmpty || cid == 'AG_LIVE' || cid == 'NONE') return false;
+    if (cid.contains('_ACC_') || cid.contains('_PRO_') || cid.contains('DEMO') || cid.contains('MOCK') || cid.contains('TEST')) {
+      return false;
+    }
+    if (RegExp(r'_\d{3}$').hasMatch(cid)) {
+      return false; // blocks _101, _108, _135 etc.
+    }
+    const blockedExact = {
+      '1100345678', 'FP9876543', 'AG789012', 'ZR123456', 'ZR442190',
+      'UP654321', 'UP662910', 'MO554433', 'PM998877', 'GW332211', 'AG_LIVE'
+    };
+    if (blockedExact.contains(cid)) return false;
+    const blockedPrefixes = [
+      'DHAN_', 'ANGEL_ACC', 'KITE_ACC', 'UPSTX_', 'FYERS_', 'MOTILAL_',
+      'KOTAK_', 'ALICE_', 'PROFIT_', 'GOODWL_', 'GROWW_', 'PAISA5_',
+      'ICICI_', 'HDFCSKY_', 'AXIS_', 'SBI_', 'SHARE_', 'IIFL_',
+      'PAYTM_', 'SHOONYA_', 'FLAT_', 'NUVAMA_', 'ARATHI_', 'CHOICE_',
+      'SAMCO_', 'ESPR_', 'FIRST_', 'TJINI_', 'JAINAM_', 'MTRUST_',
+      'SMC_', 'BAJAJ_', 'RMONEY_', 'ABM_', 'STOX_'
+    ];
+    for (final pfx in blockedPrefixes) {
+      if (cid.startsWith(pfx)) return false;
+    }
+    return true;
+  }
+
   void syncWithStorage() {
     try {
       // 1. Read from py_permanent_demat_accounts_v2 (Primary storage used by ChildAccountsTab & ServiceClass)
@@ -156,46 +185,12 @@ class CopyTradingEngine extends ChangeNotifier {
         final decoded = List<Map<String, dynamic>>.from(
           (jsonDecode(permRaw) as List).map((x) => Map<String, dynamic>.from(x as Map)),
         );
-        final realAccounts = decoded.where((a) {
-          final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
-          return cid.isNotEmpty &&
-              !cid.startsWith('DHAN_PRO_') &&
-              !cid.startsWith('ANGEL_ACC_') &&
-              !cid.startsWith('KITE_ACC_') &&
-              !cid.startsWith('UPSTX_ACC_') &&
-              !cid.startsWith('FYERS_ACC_') &&
-              !cid.startsWith('MOTILAL_ACC_') &&
-              !cid.startsWith('KOTAK_ACC_') &&
-              !cid.startsWith('PROFIT_ACC_') &&
-              !cid.startsWith('GOODWL_ACC_') &&
-              !cid.startsWith('GROWW_ACC_') &&
-              !cid.startsWith('PAISA5_ACC_') &&
-              !cid.startsWith('ICICI_ACC_') &&
-              !cid.startsWith('HDFCSKY_') &&
-              !cid.startsWith('AXIS_ACC_') &&
-              !cid.startsWith('SBI_ACC_') &&
-              !cid.startsWith('SHARE_ACC_') &&
-              !cid.startsWith('IIFL_ACC_') &&
-              !cid.startsWith('PAYTM_ACC_') &&
-              !cid.startsWith('SHOONYA_') &&
-              !cid.startsWith('FLAT_ACC_') &&
-              !cid.startsWith('NUVAMA_ACC_') &&
-              !cid.startsWith('ARATHI_') &&
-              !cid.startsWith('CHOICE_') &&
-              !cid.startsWith('SAMCO_ACC_') &&
-              !cid.startsWith('ESPR_ACC_') &&
-              !cid.startsWith('FIRST_ACC_') &&
-              !cid.startsWith('TJINI_ACC_') &&
-              !cid.startsWith('JAINAM_') &&
-              !cid.startsWith('MTRUST_') &&
-              !cid.startsWith('SMC_ACC_') &&
-              !cid.startsWith('BAJAJ_ACC_') &&
-              !cid.startsWith('RMONEY_') &&
-              !cid.startsWith('ABM_ACC_') &&
-              !cid.startsWith('STOX_ACC_') &&
-              cid != '1100345678' &&
-              cid != 'AG_LIVE';
-        }).toList();
+        final realAccounts = decoded.where((a) => isRealBrokerAccount(a['clientId'] ?? a['loginId'])).toList();
+
+        // Purge residual mock accounts from browser storage immediately
+        if (realAccounts.length != decoded.length) {
+          html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(realAccounts);
+        }
 
         if (realAccounts.isNotEmpty) {
           _accounts.clear();
@@ -233,24 +228,12 @@ class CopyTradingEngine extends ChangeNotifier {
         final decoded = List<Map<String, dynamic>>.from(
           (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
         );
-        // Identify real custom accounts that the user created (ignoring placeholder demo accounts)
-        final customOnly = decoded.where((a) {
-          final cid = (a['loginId'] ?? a['code'] ?? '').toString();
-          return cid.isNotEmpty &&
-              !cid.startsWith('DHAN_PRO_') &&
-              !cid.startsWith('ANGEL_ACC_') &&
-              cid != '1100345678' &&
-              cid != 'FP9876543' &&
-              cid != 'AG789012' &&
-              cid != 'ZR123456' &&
-              cid != 'ZR442190' &&
-              cid != 'UP654321' &&
-              cid != 'UP662910' &&
-              cid != 'MO554433' &&
-              cid != 'PM998877' &&
-              cid != 'GW332211' &&
-              cid != 'AG_LIVE';
-        }).toList();
+        final customOnly = decoded.where((a) => isRealBrokerAccount(a['loginId'] ?? a['code'])).toList();
+
+        // Purge residual mock accounts
+        if (customOnly.length != decoded.length) {
+          html.window.localStorage['panchayagnam_trading_accounts'] = jsonEncode(customOnly);
+        }
 
         if (customOnly.isNotEmpty) {
           _accounts.clear();
@@ -394,6 +377,25 @@ class CopyTradingEngine extends ChangeNotifier {
     ChildAccountConfig? specificAccount,
   }) async {
     final tradeId = 'ORD-${DateTime.now().millisecondsSinceEpoch % 1000000}';
+    if (!hasConnectedAccount && specificAccount == null) {
+      return CopyExecutionReceipt(
+        tradeId: 'ERR-NO-BROKER',
+        symbol: symbol,
+        masterSide: side,
+        masterQty: baseQty,
+        executionPrice: price,
+        orderType: orderType,
+        productType: productType,
+        timestamp: DateTime.now(),
+        totalAccountsTargeted: 0,
+        totalAccountsFilled: 0,
+        aggregateQty: 0,
+        aggregateCapital: 0.0,
+        avgLatencyMs: 0.0,
+        legs: [],
+      );
+    }
+
     final List<ReplicationLegResult> legs = [];
     final rand = math.Random();
 

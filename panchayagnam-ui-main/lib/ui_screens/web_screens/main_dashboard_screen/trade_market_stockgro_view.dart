@@ -1046,17 +1046,13 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                       const SizedBox(width: 10),
                       ElevatedButton.icon(
                         onPressed: () {
-                          CopyTradingEngine().replicateTrade(
+                          OrderPlacementTicketDialog.show(
+                            context,
                             symbol: heroCall['symbol'] as String,
                             side: 'BUY',
-                            baseQty: heroCall['lot'] as int,
-                            price: heroLtp,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('⚡ Instant Buy Order Dispatched across all $activeCount Connected Brokers!'),
-                              backgroundColor: const Color(0xFF059669),
-                            ),
+                            ltp: heroLtp,
+                            lotSize: heroCall['lot'] as int,
+                            category: 'EQUITY',
                           );
                         },
                         icon: const Icon(Icons.flash_on_rounded, size: 16, color: Colors.white),
@@ -1617,12 +1613,13 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: () {
-                      CopyTradingEngine().replicateTrade(symbol: sym, side: 'BUY', baseQty: lot, price: ltp);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('⚡ Multi-Demat Replication: Placed $sym across $activeCount connected brokers!'),
-                          backgroundColor: const Color(0xFF059669),
-                        ),
+                      OrderPlacementTicketDialog.show(
+                        context,
+                        symbol: sym,
+                        side: 'BUY',
+                        ltp: ltp,
+                        lotSize: lot,
+                        category: 'EQUITY',
                       );
                     },
                     icon: const Icon(Icons.flash_on_rounded, size: 16, color: Colors.white),
@@ -1858,10 +1855,13 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                         message: 'Copy across all ${CopyTradingEngine().totalAccountsCount} connected brokers',
                         child: InkWell(
                           onTap: () {
-                            final cnt = CopyTradingEngine().totalAccountsCount;
-                            CopyTradingEngine().replicateTrade(symbol: sym, side: 'BUY', baseQty: 10, price: ltp);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('⚡ Replicated $sym across all $cnt brokers!'), backgroundColor: const Color(0xFF059669)),
+                            OrderPlacementTicketDialog.show(
+                              context,
+                              symbol: sym,
+                              side: 'BUY',
+                              ltp: ltp,
+                              lotSize: 10,
+                              category: 'EQUITY',
                             );
                           },
                           borderRadius: BorderRadius.circular(5),
@@ -2379,17 +2379,13 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                                         alignment: Alignment.centerRight,
                                         child: ElevatedButton.icon(
                                           onPressed: () {
-                                            CopyTradingEngine().replicateTrade(
+                                            OrderPlacementTicketDialog.show(
+                                              context,
                                               symbol: symbol,
                                               side: action.contains('SELL') ? 'SELL' : 'BUY',
-                                              baseQty: lot,
-                                              price: ltp,
-                                            );
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Executed $symbol ($action) across $activeCount connected brokers!'),
-                                                backgroundColor: const Color(0xFF059669),
-                                              ),
+                                              ltp: ltp,
+                                              lotSize: lot,
+                                              category: 'EQUITY',
                                             );
                                           },
                                           icon: const Icon(Icons.flash_on_rounded, size: 15, color: Colors.white),
@@ -2783,9 +2779,13 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
               final count = _activeBrokerCount(CopyTradingEngine());
               return ElevatedButton(
                 onPressed: () {
-                  CopyTradingEngine().replicateTrade(symbol: 'NIFTY 24200 CE', side: 'BUY', baseQty: 25, price: 214.65);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('1-Click Auto Copy enabled for $name across $count connected brokers!'), backgroundColor: const Color(0xFF059669)),
+                  OrderPlacementTicketDialog.show(
+                    context,
+                    symbol: 'NIFTY 24200 CE',
+                    side: 'BUY',
+                    ltp: 214.65,
+                    lotSize: 25,
+                    category: 'F&O',
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),

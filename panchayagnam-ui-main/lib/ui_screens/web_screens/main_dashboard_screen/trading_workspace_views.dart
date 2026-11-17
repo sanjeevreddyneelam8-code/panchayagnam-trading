@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import '../../../service/copy_trading_engine.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
+import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 
 // ─── ORDERS VIEW (Consolidated Multi-Account Order Book) ─────────────────────
 
@@ -1752,19 +1753,15 @@ class _HoldingsViewState extends State<HoldingsView> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   InkWell(
-                                    onTap: () async {
-                                      final receipt = await CopyTradingEngine().replicateTrade(
+                                    onTap: () {
+                                      OrderPlacementTicketDialog.show(
+                                        context,
                                         symbol: '${h['symbol']} EQ',
                                         side: 'BUY',
-                                        baseQty: 20,
-                                        price: ltp,
-                                        orderType: 'MARKET',
-                                        productType: 'INTRADAY (MIS)',
+                                        ltp: ltp,
                                         lotSize: 1,
+                                        category: 'EQUITY',
                                       );
-                                      if (mounted) {
-                                        CopyTradeReceiptDialog.show(context, receipt);
-                                      }
                                     },
                                     borderRadius: BorderRadius.circular(4),
                                     child: Container(
@@ -1778,19 +1775,15 @@ class _HoldingsViewState extends State<HoldingsView> {
                                   ),
                                   const SizedBox(width: 4),
                                   InkWell(
-                                    onTap: () async {
-                                      final receipt = await CopyTradingEngine().replicateTrade(
+                                    onTap: () {
+                                      OrderPlacementTicketDialog.show(
+                                        context,
                                         symbol: '${h['symbol']} EQ',
                                         side: 'SELL',
-                                        baseQty: 20,
-                                        price: ltp,
-                                        orderType: 'MARKET',
-                                        productType: 'INTRADAY (MIS)',
+                                        ltp: ltp,
                                         lotSize: 1,
+                                        category: 'EQUITY',
                                       );
-                                      if (mounted) {
-                                        CopyTradeReceiptDialog.show(context, receipt);
-                                      }
                                     },
                                     borderRadius: BorderRadius.circular(4),
                                     child: Container(
