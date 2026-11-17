@@ -58,22 +58,11 @@ public class BrokerLoginService {
     private boolean paperTradingEnabled;
 
     private boolean isProtectedDemoAccount(DematAccountAddRequest request) {
-        if (paperTradingEnabled) {
-            return true;
-        }
         if (request == null) return false;
         String clientId = request.getClientId();
-        return clientId != null && (
-                clientId.equals("1100345678") ||
-                clientId.startsWith("ZR") ||
-                clientId.startsWith("UP") ||
-                clientId.startsWith("AG") ||
-                clientId.startsWith("MO") ||
-                clientId.startsWith("PM") ||
-                clientId.startsWith("GW") ||
-                clientId.startsWith("GR") ||
-                clientId.toLowerCase().contains("demo")
-        );
+        if (clientId == null) return false;
+        String clean = clientId.trim().toLowerCase();
+        return clean.equals("1100345678") || clean.contains("demo") || clean.contains("mock");
     }
 
     // ── ROUTER ────────────────────────────────────────────────────────────────

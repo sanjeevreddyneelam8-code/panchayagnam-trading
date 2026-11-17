@@ -13,8 +13,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.py.brokers.angel.client.service.AngelOneApisService;
+import com.py.common.util.TotpUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,6 +44,51 @@ public class SmartConnectController {
 
     @Autowired
     private com.py.trading.service.PaperTradingService paperTradingService;
+
+    @Autowired
+    private AngelOneApisService angelOneApisService;
+
+    @Autowired
+    private TotpUtil totpUtil;
+
+    @Operation(summary = "Validate Angel One Live Credentials", description = "Performs real-time authentication test against Angel One SmartAPI production servers")
+    @PostMapping("/login/validate")
+    public ResponseEntity<?> validateLogin(@RequestBody Map<String, String> body) {
+        String clientCode = body.get("clientId");
+        String password = body.get("mpin");
+        String totpKey = body.get("totpKey");
+        String apiKey = body.get("apiKey");
+
+        if (clientCode == null || password == null || totpKey == null || apiKey == null ||
+                clientCode.isBlank() || password.isBlank() || totpKey.isBlank() || apiKey.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Client ID, MPIN, TOTP Key, and API Key are all required"
+            ));
+        }
+
+        try {
+            String totp = totpUtil.generate(totpKey.trim());
+            AngelOneLoginRequest req = new AngelOneLoginRequest();
+            req.setClientCode(clientCode.trim());
+            req.setPassword(password.trim());
+            req.setTotp(totp);
+            req.setApiKey(apiKey.trim());
+
+            JSONObject loginResult = angelOneApisService.login(req);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Angel One verified and connected successfully!",
+                    "data", loginResult.toMap()
+            ));
+        } catch (Exception e) {
+            log.error("AngelOne login validation rejected for clientId={}: {}", clientCode, e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Angel One Authentication Failed: " + e.getMessage()
+            ));
+        }
+    }
 
     @PostMapping("/session/renew")
     public ResponseEntity<?> renewAccessToken(@RequestBody Map<String, String> body) {

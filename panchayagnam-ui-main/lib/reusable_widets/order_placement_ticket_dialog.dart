@@ -68,6 +68,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   @override
   void initState() {
     super.initState();
+    CopyTradingEngine().syncWithStorage();
     _side = widget.side.toUpperCase();
     _selectedExchange = widget.category.toUpperCase() == 'COMMODITY' ? 'MCX' : 'NSE';
     _quantity = widget.lotSize > 1 ? widget.lotSize : 25;
@@ -501,11 +502,16 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             // ── Synchronized Execution Multi-Broker Banner ───────────────────
             Builder(
               builder: (context) {
-                final brokerCount = CopyTradingEngine().totalAccountsCount;
-                final activeCount = CopyTradingEngine().childAccounts.where((a) => a.isActive).length;
+                final engine = CopyTradingEngine();
+                final brokerCount = engine.totalAccountsCount;
+                final activeCount = engine.childAccounts.where((a) => a.isActive).length;
                 final readyCount = activeCount > 0 ? activeCount : brokerCount;
-                final totalPooled = CopyTradingEngine().childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
+                final totalPooled = engine.childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
                 final pooledCrores = totalPooled > 0 ? (totalPooled / 10000000).toStringAsFixed(2) : '3.50';
+                final isSingleAccount = brokerCount <= 1;
+                final primaryBroker = engine.masterAccount.broker;
+                final primaryName = engine.masterAccount.name;
+
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -518,15 +524,24 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.hub_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          Icon(
+                            isSingleAccount ? Icons.verified_rounded : Icons.hub_rounded,
+                            size: 14,
+                            color: isSingleAccount ? const Color(0xFF34D399) : const Color(0xFF38BDF8),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Panchayagnam Synchronized: Replicating to $brokerCount Brokers (Sub-15ms)',
+                              isSingleAccount
+                                  ? 'Direct Live Order: $primaryName ($primaryBroker) Connected'
+                                  : 'Panchayagnam Synchronized: Replicating to $brokerCount Brokers (Sub-15ms)',
                               style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700),
                             ),
                           ),
-                          Text('$readyCount/$brokerCount Ready', style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text(
+                            isSingleAccount ? '1/1 Ready (Live)' : '$readyCount/$brokerCount Ready',
+                            style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                     ),
@@ -556,9 +571,14 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  const Text('Available Pooled Margin', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                  Text(isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                                   const SizedBox(height: 2),
-                                  Text('₹$pooledCrores Cr ($brokerCount Brokers)', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                  Text(
+                                    isSingleAccount
+                                        ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(engine.masterAccount.balance)} (1 Broker)'
+                                        : '₹$pooledCrores Cr ($brokerCount Brokers)',
+                                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                                  ),
                                 ],
                               ),
                             ],
@@ -578,7 +598,9 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                 elevation: 2,
                               ),
                               child: Text(
-                                'PLACE $_side ORDER ($readyCount BROKERS)',
+                                isSingleAccount
+                                    ? 'PLACE $_side ORDER ($primaryBroker)'
+                                    : 'PLACE $_side ORDER ($readyCount BROKERS)',
                                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
                               ),
                             ),

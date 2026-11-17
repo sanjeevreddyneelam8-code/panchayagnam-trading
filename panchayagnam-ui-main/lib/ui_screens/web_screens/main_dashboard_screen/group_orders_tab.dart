@@ -2805,18 +2805,29 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
             if (idx != -1) {
               _tradingAccountsHierarchy[idx] = accountData;
             } else {
-              _tradingAccountsHierarchy.insert(0, accountData);
+              _tradingAccountsHierarchy.clear();
+              _tradingAccountsHierarchy.add(accountData);
             }
           } else {
-            _tradingAccountsHierarchy.insert(0, accountData);
+            // Remove seeded dummy placeholder accounts so only the user's real account is active!
+            _tradingAccountsHierarchy.removeWhere((a) {
+              final cid = (a['loginId'] ?? a['code'] ?? '').toString();
+              return cid == '1100345678' || cid == 'FP9876543' || cid == 'AG789012' || cid == 'ZR123456' || cid == 'UP654321';
+            });
+            if (_tradingAccountsHierarchy.isEmpty) {
+              _tradingAccountsHierarchy.add(accountData);
+            } else {
+              _tradingAccountsHierarchy.insert(0, accountData);
+            }
           }
           _saveTradingAccountsToStorage();
+          CopyTradingEngine().syncWithStorage();
           _isCreatingAccount = false;
           _editingAccount = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Trading account configured and synchronized successfully!'),
+            content: Text('Trading account configured and synchronized successfully! Only your connected live Demat is active.'),
             backgroundColor: Color(0xFF059669),
           ),
         );
@@ -9220,16 +9231,72 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
   }
 
   Future<void> _validateAccount() async {
+    final clientId = _loginIdCtrl.text.trim();
+    final mpin = _mpinCtrl.text.trim();
+    final totp = _totpCtrl.text.trim();
+    final apiKey = _apiKeyCtrl.text.trim();
+
+    if (clientId.isEmpty || mpin.isEmpty || totp.isEmpty || apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill Client ID, MPIN, TOTP Key, and API Key to validate.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isValidating = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _isValidating = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$_selectedBroker Account credentials validated successfully! Latency: 11ms'),
-        backgroundColor: const Color(0xFF059669),
-      ),
-    );
+
+    try {
+      final url = Uri.parse('${ApiUrls.baseUrl}/api/smart/login/validate');
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'clientId': clientId,
+          'mpin': mpin,
+          'totpKey': totp,
+          'apiKey': apiKey,
+        }),
+      ).timeout(const Duration(seconds: 12));
+
+      Map<String, dynamic> data = {};
+      try {
+        data = jsonDecode(resp.body) as Map<String, dynamic>;
+      } catch (_) {}
+
+      if (resp.statusCode == 200 && data['success'] == true) {
+        if (!mounted) return;
+        setState(() => _isValidating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Angel One Verified & Connected Live! (Client: $clientId)'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        setState(() => _isValidating = false);
+        final msg = data['message'] ?? 'Invalid credentials or TOTP. Rejected by Angel One SmartAPI.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Validation Failed: $msg'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isValidating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Broker Connection Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

@@ -89,19 +89,20 @@ public class BrokerAccountOperationService {
 
         // ── Login BEFORE any DB write — invalid credentials are caught here ───
         JSONObject loginData = null;
-        String initialLoginError = null;
         try {
             if (!request.getBrokerType().equals(BrokerType.PROFITMART)) {
                 loginData = brokerLoginService.login(request);
             }
         } catch (RuntimeException e) {
-            log.warn("Initial broker login could not establish session for clientId={}: {}. Saving account as DISCONNECTED.",
+            log.error("Broker login rejected on addAccount for clientId={}: {}",
                     request.getClientId(), e.getMessage());
-            initialLoginError = e.getMessage();
+            return ApiResponse.error(401,
+                    "Broker Authentication Failed for " + request.getBrokerType()
+                    + " [" + request.getClientId() + "]: " + e.getMessage());
         }
 
         // ── Persist new account ───────────────────────────────────────────────
-        return persistNewAccount(request, pyUser, loginData, ipValidation.getData(), initialLoginError);
+        return persistNewAccount(request, pyUser, loginData, ipValidation.getData(), null);
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────

@@ -87,7 +87,9 @@ class CopyTradeReceiptDialog extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  '${receipt.totalAccountsFilled} DEMATS SYNCED',
+                                  receipt.totalAccountsFilled > 1
+                                      ? '${receipt.totalAccountsFilled} DEMATS SYNCED'
+                                      : '1 DEMAT EXECUTED',
                                   style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -95,7 +97,9 @@ class CopyTradeReceiptDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Panchayagnam Real-Time Trade Copier Engine • Trade ID: ${receipt.tradeId}',
+                            receipt.totalAccountsFilled > 1
+                                ? 'Panchayagnam Real-Time Trade Copier Engine • Trade ID: ${receipt.tradeId}'
+                                : 'Direct Broker Live Order Execution • Trade ID: ${receipt.tradeId}',
                             style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 11.5),
                           ),
                         ],

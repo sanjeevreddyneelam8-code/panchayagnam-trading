@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -143,6 +145,63 @@ class CopyTradingEngine extends ChangeNotifier {
 
   CopyTradingEngine._internal() {
     _initDefaultAccounts();
+    syncWithStorage();
+  }
+
+  void syncWithStorage() {
+    try {
+      final saved = html.window.localStorage['panchayagnam_trading_accounts'] ??
+          html.window.sessionStorage['custom_trading_accounts'];
+      if (saved != null && saved.isNotEmpty) {
+        final decoded = List<Map<String, dynamic>>.from(
+          (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+        // Identify real custom accounts that the user created (ignoring placeholder demo accounts)
+        final customOnly = decoded.where((a) {
+          final cid = (a['loginId'] ?? a['code'] ?? '').toString();
+          return cid.isNotEmpty &&
+              cid != '1100345678' &&
+              cid != 'FP9876543' &&
+              cid != 'AG789012' &&
+              cid != 'ZR123456' &&
+              cid != 'UP654321';
+        }).toList();
+
+        final accountsToUse = customOnly.isNotEmpty ? customOnly : decoded;
+
+        if (accountsToUse.isNotEmpty) {
+          _accounts.clear();
+          for (final a in accountsToUse) {
+            final broker = (a['broker'] ?? 'ANGELONE').toString().toUpperCase();
+            final name = (a['nickname'] ?? a['name'] ?? '$broker Demat').toString();
+            final cid = (a['loginId'] ?? a['code'] ?? '').toString();
+            final isMaster = a['isMaster'] == true || (a['role']?.toString().contains('MASTER') ?? false);
+            final rawBal = a['margin']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '1500000';
+            final bal = double.tryParse(rawBal) ?? 1500000.0;
+            _accounts.add(
+              ChildAccountConfig(
+                id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}').toString(),
+                name: name,
+                broker: broker,
+                clientId: cid,
+                isMaster: isMaster,
+                multiplier: double.tryParse(a['multiplier']?.toString().replaceAll('x', '') ?? '1.0') ?? 1.0,
+                isActive: a['live'] != false && a['status'] != 'Paused',
+                balance: bal,
+                status: 'ONLINE',
+              ),
+            );
+          }
+          if (!_accounts.any((a) => a.isMaster) && _accounts.isNotEmpty) {
+            _accounts.first.isMaster = true;
+          }
+          notifyListeners();
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing CopyTradingEngine with storage: $e');
+    }
   }
 
   bool _isCopyTradingActive = true;
