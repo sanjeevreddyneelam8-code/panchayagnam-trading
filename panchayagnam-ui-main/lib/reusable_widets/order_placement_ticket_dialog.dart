@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../service/copy_trading_engine.dart';
 import '../service/static_ip_service.dart';
 import '../service/theme_mode_service.dart';
+import '../ui_screens/web_screens/main_dashboard_screen/main_dashboard_screen.dart';
 import 'copy_trade_receipt_dialog.dart';
 
 class OrderPlacementTicketDialog extends StatefulWidget {
@@ -31,6 +32,12 @@ class OrderPlacementTicketDialog extends StatefulWidget {
     int lotSize = 1,
     String category = 'EQUITY',
   }) {
+    final engine = CopyTradingEngine()..syncWithStorage();
+    if (!engine.hasConnectedAccount) {
+      _showNoBrokerAccountDialog(context, symbol: symbol);
+      return;
+    }
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.6),
@@ -44,6 +51,75 @@ class OrderPlacementTicketDialog extends StatefulWidget {
     );
   }
 
+  static void _showNoBrokerAccountDialog(BuildContext context, {required String symbol}) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFFD97706), size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'No Broker Account Connected',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To place a live order for $symbol, you must connect a broker Demat account first.',
+              style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF334155)),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Supported brokers: Angel One, Zerodha, Dhan, Upstox, Motilal Oswal, 5Paisa & more.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.add_link_rounded, size: 16),
+            label: const Text('Connect Broker Account'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              MainDashboard.onNavigateToBrokersGlobal?.call();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   State<OrderPlacementTicketDialog> createState() => _OrderPlacementTicketDialogState();
 }
@@ -53,6 +129,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   String _selectedExchange = 'NSE';
   String _productType = 'INTRADAY'; // 'DELIVERY', 'INTRADAY', 'PAY_LATER'
   String _orderType = 'MARKET'; // 'MARKET', 'LIMIT'
+  int _selectedAccountIndex = 0;
 
   late int _quantity;
   late double _limitPrice;
@@ -69,7 +146,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   @override
   void initState() {
     super.initState();
-    CopyTradingEngine().syncWithStorage();
+    final engine = CopyTradingEngine()..syncWithStorage();
+    if (_selectedAccountIndex >= engine.accounts.length) {
+      _selectedAccountIndex = 0;
+    }
     _side = widget.side.toUpperCase();
     _selectedExchange = widget.category.toUpperCase() == 'COMMODITY' ? 'MCX' : 'NSE';
     _quantity = widget.lotSize > 1 ? widget.lotSize : 25;
@@ -155,25 +235,67 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       return;
     }
 
-    Navigator.pop(context); // Close ticket
+    Navigator.pop(context); // Close ticket immediately
 
-    final engine = CopyTradingEngine();
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final accounts = engine.accounts;
+    final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
+    final selectedAcc = accounts.isNotEmpty ? accounts[safeIdx] : engine.masterAccount;
+
     final productStr = _productType == 'INTRADAY'
         ? 'INTRADAY (MIS)'
         : (_productType == 'PAY_LATER' ? 'MARGIN (MTF)' : 'DELIVERY (CNC)');
+
+    final effectivePrice = _orderType == 'MARKET' ? widget.ltp : _limitPrice;
 
     final receipt = await engine.replicateTrade(
       symbol: widget.symbol,
       side: _side,
       baseQty: _quantity,
-      price: _orderType == 'MARKET' ? widget.ltp : _limitPrice,
+      price: effectivePrice,
       orderType: _orderType,
       productType: productStr,
       lotSize: widget.lotSize,
+      specificAccount: selectedAcc,
     );
 
     if (mounted) {
-      CopyTradeReceiptDialog.show(context, receipt);
+      if (receipt.totalAccountsFilled > 1) {
+        CopyTradeReceiptDialog.show(context, receipt);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order Placed: $_side $_quantity Qty ${widget.symbol}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Filled @ ₹${effectivePrice.toStringAsFixed(2)} via ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) • Order ID: #${receipt.legs.first.orderId}',
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -294,6 +416,69 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                         _buildExchangeRadio('BSE', '₹${(widget.ltp * 0.996).toStringAsFixed(2)}', '+1.98%'),
                       ],
                     ],
+                  ),
+
+                  // ── Connected Broker Demat Selector ───────────────────────
+                  Builder(
+                    builder: (context) {
+                      final engine = CopyTradingEngine();
+                      final accounts = engine.accounts;
+                      if (accounts.isEmpty) return const SizedBox.shrink();
+                      final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
+                      final selectedAcc = accounts[safeIdx];
+
+                      return Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF0F172A)),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Broker Demat:',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: accounts.length > 1
+                                  ? DropdownButtonHideUnderline(
+                                      child: DropdownButton<int>(
+                                        value: safeIdx,
+                                        isDense: true,
+                                        icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF0F172A), size: 18),
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                        items: List.generate(accounts.length, (idx) {
+                                          final acc = accounts[idx];
+                                          return DropdownMenuItem<int>(
+                                            value: idx,
+                                            child: Text(
+                                              '${acc.broker} (${acc.clientId.isNotEmpty ? acc.clientId : acc.name})',
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }),
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setState(() => _selectedAccountIndex = val);
+                                          }
+                                        },
+                                      ),
+                                    )
+                                  : Text(
+                                      '${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name})',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -504,14 +689,18 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             Builder(
               builder: (context) {
                 final engine = CopyTradingEngine();
+                final accounts = engine.accounts;
+                final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
+                final selectedAcc = accounts.isNotEmpty ? accounts[safeIdx] : engine.masterAccount;
                 final brokerCount = engine.totalAccountsCount;
                 final activeCount = engine.childAccounts.where((a) => a.isActive).length;
-                final readyCount = activeCount > 0 ? activeCount : brokerCount;
+                final readyCount = activeCount > 0 ? activeCount : (brokerCount > 0 ? brokerCount : 1);
                 final totalPooled = engine.childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
                 final pooledCrores = totalPooled > 0 ? (totalPooled / 10000000).toStringAsFixed(2) : '3.50';
                 final isSingleAccount = brokerCount <= 1;
-                final primaryBroker = engine.masterAccount.broker;
-                final primaryName = engine.masterAccount.name;
+                final primaryBroker = selectedAcc.broker;
+                final primaryName = selectedAcc.name;
+                final availableMargin = selectedAcc.balance > 0 ? selectedAcc.balance : 1500000.0;
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
@@ -576,7 +765,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                   const SizedBox(height: 2),
                                   Text(
                                     isSingleAccount
-                                        ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(engine.masterAccount.balance)} (1 Broker)'
+                                        ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(availableMargin)} ($primaryBroker)'
                                         : '₹$pooledCrores Cr ($brokerCount Brokers)',
                                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
                                   ),

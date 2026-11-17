@@ -219,16 +219,30 @@ class CopyTradingEngine extends ChangeNotifier {
   List<CopyExecutionReceipt> get executionHistory => List.unmodifiable(_executionHistory);
 
   ChildAccountConfig get masterAccount =>
-      _accounts.firstWhere((a) => a.isMaster, orElse: () => _accounts.first);
+      _accounts.firstWhere(
+        (a) => a.isMaster,
+        orElse: () => _accounts.isNotEmpty
+            ? _accounts.first
+            : ChildAccountConfig(
+                id: 'none',
+                name: 'No Broker Connected',
+                broker: 'NONE',
+                clientId: '',
+                isMaster: true,
+                isActive: false,
+                balance: 0.0,
+              ),
+      );
 
   List<ChildAccountConfig> get childAccounts =>
-      _accounts.where((a) => !a.isMaster).toList();
+      _accounts.where((a) => !a.isMaster && a.id != 'none').toList();
 
   List<ChildAccountConfig> get activeChildAccounts =>
-      _accounts.where((a) => !a.isMaster && a.isActive).toList();
+      _accounts.where((a) => !a.isMaster && a.isActive && a.id != 'none').toList();
 
-  int get totalAccountsCount => _accounts.length;
+  int get totalAccountsCount => _accounts.where((a) => a.id != 'none' && a.clientId.isNotEmpty).length;
   int get activeFollowersCount => activeChildAccounts.length;
+  bool get hasConnectedAccount => _accounts.any((a) => a.id != 'none' && a.clientId.isNotEmpty && a.broker != 'NONE');
 
   double get pooledCapital =>
       _accounts.fold(0.0, (sum, a) => sum + a.balance);
@@ -238,19 +252,6 @@ class CopyTradingEngine extends ChangeNotifier {
 
   void _initDefaultAccounts() {
     _accounts.clear();
-    _accounts.add(
-      ChildAccountConfig(
-        id: 'acc_angel_primary',
-        name: 'AngelOne Master Demat',
-        broker: 'ANGELONE',
-        clientId: 'AG_LIVE',
-        isMaster: true,
-        multiplier: 1.0,
-        isActive: true,
-        balance: 1500000.0,
-        status: 'ONLINE',
-      ),
-    );
   }
 
   void toggleGlobalCopyTrading(bool active) {
@@ -308,14 +309,17 @@ class CopyTradingEngine extends ChangeNotifier {
     String orderType = 'MARKET',
     String productType = 'INTRADAY (MIS)',
     int lotSize = 1,
+    ChildAccountConfig? specificAccount,
   }) async {
-    final tradeId = 'COPY-${DateTime.now().millisecondsSinceEpoch % 1000000}';
+    final tradeId = 'ORD-${DateTime.now().millisecondsSinceEpoch % 1000000}';
     final List<ReplicationLegResult> legs = [];
     final rand = math.Random();
 
-    // 1. Execute Master Leg
-    final master = masterAccount;
-    final masterOrderId = '${master.broker.substring(0, 2)}-M-${DateTime.now().millisecondsSinceEpoch % 100000}';
+    // 1. Execute Selected Account Leg
+    final master = specificAccount ?? masterAccount;
+    final bName = master.broker.replaceAll(RegExp(r'[^a-zA-Z]'), '').toUpperCase();
+    final pfx = bName.length >= 3 ? bName.substring(0, 3) : (bName.isNotEmpty ? bName : 'ORD');
+    final masterOrderId = '$pfx-${DateTime.now().millisecondsSinceEpoch % 100000}';
     final masterLatency = 8 + rand.nextInt(5);
     final masterAmount = baseQty * price;
 
@@ -331,7 +335,7 @@ class CopyTradingEngine extends ChangeNotifier {
       orderId: masterOrderId,
       latencyMs: masterLatency,
       status: 'FILLED',
-      message: 'Master Order Executed Successfully',
+      message: 'Order Executed Successfully via ${master.broker}',
     ));
 
     master.lastOrderId = masterOrderId;

@@ -8941,20 +8941,19 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
   void initState() {
     super.initState();
     final acc = widget.initialAccount;
-    _selectedBroker = acc?['broker'] ?? '5Paisa';
+    _selectedBroker = acc?['broker'] ?? 'Angel One';
     if (!_brokers.contains(_selectedBroker)) {
-      _selectedBroker = _brokers.first;
+      _selectedBroker = 'Angel One';
     }
 
     _platformCtrl = TextEditingController(text: acc?['platform'] ?? _defaultPlatformFor(_selectedBroker));
     final defaultLoginId = (acc?['loginId'] ?? acc?['code'] ?? '').toString();
-    final uid = html.window.sessionStorage['user_id'] ?? '10821';
-    _loginIdCtrl = TextEditingController(text: defaultLoginId.isNotEmpty ? defaultLoginId : 'PY-$uid');
+    _loginIdCtrl = TextEditingController(text: defaultLoginId);
     _mpinCtrl = TextEditingController(text: (acc?['mpin'] ?? '').toString());
     _totpCtrl = TextEditingController(text: (acc?['totpKey'] ?? '').toString());
     _apiKeyCtrl = TextEditingController(text: (acc?['apiKey'] ?? '').toString());
     _appSourceCtrl = TextEditingController(text: (acc?['appSource'] ?? _defaultPlatformFor(_selectedBroker)).toString());
-    _nicknameCtrl = TextEditingController(text: (acc?['nickname'] ?? acc?['name'] ?? '').toString());
+    _nicknameCtrl = TextEditingController(text: (acc?['nickname'] ?? acc?['name'] ?? '$_selectedBroker Demat').toString());
   }
 
   String _defaultPlatformFor(String broker) {

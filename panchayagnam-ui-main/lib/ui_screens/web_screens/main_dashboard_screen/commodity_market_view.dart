@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../service/theme_mode_service.dart';
+import 'main_dashboard_screen.dart';
 
 /// CommodityMarketView
 /// Panchayagnam MCX, NCDEX & NSE Commodity Derivatives Terminal
@@ -1051,25 +1052,37 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
               AnimatedBuilder(
                 animation: CopyTradingEngine(),
                 builder: (context, _) {
-                  final count = CopyTradingEngine().totalAccountsCount;
+                  final engine = CopyTradingEngine();
+                  final count = engine.totalAccountsCount;
+                  final hasAcc = engine.hasConnectedAccount;
                   final isSingle = count <= 1;
-                  final brokerName = CopyTradingEngine().masterAccount.broker;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.35)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.sync_rounded, color: Color(0xFF38BDF8), size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          isSingle ? '$brokerName Demat Active' : '$count Brokers Synced',
-                          style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.w900),
-                        ),
-                      ],
+                  final brokerName = engine.masterAccount.broker;
+                  return InkWell(
+                    onTap: () {
+                      if (!hasAcc) {
+                        MainDashboard.onNavigateToBrokersGlobal?.call();
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
+                      decoration: BoxDecoration(
+                        color: (hasAcc ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B)).withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: (hasAcc ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B)).withOpacity(0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(hasAcc ? Icons.sync_rounded : Icons.account_balance_wallet_outlined, color: hasAcc ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B), size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            hasAcc
+                                ? (isSingle ? '$brokerName Demat Active' : '$count Brokers Synced')
+                                : 'Connect Broker Account',
+                            style: TextStyle(color: hasAcc ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B), fontSize: 11, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

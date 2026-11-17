@@ -86,6 +86,8 @@ class _NavSelection {
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});
 
+  static VoidCallback? onNavigateToBrokersGlobal;
+
   @override
   State<MainDashboard> createState() => _MainDashboardState();
 }
@@ -121,8 +123,18 @@ class _MainDashboardState extends State<MainDashboard> {
   @override
   void initState() {
     super.initState();
+    MainDashboard.onNavigateToBrokersGlobal = _navigateToBrokers;
     _hydrateSession();
     _startMarketLiveTicker();
+  }
+
+  @override
+  void dispose() {
+    if (MainDashboard.onNavigateToBrokersGlobal == _navigateToBrokers) {
+      MainDashboard.onNavigateToBrokersGlobal = null;
+    }
+    _marketTickerTimer?.cancel();
+    super.dispose();
   }
 
   void _startMarketLiveTicker() {
@@ -148,11 +160,7 @@ class _MainDashboardState extends State<MainDashboard> {
     });
   }
 
-  @override
-  void dispose() {
-    _marketTickerTimer?.cancel();
-    super.dispose();
-  }
+
 
   String _formatNumWithCommas(double val) {
     final parts = val.toStringAsFixed(2).split('.');
