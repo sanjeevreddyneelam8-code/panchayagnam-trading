@@ -1,6 +1,7 @@
 import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../service/copy_trading_engine.dart';
 import '../service/static_ip_service.dart';
 import '../service/theme_mode_service.dart';
