@@ -1052,6 +1052,8 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                 animation: CopyTradingEngine(),
                 builder: (context, _) {
                   final count = CopyTradingEngine().totalAccountsCount;
+                  final isSingle = count <= 1;
+                  final brokerName = CopyTradingEngine().masterAccount.broker;
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
                     decoration: BoxDecoration(
@@ -1063,7 +1065,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
                       children: [
                         const Icon(Icons.sync_rounded, color: Color(0xFF38BDF8), size: 14),
                         const SizedBox(width: 6),
-                        Text('$count Brokers Synced', style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.w900)),
+                        Text(
+                          isSingle ? '$brokerName Demat Active' : '$count Brokers Synced',
+                          style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.w900),
+                        ),
                       ],
                     ),
                   );

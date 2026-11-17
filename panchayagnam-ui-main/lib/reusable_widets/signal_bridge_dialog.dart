@@ -66,7 +66,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 50,
       price: 135.50,
       timestamp: 'Today, 09:25:12 AM',
-      status: 'EXECUTED (35 Brokers)',
+      status: 'EXECUTED (Live Broker)',
       latencyMs: 14,
     ),
     WebhookLogItem(
@@ -77,7 +77,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 25,
       price: 2942.00,
       timestamp: 'Today, 09:20:05 AM',
-      status: 'EXECUTED (35 Brokers)',
+      status: 'EXECUTED (Live Broker)',
       latencyMs: 12,
     ),
     WebhookLogItem(
@@ -88,7 +88,7 @@ class _SignalBridgeDialogState extends State<SignalBridgeDialog> with SingleTick
       qty: 30,
       price: 184.00,
       timestamp: 'Today, 09:16:40 AM',
-      status: 'EXECUTED (35 Brokers)',
+      status: 'EXECUTED (Live Broker)',
       latencyMs: 11,
     ),
   ];

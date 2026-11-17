@@ -180,208 +180,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   String _filterPaid = 'All';
   bool _isHelpExpanded = false;
 
-  static final List<Map<String, dynamic>> _seedTradingAccounts = [
-    {
-      'id': 'ACC_5PAISA',
-      'loginId': 'FP9876543',
-      'code': 'FP9876543',
-      'nickname': '5Paisa Primary',
-      'name': '5Paisa Primary',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': '5Paisa',
-      'platform': 'FP_API_IPV6',
-      'mpin': '123456',
-      'totpKey': 'JBSWY3DPEHPK3PXP',
-      'apiKey': 'fp_live_9a87b1c',
-      'appSource': 'FP_API_IPV6',
-      'role': 'MASTER (Parent)',
-      'margin': '₹20,00,000',
-      'multiplier': '1.0x',
-      'isMaster': true,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_DHAN',
-      'loginId': '1100345678',
-      'code': '1100345678',
-      'nickname': 'Dhan Main Account',
-      'name': 'Dhan Main Account',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Dhan',
-      'platform': 'DHAN_HQ',
-      'mpin': '654321',
-      'totpKey': 'DHA987654321TOTP',
-      'apiKey': 'dh_live_k8921x',
-      'appSource': 'DHAN_HQ',
-      'role': 'MASTER (Parent)',
-      'margin': '₹25,00,000',
-      'multiplier': '1.0x',
-      'isMaster': true,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_ANGEL',
-      'loginId': 'AG789012',
-      'code': 'AG789012',
-      'nickname': 'AngelOne Child Account',
-      'name': 'AngelOne Child Account',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Angel One',
-      'platform': 'SMARTAPI',
-      'mpin': '112233',
-      'totpKey': 'ANGELONE123TOTP',
-      'apiKey': 'ag_live_key771',
-      'appSource': 'SMARTAPI',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹12,50,000',
-      'multiplier': '1.0x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_ZERODHA',
-      'loginId': 'ZR442190',
-      'code': 'ZR442190',
-      'nickname': 'Zerodha Kite Account',
-      'name': 'Zerodha Kite Account',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Zerodha',
-      'platform': 'KITE_CONNECT',
-      'mpin': '998877',
-      'totpKey': 'ZERODHAKITE2FA',
-      'apiKey': 'kite_live_secret9',
-      'appSource': 'KITE_CONNECT',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹15,00,000',
-      'multiplier': '1.5x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_UPSTOX',
-      'loginId': 'UP662910',
-      'code': 'UP662910',
-      'nickname': 'Upstox Pro Account',
-      'name': 'Upstox Pro Account',
-      'live': false,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Upstox',
-      'platform': 'UPSTOX_V2',
-      'mpin': '554433',
-      'totpKey': 'UPSTOXPRO2FAKEY',
-      'apiKey': 'up_live_sec881',
-      'appSource': 'UPSTOX_V2',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹10,00,000',
-      'multiplier': '1.0x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_MOTILAL',
-      'loginId': 'MO554433',
-      'code': 'MO554433',
-      'nickname': 'Motilal Oswal Account',
-      'name': 'Motilal Oswal Account',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Motilal Oswal',
-      'platform': 'API',
-      'mpin': '332211',
-      'totpKey': 'MOTILAL2FAKEY',
-      'apiKey': 'mo_live_sec552',
-      'appSource': 'API',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹8,50,000',
-      'multiplier': '1.0x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_PROFITMART',
-      'loginId': 'PM998877',
-      'code': 'PM998877',
-      'nickname': 'Profitmart Account',
-      'name': 'Profitmart Account',
-      'live': false,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Profitmart',
-      'platform': 'API',
-      'mpin': '778899',
-      'totpKey': 'PROFITMART2FA',
-      'apiKey': 'pm_live_sec993',
-      'appSource': 'API',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹5,00,000',
-      'multiplier': '0.5x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-    {
-      'id': 'ACC_GOODWILL',
-      'loginId': 'GW332211',
-      'code': 'GW332211',
-      'nickname': 'Goodwill Giga Account',
-      'name': 'Goodwill Giga Account',
-      'live': true,
-      'session': 'Active',
-      'expiry': '2026-12-31',
-      'days': 53,
-      'ipDays': 53,
-      'ipType': 'Dedicated Static',
-      'paid': 'Yes',
-      'broker': 'Goodwill',
-      'platform': 'API',
-      'mpin': '445566',
-      'totpKey': 'GOODWILL2FA',
-      'apiKey': 'gw_live_sec331',
-      'appSource': 'API',
-      'role': 'FOLLOWER (Child)',
-      'margin': '₹4,50,000',
-      'multiplier': '0.5x',
-      'isMaster': false,
-      'status': 'Connected',
-    },
-  ];
+  static final List<Map<String, dynamic>> _seedTradingAccounts = [];
 
   final List<Map<String, dynamic>> _tradingAccountsHierarchy = [];
 
@@ -393,17 +192,35 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
         final decoded = List<Map<String, dynamic>>.from(
           (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
         );
-        if (decoded.isNotEmpty) {
+        // Exclude all dummy/seed accounts permanently
+        final realOnly = decoded.where((a) {
+          final cid = (a['loginId'] ?? a['code'] ?? '').toString();
+          return cid.isNotEmpty &&
+              cid != '1100345678' &&
+              cid != 'FP9876543' &&
+              cid != 'AG789012' &&
+              cid != 'ZR123456' &&
+              cid != 'ZR442190' &&
+              cid != 'UP654321' &&
+              cid != 'UP662910' &&
+              cid != 'MO554433' &&
+              cid != 'PM998877' &&
+              cid != 'GW332211';
+        }).toList();
+
+        if (realOnly.isNotEmpty) {
           _tradingAccountsHierarchy.clear();
-          _tradingAccountsHierarchy.addAll(decoded);
+          _tradingAccountsHierarchy.addAll(realOnly);
+          _saveTradingAccountsToStorage();
+          CopyTradingEngine().syncWithStorage();
           return;
         }
       }
     } catch (_) {}
 
     _tradingAccountsHierarchy.clear();
-    _tradingAccountsHierarchy.addAll(_seedTradingAccounts);
     _saveTradingAccountsToStorage();
+    CopyTradingEngine().syncWithStorage();
   }
 
   void _saveTradingAccountsToStorage() {
@@ -2809,16 +2626,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
               _tradingAccountsHierarchy.add(accountData);
             }
           } else {
-            // Remove seeded dummy placeholder accounts so only the user's real account is active!
-            _tradingAccountsHierarchy.removeWhere((a) {
-              final cid = (a['loginId'] ?? a['code'] ?? '').toString();
-              return cid == '1100345678' || cid == 'FP9876543' || cid == 'AG789012' || cid == 'ZR123456' || cid == 'UP654321';
-            });
-            if (_tradingAccountsHierarchy.isEmpty) {
-              _tradingAccountsHierarchy.add(accountData);
-            } else {
-              _tradingAccountsHierarchy.insert(0, accountData);
-            }
+            // User connected their live broker: replace all placeholders with user's verified demat!
+            _tradingAccountsHierarchy.clear();
+            _tradingAccountsHierarchy.add(accountData);
           }
           _saveTradingAccountsToStorage();
           CopyTradingEngine().syncWithStorage();

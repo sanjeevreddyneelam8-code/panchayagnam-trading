@@ -164,10 +164,15 @@ class CopyTradingEngine extends ChangeNotifier {
               cid != 'FP9876543' &&
               cid != 'AG789012' &&
               cid != 'ZR123456' &&
-              cid != 'UP654321';
+              cid != 'ZR442190' &&
+              cid != 'UP654321' &&
+              cid != 'UP662910' &&
+              cid != 'MO554433' &&
+              cid != 'PM998877' &&
+              cid != 'GW332211';
         }).toList();
 
-        final accountsToUse = customOnly.isNotEmpty ? customOnly : decoded;
+        final accountsToUse = customOnly;
 
         if (accountsToUse.isNotEmpty) {
           _accounts.clear();

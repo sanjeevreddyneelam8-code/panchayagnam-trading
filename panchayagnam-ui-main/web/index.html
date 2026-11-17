@@ -140,7 +140,7 @@
               var deletePromises = [];
               for (var i = 0; i < names.length; i++) {
                 var name = names[i];
-                if (name.includes('panchayagnam') || name.includes('easy_trade')) {
+                if (name.includes('panchayagnam') || name.includes('easy_trade') || name.toLowerCase().includes('flutter')) {
                   deletePromises.push(caches.delete(name));
                 }
               }

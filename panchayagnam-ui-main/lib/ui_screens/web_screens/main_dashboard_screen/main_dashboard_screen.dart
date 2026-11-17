@@ -2931,7 +2931,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Broker Token Auto-Refresh Daemon', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF0F172A))),
-                        Text('ALL 35+ BROKERS SYNCED 🟢', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF059669))),
+                        Text('BROKER SESSION SYNCED 🟢', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF059669))),
                       ],
                     ),
                   ],
