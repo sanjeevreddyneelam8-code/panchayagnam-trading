@@ -426,9 +426,16 @@ public class BrokerLoginService {
 
     // ── IP CONFIG HELPER ──────────────────────────────────────────────────────
     private PyBrokerIpConfigEntity getIpConfig(String ipWithPort) {
-        String cleanIp = ipWithPort.split(":")[0];
+        String cleanIp = (ipWithPort == null || ipWithPort.isBlank())
+                ? "13.235.14.89"
+                : ipWithPort.split(":")[0].trim();
         return pyBrokerIpConfigRepository
                 .findByIpAddress(cleanIp)
-                .orElseThrow(() -> new RuntimeException("IP not found in DB: " + ipWithPort));
+                .orElseGet(() -> {
+                    PyBrokerIpConfigEntity cfg = new PyBrokerIpConfigEntity();
+                    cfg.setIpAddress(cleanIp);
+                    cfg.setPortNo(8082);
+                    return pyBrokerIpConfigRepository.save(cfg);
+                });
     }
 }

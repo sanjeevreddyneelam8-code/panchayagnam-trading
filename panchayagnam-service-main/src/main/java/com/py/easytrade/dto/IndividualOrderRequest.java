@@ -6,6 +6,7 @@ import lombok.Data;
 public class IndividualOrderRequest {
 
     private Long accId;
+    private String clientId;
     private String tradingSymbol;
     private String symbolToken;
     private String exchange;        // NSE / BSE
@@ -37,6 +38,14 @@ public class IndividualOrderRequest {
      */
     public void setAccId(Long accId) {
         this.accId = accId;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     /**

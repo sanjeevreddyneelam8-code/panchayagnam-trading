@@ -203,7 +203,15 @@ public class PyBrokerController {
         }
 
         try {
-            if (request == null || request.getAccId() == null) {
+            if (request == null || (request.getAccId() == null && (request.getClientId() == null || request.getClientId().isBlank()))) {
+                return responseBuilder.buildError(400, "Account ID and order details are required");
+            }
+            if (request.getClientId() != null && !request.getClientId().isBlank()
+                    && (request.getAccId() == null || pyBrokerAccountRepository.findById(request.getAccId()).isEmpty())) {
+                pyBrokerAccountRepository.findByClientId(request.getClientId().trim())
+                        .ifPresent(acc -> request.setAccId(acc.getId()));
+            }
+            if (request.getAccId() == null) {
                 return responseBuilder.buildError(400, "Account ID and order details are required");
             }
             validateAccountOwnership(request.getAccId());
@@ -248,7 +256,15 @@ public class PyBrokerController {
         }
 
         try {
-            if (request == null || request.getAccId() == null) {
+            if (request == null || (request.getAccId() == null && (request.getClientId() == null || request.getClientId().isBlank()))) {
+                return responseBuilder.buildError(400, "Account ID and order details are required");
+            }
+            if (request.getClientId() != null && !request.getClientId().isBlank()
+                    && (request.getAccId() == null || pyBrokerAccountRepository.findById(request.getAccId()).isEmpty())) {
+                pyBrokerAccountRepository.findByClientId(request.getClientId().trim())
+                        .ifPresent(acc -> request.setAccId(acc.getId()));
+            }
+            if (request.getAccId() == null) {
                 return responseBuilder.buildError(400, "Account ID and order details are required");
             }
             validateAccountOwnership(request.getAccId());

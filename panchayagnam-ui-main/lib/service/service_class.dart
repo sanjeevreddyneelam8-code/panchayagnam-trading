@@ -10,6 +10,7 @@ import '../models/add_demat_account_response.dart';
 import '../models/demat_account.dart';
 import '../models/fetch_demat_accounts_response.dart';
 import '../models/py_user.dart';
+import 'copy_trading_engine.dart';
 
 class ServerUnreachableException implements Exception {
   final String message;
@@ -407,16 +408,14 @@ class ServiceClass {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List data = json['data'] ?? [];
-        final realAccounts = data
-            .map((e) => DematAccount.fromJson(e))
-            .where((a) =>
-                !a.clientId.startsWith('DHAN_PRO_') &&
-                a.clientId != 'AG_LIVE' &&
-                a.clientId != '1100345678')
+        final realRaw = data
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .where((a) => CopyTradingEngine.isRealBrokerAccount(a['clientId'] ?? a['loginId']))
             .toList();
-        if (realAccounts.isNotEmpty) {
-          return realAccounts;
-        }
+        // Sync authoritative server accounts (with real PostgreSQL IDs) into browser storage
+        _savePermanentLocalAccounts(realRaw);
+        CopyTradingEngine().syncWithStorage();
+        return realRaw.map((e) => DematAccount.fromJson(e)).toList();
       }
     } catch (_) {}
 
@@ -438,10 +437,16 @@ class ServiceClass {
             headers: AuthHeaderHelper.getHeaders(),
             body: jsonEncode(request.toJson()),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 30));
 
       final res = _handleResponse(response);
       _syncAccountToLocal(request, actionType);
+      // Immediately refresh authoritative accounts from server so real DB accId is stored
+      try {
+        await fetchDematAccountsApi(request.pyUserId);
+      } catch (_) {
+        CopyTradingEngine().syncWithStorage();
+      }
       return res;
     } on ServiceException {
       // Re-throw service exceptions (e.g. 401 Unauthorized, invalid TOTP/API Key)

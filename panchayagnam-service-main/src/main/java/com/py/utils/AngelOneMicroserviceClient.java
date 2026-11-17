@@ -60,84 +60,30 @@ public class AngelOneMicroserviceClient {
     // ─── PLACE ORDER ─────────────────────────────────────────────────────────
     public CompletableFuture<JSONObject> placeOrder(
             String baseUrl, AngelOnePlaceOrderRequest request) {
-        log.info("AngelOne place order request | baseUrl={} symbol={} qty={} type={}",
-                baseUrl, request.getTradingsymbol(),
+        log.info("AngelOne direct place order request | symbol={} qty={} type={}",
+                request.getTradingsymbol(),
                 request.getQuantity(), request.getTransactiontype());
 
-        return clientFor(baseUrl).post()
-                .uri("/api/smart/order/place")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, res
-                        -> res.bodyToMono(String.class)
-                        .map(body -> {
-                            log.error("AngelOne place order failed | baseUrl={} symbol={} error={}",
-                                    baseUrl, request.getTradingsymbol(), body);
-                            return new RuntimeException("Place order failed: " + body);
-                        }))
-                .bodyToMono(String.class)
-                .map(body -> {
-                    JSONObject json = new JSONObject(body);
-                    log.info("AngelOne place order success | baseUrl={} symbol={} orderId={}",
-                            baseUrl, request.getTradingsymbol(), json.optString("orderId"));
-                    return json;
-                })
-                .toFuture();
+        return CompletableFuture.supplyAsync(() -> angelOneApisService.placeOrder(request));
     }
 
     // ─── MODIFY ORDER ────────────────────────────────────────────────────────
     public CompletableFuture<JSONObject> modifyOrder(
             String baseUrl, AngelOneModifyOrderRequest request) {
-        log.info("AngelOne modify order request | baseUrl={} orderId={} symbol={} qty={} price={}",
-                baseUrl, request.getOrderId(), request.getTradingSymbol(),
+        log.info("AngelOne direct modify order request | orderId={} symbol={} qty={} price={}",
+                request.getOrderId(), request.getTradingSymbol(),
                 request.getQuantity(), request.getPrice());
 
-        return clientFor(baseUrl).post()
-                .uri("/api/smart/order/modify")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, res
-                        -> res.bodyToMono(String.class)
-                        .map(body -> {
-                            log.error("AngelOne modify order failed | baseUrl={} orderId={} error={}",
-                                    baseUrl, request.getOrderId(), body);
-                            return new RuntimeException("Modify order failed: " + body);
-                        }))
-                .bodyToMono(String.class)
-                .map(body -> {
-                    JSONObject json = new JSONObject(body);
-                    log.info("AngelOne modify order success | baseUrl={} orderId={}",
-                            baseUrl, json.optString("orderId"));
-                    return json;
-                })
-                .toFuture();
+        return CompletableFuture.supplyAsync(() -> angelOneApisService.modifyOrder(request));
     }
 
     // ─── CANCEL ORDER ────────────────────────────────────────────────────────
     public CompletableFuture<JSONObject> cancelOrder(
             String baseUrl, AngelOneCancelOrderRequest request) {
-        log.info("AngelOne cancel order request | baseUrl={} orderId={} variety={}",
-                baseUrl, request.getOrderId(), request.getVariety());
+        log.info("AngelOne direct cancel order request | orderId={} variety={}",
+                request.getOrderId(), request.getVariety());
 
-        return clientFor(baseUrl).post()
-                .uri("/api/smart/order/cancel")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, res
-                        -> res.bodyToMono(String.class)
-                        .map(body -> {
-                            log.error("AngelOne cancel order failed | baseUrl={} orderId={} error={}",
-                                    baseUrl, request.getOrderId(), body);
-                            return new RuntimeException("Cancel order failed: " + body);
-                        }))
-                .bodyToMono(String.class)
-                .map(body -> {
-                    JSONObject json = new JSONObject(body);
-                    log.info("AngelOne cancel order success | baseUrl={} orderId={}",
-                            baseUrl, json.optString("orderId"));
-                    return json;
-                })
-                .toFuture();
+        return CompletableFuture.supplyAsync(() -> angelOneApisService.cancelOrder(request));
     }
 
     // ─── ORDER HISTORY ───────────────────────────────────────────────────────
@@ -184,28 +130,10 @@ public class AngelOneMicroserviceClient {
     // ─── CONVERT POSITION ────────────────────────────────────────────────────
     public CompletableFuture<JSONObject> convertPosition(String baseUrl,
             AngelOneConvertPositionRequest request) {
-        log.info("AngelOne convert position request | baseUrl={} symbol={} {} -> {}",
-                baseUrl, request.getTradingsymbol(),
+        log.info("AngelOne direct convert position request | symbol={} {} -> {}",
+                request.getTradingsymbol(),
                 request.getOldproducttype(), request.getNewproducttype());
 
-        return clientFor(baseUrl).post()
-                .uri("/api/smart/convertPosition")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, res
-                        -> res.bodyToMono(String.class)
-                        .map(body -> {
-                            log.error("AngelOne convert position failed | baseUrl={} symbol={} error={}",
-                                    baseUrl, request.getTradingsymbol(), body);
-                            return new RuntimeException("Convert position failed: " + body);
-                        }))
-                .bodyToMono(String.class)
-                .map(body -> {
-                    JSONObject json = new JSONObject(body);
-                    log.info("AngelOne convert position success | baseUrl={} symbol={}",
-                            baseUrl, request.getTradingsymbol());
-                    return json;
-                })
-                .toFuture();
+        return CompletableFuture.supplyAsync(() -> angelOneApisService.convertPosition(request));
     }
 }

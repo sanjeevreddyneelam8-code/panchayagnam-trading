@@ -15,6 +15,7 @@ import com.py.brokers.angel.dto.OrderParams;
 import com.py.brokers.angel.exception.SmartAPIException;
 import com.py.brokers.angel.http.ApiRequestHandler;
 import java.io.IOException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,24 +150,78 @@ public class AngelOneApisService {
     // ─── PLACE ORDER ─────────────────────────────────────────────────────────
     public JSONObject placeOrder(AngelOnePlaceOrderRequest request) {
         try {
+            String exchange = (request.getExchange() != null && !request.getExchange().isBlank())
+                    ? request.getExchange().trim().toUpperCase()
+                    : "NSE";
+            String tradingSymbol = request.getTradingsymbol() != null ? request.getTradingsymbol().trim() : "";
+            String symbolToken = request.getSymboltoken() != null ? request.getSymboltoken().trim() : "";
+
+            // Auto-resolve exact Angel One tradingsymbol & symboltoken via searchScrip when symbolToken is omitted
+            if (symbolToken.isEmpty() && !tradingSymbol.isEmpty()) {
+                String cleanQuery = tradingSymbol.replaceAll("\\s+", " ").trim().toUpperCase();
+                String baseTicker = cleanQuery.split("[\\s-]")[0];
+                try {
+                    JSONObject searchParams = new JSONObject();
+                    searchParams.put("exchange", exchange);
+                    searchParams.put("searchscrip", baseTicker);
+                    JSONObject searchResp = apiRequestHandler.postRequest(
+                            request.getApiKey(),
+                            routes.get("api.search.script.data"),
+                            searchParams,
+                            request.getAccessToken());
+                    JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                    if (dataArr != null && dataArr.length() > 0) {
+                        JSONObject bestMatch = null;
+                        String eqTarget = baseTicker + "-EQ";
+                        for (int i = 0; i < dataArr.length(); i++) {
+                            JSONObject item = dataArr.optJSONObject(i);
+                            if (item == null) continue;
+                            String sym = item.optString("tradingsymbol", "").toUpperCase();
+                            if (sym.equals(cleanQuery) || sym.equals(eqTarget)) {
+                                bestMatch = item;
+                                break;
+                            }
+                            if (bestMatch == null && sym.startsWith(baseTicker)) {
+                                bestMatch = item;
+                            }
+                        }
+                        if (bestMatch == null) {
+                            bestMatch = dataArr.optJSONObject(0);
+                        }
+                        if (bestMatch != null) {
+                            tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
+                            symbolToken = bestMatch.optString("symboltoken", symbolToken);
+                            log.info("Auto-resolved AngelOne scrip | query={} -> exchange={} symbol={} token={}",
+                                    cleanQuery, exchange, tradingSymbol, symbolToken);
+                        }
+                    }
+                } catch (Exception | SmartAPIException ex) {
+                    log.warn("AngelOne searchScrip auto-resolve failed for {}: {}", tradingSymbol, ex.getMessage());
+                }
+            }
+
             SmartConnect smartConnect = new SmartConnect(request.getApiKey());
             smartConnect.setAccessToken(request.getAccessToken());
 
             OrderParams orderParams = new OrderParams();
-            orderParams.setExchange(request.getExchange());
-            orderParams.setTradingsymbol(request.getTradingsymbol());
-            orderParams.setSymboltoken(request.getSymboltoken());
+            orderParams.setExchange(exchange);
+            orderParams.setTradingsymbol(tradingSymbol);
+            orderParams.setSymboltoken(symbolToken);
             orderParams.setOrdertype(request.getOrdertype());
             orderParams.setProducttype(request.getProducttype());
             orderParams.setQuantity(request.getQuantity());
             orderParams.setPrice(request.getPrice());
-            orderParams.setDuration(request.getDuration());
-            orderParams.setSquareoff(request.getSquareoff());
-            orderParams.setStoploss(request.getStoploss());
-            orderParams.setTriggerprice(request.getTriggerprice().toString());
+            orderParams.setDuration(request.getDuration() != null ? request.getDuration() : "DAY");
+            orderParams.setSquareoff(request.getSquareoff() != null ? request.getSquareoff() : "0");
+            orderParams.setStoploss(request.getStoploss() != null ? request.getStoploss() : "0");
+            orderParams.setTriggerprice(request.getTriggerprice() != null ? request.getTriggerprice().toString() : "0");
             orderParams.setTransactiontype(request.getTransactiontype());
 
-            Order order = smartConnect.placeOrder(orderParams, request.getVariety());
+            String variety = (request.getVariety() != null && !request.getVariety().isBlank())
+                    ? request.getVariety()
+                    : "NORMAL";
+
+            Order order = smartConnect.placeOrder(orderParams, variety);
 
             if (order == null || order.orderId == null) {
                 throw new RuntimeException("Order failed — null response from broker");
@@ -174,6 +229,7 @@ public class AngelOneApisService {
 
             JSONObject response = new JSONObject();
             response.put("orderId", order.orderId);
+            response.put("uniqueOrderId", order.uniqueOrderId != null ? order.uniqueOrderId : order.orderId);
             response.put("status", "SUCCESS");
             return response;
 

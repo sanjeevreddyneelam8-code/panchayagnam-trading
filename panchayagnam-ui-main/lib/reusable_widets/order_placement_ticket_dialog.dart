@@ -1,7 +1,11 @@
+import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import '../constants/api_url_constants.dart';
+import '../constants/auth_header_helper.dart';
 import '../service/copy_trading_engine.dart';
 import '../service/static_ip_service.dart';
 import '../service/theme_mode_service.dart';
@@ -130,6 +134,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   String _productType = 'INTRADAY'; // 'DELIVERY', 'INTRADAY', 'PAY_LATER'
   String _orderType = 'MARKET'; // 'MARKET', 'LIMIT'
   int _selectedAccountIndex = 0;
+  bool _isSubmitting = false;
 
   late int _quantity;
   late double _limitPrice;
@@ -200,6 +205,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   }
 
   void _executeOrder() async {
+    if (_isSubmitting) return;
+
     final role = (html.window.sessionStorage['user_role'] ?? '').toUpperCase();
     final cleanPhone = (html.window.sessionStorage['user_phoneNumber'] ??
             html.window.sessionStorage['user_phone'] ??
@@ -235,61 +242,161 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       return;
     }
 
-    Navigator.pop(context); // Close ticket immediately
-
     final engine = CopyTradingEngine()..syncWithStorage();
     final accounts = engine.accounts;
+    if (accounts.isEmpty) {
+      Navigator.pop(context);
+      OrderPlacementTicketDialog._showNoBrokerAccountDialog(context, symbol: widget.symbol);
+      return;
+    }
     final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
-    final selectedAcc = accounts.isNotEmpty ? accounts[safeIdx] : engine.masterAccount;
-
-    final productStr = _productType == 'INTRADAY'
-        ? 'INTRADAY (MIS)'
-        : (_productType == 'PAY_LATER' ? 'MARGIN (MTF)' : 'DELIVERY (CNC)');
+    final selectedAcc = accounts[safeIdx];
 
     final effectivePrice = _orderType == 'MARKET' ? widget.ltp : _limitPrice;
+    final apiProductType = _productType == 'INTRADAY'
+        ? 'INTRADAY'
+        : (_productType == 'PAY_LATER' ? 'MARGIN' : 'DELIVERY');
+    final idempotencyKey =
+        'UI-${DateTime.now().millisecondsSinceEpoch}-${widget.symbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-$_quantity';
 
-    final receipt = await engine.replicateTrade(
-      symbol: widget.symbol,
-      side: _side,
-      baseQty: _quantity,
-      price: effectivePrice,
-      orderType: _orderType,
-      productType: productStr,
-      lotSize: widget.lotSize,
-      specificAccount: selectedAcc,
-    );
+    setState(() => _isSubmitting = true);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Order Placed: $_side $_quantity Qty ${widget.symbol}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Filled @ ₹${effectivePrice.toStringAsFixed(2)} via ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) • Order ID: #${receipt.legs.first.orderId}',
-                      style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
-                    ),
-                  ],
+    final messenger = ScaffoldMessenger.of(context);
+    final endpoint = _side == 'BUY'
+        ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
+        : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
+
+    try {
+      final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
+      headers['Idempotency-Key'] = idempotencyKey;
+
+      final response = await http
+          .post(
+            Uri.parse(endpoint),
+            headers: headers,
+            body: jsonEncode({
+              'accId': int.tryParse(selectedAcc.id),
+              'clientId': selectedAcc.clientId,
+              'tradingSymbol': widget.symbol,
+              'symbolToken': '',
+              'exchange': _selectedExchange,
+              'quantity': _quantity,
+              'orderType': _orderType,
+              'price': _orderType == 'MARKET' ? 0.0 : _limitPrice,
+              'productType': apiProductType,
+              'variety': 'NORMAL',
+              'idempotencyKey': idempotencyKey,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      Map<String, dynamic> decoded = {};
+      try {
+        final raw = jsonDecode(response.body);
+        if (raw is Map<String, dynamic>) decoded = raw;
+      } catch (_) {}
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final orderId = (decoded['orderId'] ??
+                decoded['uniqueOrderId'] ??
+                (decoded['data'] is Map ? decoded['data']['orderId'] : null) ??
+                'CONFIRMED')
+            .toString();
+
+        if (mounted) {
+          Navigator.pop(context);
+        }
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Live Order Placed: $_side $_quantity Qty ${widget.symbol}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Sent to ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) @ ₹${effectivePrice.toStringAsFixed(2)} • Order ID: #$orderId',
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 5),
           ),
-          backgroundColor: const Color(0xFF059669),
+        );
+      } else {
+        final errMsg = (decoded['message'] ??
+                decoded['error'] ??
+                (response.body.isNotEmpty && response.body.length < 220
+                    ? response.body
+                    : 'Order rejected by broker (HTTP ${response.statusCode})'))
+            .toString();
+
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order Rejected (${selectedAcc.broker})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        errMsg,
+                        style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.95)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to place order with broker server: $e',
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 5),
         ),
       );
     }
@@ -776,19 +883,38 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: _executeOrder,
+                              onPressed: _isSubmitting ? null : _executeOrder,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: themeColor,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 elevation: 2,
                               ),
-                              child: Text(
-                                isSingleAccount
-                                    ? 'PLACE $_side ORDER ($primaryBroker)'
-                                    : 'PLACE $_side ORDER ($readyCount BROKERS)',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
-                              ),
+                              child: _isSubmitting
+                                  ? const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          'PLACING LIVE ORDER...',
+                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      isSingleAccount
+                                          ? 'PLACE $_side ORDER ($primaryBroker)'
+                                          : 'PLACE $_side ORDER ($readyCount BROKERS)',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                                    ),
                             ),
                           ),
                         ],

@@ -267,6 +267,11 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
 
     if (_isUpdate && widget.existingAccount != null) {
       _prefillFromExisting(widget.existingAccount!);
+    } else {
+      _ipController.text = '13.235.14.89';
+      _ipStatus = IpValidationStatus.valid;
+      _ipStatusMessage = 'Platform Static IP (13.235.14.89) ready';
+      _validatedPort = 8082;
     }
   }
 
@@ -379,7 +384,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _totpKeyGoodWellController.clear();
       _apiSecretKeyController.clear();
       _dobTextController.clear();
-      _ipController.clear();
+      _ipController.text = '13.235.14.89';
       _selectedDob = null;
       _dobError = false;
       _dobErrMsg = 'Please enter or select Date of Birth';
@@ -387,9 +392,9 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _useLoginAsNickname = false;
       _ownAccount = null;
       _ownAccountError = false;
-      _ipStatus = IpValidationStatus.idle;
-      _ipStatusMessage = '';
-      _validatedPort = null;
+      _ipStatus = IpValidationStatus.valid;
+      _ipStatusMessage = 'Platform Static IP (13.235.14.89) ready';
+      _validatedPort = 8082;
       _showMpin = _showTotpAngel = _showApiKey = false;
       _showTotpMotilal = _showApiSecretKey = _showTotpDhan = false;
       _showTotpProfitMart = _showApiKeyProfitMart = false;

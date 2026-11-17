@@ -92,23 +92,38 @@ public class PyBrokerIpConfigService {
      * @return ApiResponse containing the PyBrokerIpConfigEntity on success, or an error response
      */
     public ApiResponse<PyBrokerIpConfigEntity> validateIpForAccount(String ip, BrokerType brokerType) {
-        String ipAddress = extractIpAddress(ip);
+        String rawIp = (ip == null || ip.isBlank()) ? "13.235.14.89" : ip.trim();
+        String ipAddress = extractIpAddress(rawIp);
 
-        // Rule 4: IP must exist in ip_config table
-        Optional<PyBrokerIpConfigEntity> ipConfigOpt = pyBrokerIpConfigRepository.findByIpAddress(ipAddress);
-        if (ipConfigOpt.isEmpty()) {
+        if (ipAddress == null || !ipAddress.matches("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")) {
             return ApiResponse.error(400, "IP " + ipAddress
-                    + " is not a valid/registered IP. Please use a valid IP from the system.");
+                    + " is not a valid IPv4 address. Please use a valid IP (e.g. 13.235.14.89).");
         }
-        PyBrokerIpConfigEntity ipConfig = ipConfigOpt.get();
 
-        // Rule 2: same broker type cannot be assigned to same IP twice (active accounts)
-        boolean sameBrokerTypeExists = pyBrokerAccountRepository.existsActiveAccountWithIpAndBrokerType(
-                        ipAddress, brokerType);
+        // Auto-register valid IPv4 in py_broker_ip_config if not already present
+        Optional<PyBrokerIpConfigEntity> ipConfigOpt = pyBrokerIpConfigRepository.findByIpAddress(ipAddress);
+        PyBrokerIpConfigEntity ipConfig;
+        if (ipConfigOpt.isEmpty()) {
+            PyBrokerIpConfigEntity newCfg = new PyBrokerIpConfigEntity();
+            newCfg.setIpAddress(ipAddress);
+            Integer parsedPort = extractPortNumber(rawIp);
+            newCfg.setPortNo(parsedPort != null ? parsedPort : 8082);
+            ipConfig = pyBrokerIpConfigRepository.save(newCfg);
+        } else {
+            ipConfig = ipConfigOpt.get();
+        }
 
-        if (sameBrokerTypeExists) {
-            return ApiResponse.error(409, "IP " + ipAddress
-                    + " is already assigned to an active " + brokerType + " account. One IP can only serve one account per broker type.");
+        // Allow shared platform cloud IP (13.235.14.89 / 127.0.0.1) across accounts
+        boolean isSharedCloudIp = "13.235.14.89".equals(ipAddress) || "127.0.0.1".equals(ipAddress);
+        if (!isSharedCloudIp) {
+            // Rule 2: same broker type cannot be assigned to same IP twice (active accounts)
+            boolean sameBrokerTypeExists = pyBrokerAccountRepository.existsActiveAccountWithIpAndBrokerType(
+                            ipAddress, brokerType);
+
+            if (sameBrokerTypeExists) {
+                return ApiResponse.error(409, "IP " + ipAddress
+                        + " is already assigned to an active " + brokerType + " account. One IP can only serve one account per broker type.");
+            }
         }
         return ApiResponse.success("IP is valid and available for " + brokerType, ipConfig);
     }
