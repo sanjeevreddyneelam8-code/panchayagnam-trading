@@ -46,7 +46,7 @@ public class PySecurityConfig {
     @Autowired
     private AuthRateLimitFilter authRateLimitFilter;
 
-    @Value("#{'${app.cors.allowed-origins:https://sanjeevreddyneelam8-code.github.io,http://localhost:*,http://127.0.0.1:*}'.split(',')}")
+    @Value("#{'${app.cors.allowed-origins:https://sanjeevreddyneelam8-code.github.io,http://localhost:*,http://127.0.0.1:*,https://www.panchayagnam.com,https://panchayagnam.com}'.split(',')}")
     private List<String> allowedOriginPatterns;
 
     @Value("${app.security.public-docs-enabled:false}")
