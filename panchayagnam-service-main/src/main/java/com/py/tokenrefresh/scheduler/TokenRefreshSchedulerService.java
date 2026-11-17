@@ -29,7 +29,7 @@ public class TokenRefreshSchedulerService {
 
     private static final Logger log = LoggerFactory.getLogger(TokenRefreshSchedulerService.class);
 
-    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:false}}")
     private boolean paperTradingEnabled;
 
     @Autowired

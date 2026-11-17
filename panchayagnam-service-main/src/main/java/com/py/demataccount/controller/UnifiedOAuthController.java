@@ -45,7 +45,7 @@ public class UnifiedOAuthController {
 
     private static final Map<String, String> pendingConnects = new ConcurrentHashMap<>();
 
-    @Value("${trading.paper-trading.enabled:true}")
+    @Value("${trading.paper-trading.enabled:false}")
     private boolean paperTradingEnabled;
 
     @Value("${server.port:8081}")

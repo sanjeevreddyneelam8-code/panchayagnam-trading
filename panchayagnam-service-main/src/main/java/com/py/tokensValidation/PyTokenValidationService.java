@@ -33,7 +33,7 @@ public class PyTokenValidationService {
     private static final Logger log = LoggerFactory
             .getLogger(PyTokenValidationService.class);
 
-    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:false}}")
     private boolean paperTradingEnabled;
 
     @Autowired

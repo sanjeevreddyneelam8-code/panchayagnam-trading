@@ -54,7 +54,7 @@ public class BrokerLoginService {
     @Autowired
     private BrokerProfileLoader profileLoader;
 
-    @org.springframework.beans.factory.annotation.Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:true}}")
+    @org.springframework.beans.factory.annotation.Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:false}}")
     private boolean paperTradingEnabled;
 
     private boolean isProtectedDemoAccount(DematAccountAddRequest request) {

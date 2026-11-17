@@ -1342,25 +1342,25 @@ class _IndividualExecutionScreenState extends State<IndividualExecutionScreen>
                   ),
                   _vSep(),
                   Tooltip(
-                    message: 'Paper Trading Mode: orders are executed virtually with simulation funds. Real money live trading is currently locked by safety gate.',
+                    message: 'Direct Live Trading Active: Orders execute directly on connected Broker Demats via Dedicated Static IP Gateway.',
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFF59E0B)),
+                        border: Border.all(color: const Color(0xFF10B981)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.shield_outlined, size: 14, color: Color(0xFFB45309)),
+                          Icon(Icons.fiber_manual_record_rounded, size: 12, color: Color(0xFF059669)),
                           SizedBox(width: 5),
                           Text(
-                            'PAPER TRADING',
+                            'DIRECT LIVE TRADING',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF92400E),
+                              color: Color(0xFF065F46),
                               letterSpacing: 0.5,
                             ),
                           ),

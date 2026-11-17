@@ -18,10 +18,10 @@ public class PaperTradingService {
 
     private static final Logger log = LoggerFactory.getLogger(PaperTradingService.class);
 
-    @Value("${trading.paper-trading.enabled:true}")
+    @Value("${trading.paper-trading.enabled:false}")
     private boolean paperTradingEnabled;
 
-    @Value("${trading.live-trading.enabled:false}")
+    @Value("${trading.live-trading.enabled:true}")
     private boolean liveTradingEnabled;
 
     /**

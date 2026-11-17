@@ -18,7 +18,8 @@ USER pybroker
 COPY --from=builder /app/target/py-broker-service-*.jar /app/app.jar
 
 ENV PORT=8082 \
-    TRADING_PAPER_TRADING_ENABLED=true \
+    TRADING_PAPER_TRADING_ENABLED=false \
+    TRADING_LIVE_TRADING_ENABLED=true \
     JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
 EXPOSE 8082

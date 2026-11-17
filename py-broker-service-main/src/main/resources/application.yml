@@ -23,7 +23,9 @@ smartapi:
 
 trading:
   paper-trading:
-    enabled: ${PAPER_TRADING_ENABLED:true}
+    enabled: ${PAPER_TRADING_ENABLED:false}
+  live-trading:
+    enabled: ${LIVE_TRADING_ENABLED:true}
 
 management:
   endpoints:

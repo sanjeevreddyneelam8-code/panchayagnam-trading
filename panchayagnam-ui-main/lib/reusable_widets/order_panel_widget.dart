@@ -231,26 +231,26 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Simulation banner
+            // ── Live Trading banner ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF59E0B)),
+                border: Border.all(color: const Color(0xFF10B981)),
               ),
               child: Row(
                 children: const [
-                  Icon(Icons.shield_outlined, size: 18, color: Color(0xFFB45309)),
+                  Icon(Icons.fiber_manual_record_rounded, size: 14, color: Color(0xFF059669)),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'PAPER TRADING (SIMULATION)\nVirtual order — Zero financial risk',
+                      'DIRECT LIVE TRADING ACTIVE\nReal order routed directly to broker Demat via Static IP (13.235.14.89)',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF92400E),
+                        color: Color(0xFF065F46),
                       ),
                     ),
                   ),
@@ -348,23 +348,23 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
               ),
             ),
 
-            // ── Paper Trading simulation banner ─────────────────────────────
+            // ── Direct Live Trading banner ──────────────────────────────────
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Icon(Icons.shield_outlined, size: 13, color: Color(0xFFB45309)),
+                  Icon(Icons.fiber_manual_record_rounded, size: 10, color: Color(0xFF059669)),
                   SizedBox(width: 5),
                   Text(
-                    'Paper Trading Mode (Simulated Execution — Zero Risk)',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+                    'Direct Live Broker Trading Active (Dedicated Static IP Gateway)',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
                   ),
                 ],
               ),

@@ -14,9 +14,13 @@ services:
       - key: SERVER_PORT
         value: 8080
       - key: PAPER_TRADING_ENABLED
+        value: "false"
+      - key: TRADING_PAPER_TRADING_ENABLED
+        value: "false"
+      - key: LIVE_TRADING_ENABLED
         value: "true"
       - key: TRADING_LIVE_TRADING_ENABLED
-        value: "false"
+        value: "true"
       - key: TWOFACTOR_ENABLED
         value: "false"
       - key: TWILIO_ENABLED
