@@ -891,10 +891,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                 elevation: 2,
                               ),
                               child: _isSubmitting
-                                  ? const Row(
+                                  ? Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        SizedBox(
+                                        const SizedBox(
                                           width: 18,
                                           height: 18,
                                           child: CircularProgressIndicator(
@@ -902,8 +902,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                             color: Colors.white,
                                           ),
                                         ),
-                                        SizedBox(width: 10),
-                                        Text(
+                                        const SizedBox(width: 10),
+                                        const Text(
                                           'PLACING LIVE ORDER...',
                                           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
                                         ),

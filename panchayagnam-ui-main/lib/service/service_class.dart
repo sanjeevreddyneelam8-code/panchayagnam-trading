@@ -443,7 +443,11 @@ class ServiceClass {
       _syncAccountToLocal(request, actionType);
       // Immediately refresh authoritative accounts from server so real DB accId is stored
       try {
-        await fetchDematAccountsApi(request.pyUserId);
+        if (request.pyUserId != null) {
+          await fetchDematAccountsApi(request.pyUserId!);
+        } else {
+          CopyTradingEngine().syncWithStorage();
+        }
       } catch (_) {
         CopyTradingEngine().syncWithStorage();
       }
