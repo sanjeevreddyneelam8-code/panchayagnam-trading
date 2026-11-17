@@ -8,10 +8,41 @@ class CopyTradeReceiptDialog extends StatelessWidget {
   const CopyTradeReceiptDialog({super.key, required this.receipt});
 
   static void show(BuildContext context, CopyExecutionReceipt receipt) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
-      builder: (ctx) => CopyTradeReceiptDialog(receipt: receipt),
+    final leg = receipt.legs.isNotEmpty ? receipt.legs.first : null;
+    final brokerInfo = leg != null ? ' via ${leg.broker} (${leg.clientId})' : '';
+    final orderIdInfo = leg != null ? ' • Order ID: #${leg.orderId}' : '';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order Placed: ${receipt.masterSide} ${receipt.masterQty} Qty ${receipt.symbol}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Filled @ ₹${receipt.executionPrice.toStringAsFixed(2)}$brokerInfo$orderIdInfo',
+                    style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      ),
     );
   }
 

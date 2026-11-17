@@ -260,42 +260,38 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     );
 
     if (mounted) {
-      if (receipt.totalAccountsFilled > 1) {
-        CopyTradeReceiptDialog.show(context, receipt);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Order Placed: $_side $_quantity Qty ${widget.symbol}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Filled @ ₹${effectivePrice.toStringAsFixed(2)} via ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) • Order ID: #${receipt.legs.first.orderId}',
-                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
-                      ),
-                    ],
-                  ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order Placed: $_side $_quantity Qty ${widget.symbol}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Filled @ ₹${effectivePrice.toStringAsFixed(2)} via ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) • Order ID: #${receipt.legs.first.orderId}',
+                      style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF059669),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 4),
+              ),
+            ],
           ),
-        );
-      }
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 

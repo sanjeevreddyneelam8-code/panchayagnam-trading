@@ -335,90 +335,58 @@ class ServiceClass {
 
   static const String _permanentAccountsStorageKey = 'py_permanent_demat_accounts_v2';
 
-  static List<Map<String, dynamic>> _seed35BrokerAccounts() {
-    const brokers = [
-      ('Dhan Pro Master', 'DHAN_PRO_101', 'DHAN', 2500000.0, true, 'Master Desk'),
-      ('AngelOne Alpha Demat', 'ANGEL_ACC_102', 'ANGELONE', 1500000.0, false, 'Alpha Equity Desk'),
-      ('Zerodha Kite Beta', 'KITE_ACC_103', 'ZERODHA', 2000000.0, false, 'Nifty Straddle'),
-      ('Upstox Pro Gamma', 'UPSTX_ACC_104', 'UPSTOX', 1250000.0, false, 'Delta Hedge'),
-      ('Fyers API v3 Desk', 'FYERS_ACC_105', 'FYERS', 1000000.0, false, 'Gamma Momentum'),
-      ('Motilal Oswal Prime', 'MOTILAL_ACC_106', 'MOTILAL', 1800000.0, false, 'Institutional Pool'),
-      ('Kotak Neo Express', 'KOTAK_ACC_107', 'KOTAKNEO', 1100000.0, false, 'Zero-Brokerage F&O'),
-      ('Alice Blue ANT Pro', 'ALICE_ACC_108', 'ALICEBLUE', 950000.0, false, 'Multi-Lot Copier'),
-      ('Profitmart Diamond', 'PROFIT_ACC_109', 'PROFITMART', 800000.0, false, 'Margin Scalper'),
-      ('Goodwill Giga Desk', 'GOODWL_ACC_110', 'GOODWILL', 850000.0, false, 'MCX & F&O Desk'),
-      ('Groww Direct Desk', 'GROWW_ACC_111', 'GROWW', 750000.0, false, 'Retail Mirror'),
-      ('5Paisa Xstream Pro', 'PAISA5_ACC_112', 'FIVEPAISA', 650000.0, false, 'Fast Algo Mirror'),
-      ('ICICI Direct Breeze', 'ICICI_ACC_113', 'ICICIDIRECT', 2200000.0, false, 'HNI Bank Pool'),
-      ('HDFC Sky Prime', 'HDFCSKY_114', 'HDFCSKY', 1600000.0, false, 'Banking Core'),
-      ('Axis Direct OpenAPI', 'AXIS_ACC_115', 'AXISDIRECT', 1400000.0, false, 'Swing Cash Desk'),
-      ('SBI Securities Smart', 'SBI_ACC_116', 'SBISEC', 1200000.0, false, 'PSU Equity Desk'),
-      ('Sharekhan Espresso', 'SHARE_ACC_117', 'SHAREKHAN', 900000.0, false, 'Positional Options'),
-      ('IIFL Blaze Terminal', 'IIFL_ACC_118', 'IIFL', 1050000.0, false, 'Quant Arb Desk'),
-      ('Paytm Money OpenAPI', 'PAYTM_ACC_119', 'PAYTMMONEY', 600000.0, false, 'Micro Lot Copier'),
-      ('Shoonya Finvasia', 'SHOONYA_120', 'SHOONYA', 1150000.0, false, 'Zero Cost Algo'),
-      ('Flattrade Pi Zero', 'FLAT_ACC_121', 'FLATTRADE', 700000.0, false, 'Scalping Child'),
-      ('Nuvama WealthTech', 'NUVAMA_ACC_122', 'NUVAMA', 3000000.0, false, 'Prop Desk Tier-1'),
-      ('Anand Rathi TradeXp', 'ARATHI_123', 'ANANDRATHI', 1300000.0, false, 'Commodities Desk'),
-      ('Choice Broking Jiffy', 'CHOICE_124', 'CHOICE', 720000.0, false, 'Family Account 1'),
-      ('Samco StockNote', 'SAMCO_ACC_125', 'SAMCO', 880000.0, false, 'Breakout Child'),
-      ('Espresso TurboAPI', 'ESPR_ACC_126', 'ESPRESSO', 550000.0, false, 'Intraday Mirror'),
-      ('Firstock Connect', 'FIRST_ACC_127', 'FIRSTOCK', 680000.0, false, 'Fast Order Router'),
-      ('Tradejini CubePlus', 'TJINI_ACC_128', 'TRADEJINI', 920000.0, false, 'Low Latency F&O'),
-      ('Jainam Duck Pro', 'JAINAM_129', 'JAINAM', 1450000.0, false, 'HNI Desk West'),
-      ('MasterTrust Swift', 'MTRUST_130', 'MASTERTRUST', 1000000.0, false, 'North Desk Child'),
-      ('SMC Global Ace', 'SMC_ACC_131', 'SMCGLOBAL', 1120000.0, false, 'Hedging Child'),
-      ('Bajaj Broking Hub', 'BAJAJ_ACC_132', 'BAJAJ', 960000.0, false, 'MTF & Cash Child'),
-      ('RMoney Quickso API', 'RMONEY_133', 'RMONEY', 640000.0, false, 'Arbitrage Child'),
-      ('Aditya Birla Trade', 'ABM_ACC_134', 'ADITYABIRLA', 1280000.0, false, 'Wealth Mirror'),
-      ('Stoxkart Pro Desk', 'STOX_ACC_135', 'STOXKART', 590000.0, false, 'High Speed Copier'),
-    ];
-
-    final list = <Map<String, dynamic>>[];
-    for (int i = 0; i < brokers.length; i++) {
-      final (name, cid, broker, cash, isOwn, assigned) = brokers[i];
-      list.add({
-        'id': 101 + i,
-        'userName': name,
-        'clientId': cid,
-        'brokerType': broker,
-        'availableCash': cash,
-        'active': true,
-        'isOwnAccount': isOwn,
-        'createdDate': '2026-03-${((i % 28) + 1).toString().padLeft(2, '0')}',
-        'isAdmin': isOwn,
-        'mpin': '1234',
-        'apiKey': '${broker.toLowerCase()}_live_key_${101 + i}',
-        'totpKey': 'JBSWY3DPEHPK3PXP',
-        'password': '',
-        'mobileNumber': '955338${(2135 + i).toString()}',
-        'assignedTo': assigned,
-        'ip': '13.235.14.89',
-        'tokenUpdated': true,
-        'lastLoginStatus': 'SUCCESS',
-      });
-    }
-    return list;
-  }
-
   List<DematAccount> _getPermanentLocalAccounts() {
     try {
       final raw = html.window.localStorage[_permanentAccountsStorageKey];
       if (raw != null && raw.isNotEmpty) {
-        final decoded = jsonDecode(raw) as List<dynamic>;
-        if (decoded.length >= 30) {
-          return decoded
-              .map((e) => DematAccount.fromJson(Map<String, dynamic>.from(e as Map)))
-              .toList();
-        }
+        final decoded = (jsonDecode(raw) as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .where((a) {
+              final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
+              return cid.isNotEmpty &&
+                  !cid.startsWith('DHAN_PRO_') &&
+                  !cid.startsWith('ANGEL_ACC_') &&
+                  !cid.startsWith('KITE_ACC_') &&
+                  !cid.startsWith('UPSTX_ACC_') &&
+                  !cid.startsWith('FYERS_ACC_') &&
+                  !cid.startsWith('MOTILAL_ACC_') &&
+                  !cid.startsWith('KOTAK_ACC_') &&
+                  !cid.startsWith('PROFIT_ACC_') &&
+                  !cid.startsWith('GOODWL_ACC_') &&
+                  !cid.startsWith('GROWW_ACC_') &&
+                  !cid.startsWith('PAISA5_ACC_') &&
+                  !cid.startsWith('ICICI_ACC_') &&
+                  !cid.startsWith('HDFCSKY_') &&
+                  !cid.startsWith('AXIS_ACC_') &&
+                  !cid.startsWith('SBI_ACC_') &&
+                  !cid.startsWith('SHARE_ACC_') &&
+                  !cid.startsWith('IIFL_ACC_') &&
+                  !cid.startsWith('PAYTM_ACC_') &&
+                  !cid.startsWith('SHOONYA_') &&
+                  !cid.startsWith('FLAT_ACC_') &&
+                  !cid.startsWith('NUVAMA_ACC_') &&
+                  !cid.startsWith('ARATHI_') &&
+                  !cid.startsWith('CHOICE_') &&
+                  !cid.startsWith('SAMCO_ACC_') &&
+                  !cid.startsWith('ESPR_ACC_') &&
+                  !cid.startsWith('FIRST_ACC_') &&
+                  !cid.startsWith('TJINI_ACC_') &&
+                  !cid.startsWith('JAINAM_') &&
+                  !cid.startsWith('MTRUST_') &&
+                  !cid.startsWith('SMC_ACC_') &&
+                  !cid.startsWith('BAJAJ_ACC_') &&
+                  !cid.startsWith('RMONEY_') &&
+                  !cid.startsWith('ABM_ACC_') &&
+                  !cid.startsWith('STOX_ACC_') &&
+                  cid != '1100345678' &&
+                  cid != 'AG_LIVE';
+            })
+            .toList();
+        return decoded.map((e) => DematAccount.fromJson(e)).toList();
       }
     } catch (_) {}
 
-    final seeded = _seed35BrokerAccounts();
-    try {
-      html.window.localStorage[_permanentAccountsStorageKey] = jsonEncode(seeded);
-    } catch (_) {}
-    return seeded.map((e) => DematAccount.fromJson(e)).toList();
+    return <DematAccount>[];
   }
 
   void _savePermanentLocalAccounts(List<Map<String, dynamic>> accounts) {
@@ -439,8 +407,15 @@ class ServiceClass {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List data = json['data'] ?? [];
-        if (data.length >= 30) {
-          return data.map((e) => DematAccount.fromJson(e)).toList();
+        final realAccounts = data
+            .map((e) => DematAccount.fromJson(e))
+            .where((a) =>
+                !a.clientId.startsWith('DHAN_PRO_') &&
+                a.clientId != 'AG_LIVE' &&
+                a.clientId != '1100345678')
+            .toList();
+        if (realAccounts.isNotEmpty) {
+          return realAccounts;
         }
       }
     } catch (_) {}
@@ -463,34 +438,41 @@ class ServiceClass {
             headers: AuthHeaderHelper.getHeaders(),
             body: jsonEncode(request.toJson()),
           )
-          .timeout(const Duration(seconds: 6));
+          .timeout(const Duration(seconds: 15));
 
-      return _handleResponse(response);
-    } catch (_) {
-      // Permanent local persistence when operating standalone / GitHub Pages
-      List<Map<String, dynamic>> current;
-      try {
-        final raw = html.window.localStorage[_permanentAccountsStorageKey];
-        if (raw != null && raw.isNotEmpty) {
-          current = List<Map<String, dynamic>>.from(
-            (jsonDecode(raw) as List).map((e) => Map<String, dynamic>.from(e as Map)),
-          );
-        } else {
-          current = _seed35BrokerAccounts();
-        }
-      } catch (_) {
-        current = _seed35BrokerAccounts();
+      final res = _handleResponse(response);
+      _syncAccountToLocal(request, actionType);
+      return res;
+    } on ServiceException {
+      // Re-throw service exceptions (e.g. 401 Unauthorized, invalid TOTP/API Key)
+      // so user gets clear feedback rather than fake-accepting bad credentials!
+      rethrow;
+    } catch (e) {
+      throw ServiceException('Unable to verify credentials with server: $e');
+    }
+  }
+
+  void _syncAccountToLocal(AddDematAccountRequest request, String actionType) {
+    try {
+      List<Map<String, dynamic>> current = [];
+      final raw = html.window.localStorage[_permanentAccountsStorageKey];
+      if (raw != null && raw.isNotEmpty) {
+        current = List<Map<String, dynamic>>.from(
+          (jsonDecode(raw) as List).map((e) => Map<String, dynamic>.from(e as Map)),
+        ).where((a) {
+          final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
+          return cid.isNotEmpty &&
+              !cid.startsWith('DHAN_PRO_') &&
+              !cid.startsWith('ANGEL_ACC_') &&
+              cid != '1100345678' &&
+              cid != 'AG_LIVE';
+        }).toList();
       }
 
       final action = actionType.toUpperCase();
       if (action == 'DELETE') {
         current.removeWhere(
           (a) => (request.id != null && a['id'] == request.id) || a['clientId'] == request.clientId,
-        );
-        _savePermanentLocalAccounts(current);
-        return const AddDematAccountResponse(
-          success: true,
-          message: 'Broker account removed permanently.',
         );
       } else if (action == 'UPDATE') {
         final idx = current.indexWhere(
@@ -513,14 +495,9 @@ class ServiceClass {
             'lastLoginStatus': request.isActive ? 'SUCCESS' : 'INACTIVE',
             'tokenUpdated': true,
           };
-          _savePermanentLocalAccounts(current);
         }
-        return const AddDematAccountResponse(
-          success: true,
-          message: 'Broker account updated permanently!',
-        );
       } else {
-        // ADD new permanent account
+        // ADD
         final maxId = current.fold<int>(100, (m, a) => (a['id'] as int? ?? 100) > m ? (a['id'] as int) : m);
         current.add({
           'id': maxId + 1,
@@ -537,20 +514,16 @@ class ServiceClass {
           'totpKey': request.totpReferenceKey,
           'password': request.password,
           'mobileNumber': request.mobileNumber,
-          'assignedTo': (request.isOwn == true) ? 'Master Trading Desk' : 'Connected Strategy Pool',
+          'assignedTo': (request.isOwn == true) ? 'Master Trading Desk' : 'Connected Demat Account',
           'ip': request.ip.isNotEmpty ? request.ip : '13.235.14.89',
           'apiSecretKey': request.apiSecretKey,
           'vendorInfo': request.vendorInfo,
           'tokenUpdated': true,
           'lastLoginStatus': 'SUCCESS',
         });
-        _savePermanentLocalAccounts(current);
-        return AddDematAccountResponse(
-          success: true,
-          message: '${request.brokerType} account ${request.clientId} connected & saved permanently! (${current.length} Total Demats)',
-        );
       }
-    }
+      _savePermanentLocalAccounts(current);
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> validateIpAddress({

@@ -150,6 +150,83 @@ class CopyTradingEngine extends ChangeNotifier {
 
   void syncWithStorage() {
     try {
+      // 1. Read from py_permanent_demat_accounts_v2 (Primary storage used by ChildAccountsTab & ServiceClass)
+      final permRaw = html.window.localStorage['py_permanent_demat_accounts_v2'];
+      if (permRaw != null && permRaw.isNotEmpty) {
+        final decoded = List<Map<String, dynamic>>.from(
+          (jsonDecode(permRaw) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+        );
+        final realAccounts = decoded.where((a) {
+          final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
+          return cid.isNotEmpty &&
+              !cid.startsWith('DHAN_PRO_') &&
+              !cid.startsWith('ANGEL_ACC_') &&
+              !cid.startsWith('KITE_ACC_') &&
+              !cid.startsWith('UPSTX_ACC_') &&
+              !cid.startsWith('FYERS_ACC_') &&
+              !cid.startsWith('MOTILAL_ACC_') &&
+              !cid.startsWith('KOTAK_ACC_') &&
+              !cid.startsWith('PROFIT_ACC_') &&
+              !cid.startsWith('GOODWL_ACC_') &&
+              !cid.startsWith('GROWW_ACC_') &&
+              !cid.startsWith('PAISA5_ACC_') &&
+              !cid.startsWith('ICICI_ACC_') &&
+              !cid.startsWith('HDFCSKY_') &&
+              !cid.startsWith('AXIS_ACC_') &&
+              !cid.startsWith('SBI_ACC_') &&
+              !cid.startsWith('SHARE_ACC_') &&
+              !cid.startsWith('IIFL_ACC_') &&
+              !cid.startsWith('PAYTM_ACC_') &&
+              !cid.startsWith('SHOONYA_') &&
+              !cid.startsWith('FLAT_ACC_') &&
+              !cid.startsWith('NUVAMA_ACC_') &&
+              !cid.startsWith('ARATHI_') &&
+              !cid.startsWith('CHOICE_') &&
+              !cid.startsWith('SAMCO_ACC_') &&
+              !cid.startsWith('ESPR_ACC_') &&
+              !cid.startsWith('FIRST_ACC_') &&
+              !cid.startsWith('TJINI_ACC_') &&
+              !cid.startsWith('JAINAM_') &&
+              !cid.startsWith('MTRUST_') &&
+              !cid.startsWith('SMC_ACC_') &&
+              !cid.startsWith('BAJAJ_ACC_') &&
+              !cid.startsWith('RMONEY_') &&
+              !cid.startsWith('ABM_ACC_') &&
+              !cid.startsWith('STOX_ACC_') &&
+              cid != '1100345678' &&
+              cid != 'AG_LIVE';
+        }).toList();
+
+        if (realAccounts.isNotEmpty) {
+          _accounts.clear();
+          for (final a in realAccounts) {
+            final broker = (a['brokerType'] ?? a['broker'] ?? 'ANGELONE').toString().toUpperCase();
+            final name = (a['userName'] ?? a['nickName'] ?? a['name'] ?? '$broker Demat').toString();
+            final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
+            final isMaster = a['isOwnAccount'] == true || a['isAdmin'] == true;
+            final bal = (a['availableCash'] as num?)?.toDouble() ?? 1000000.0;
+            _accounts.add(
+              ChildAccountConfig(
+                id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}').toString(),
+                name: name,
+                broker: broker,
+                clientId: cid,
+                isMaster: isMaster,
+                multiplier: 1.0,
+                isActive: a['active'] != false,
+                balance: bal,
+                status: 'ONLINE',
+              ),
+            );
+          }
+          if (!_accounts.any((a) => a.isMaster) && _accounts.isNotEmpty) {
+            _accounts.first.isMaster = true;
+          }
+          notifyListeners();
+          return;
+        }
+      }
+
       final saved = html.window.localStorage['panchayagnam_trading_accounts'] ??
           html.window.sessionStorage['custom_trading_accounts'];
       if (saved != null && saved.isNotEmpty) {
@@ -160,6 +237,8 @@ class CopyTradingEngine extends ChangeNotifier {
         final customOnly = decoded.where((a) {
           final cid = (a['loginId'] ?? a['code'] ?? '').toString();
           return cid.isNotEmpty &&
+              !cid.startsWith('DHAN_PRO_') &&
+              !cid.startsWith('ANGEL_ACC_') &&
               cid != '1100345678' &&
               cid != 'FP9876543' &&
               cid != 'AG789012' &&
@@ -169,14 +248,13 @@ class CopyTradingEngine extends ChangeNotifier {
               cid != 'UP662910' &&
               cid != 'MO554433' &&
               cid != 'PM998877' &&
-              cid != 'GW332211';
+              cid != 'GW332211' &&
+              cid != 'AG_LIVE';
         }).toList();
 
-        final accountsToUse = customOnly;
-
-        if (accountsToUse.isNotEmpty) {
+        if (customOnly.isNotEmpty) {
           _accounts.clear();
-          for (final a in accountsToUse) {
+          for (final a in customOnly) {
             final broker = (a['broker'] ?? 'ANGELONE').toString().toUpperCase();
             final name = (a['nickname'] ?? a['name'] ?? '$broker Demat').toString();
             final cid = (a['loginId'] ?? a['code'] ?? '').toString();
@@ -204,6 +282,10 @@ class CopyTradingEngine extends ChangeNotifier {
           return;
         }
       }
+
+      // No accounts connected
+      _accounts.clear();
+      notifyListeners();
     } catch (e) {
       debugPrint('Error syncing CopyTradingEngine with storage: $e');
     }
@@ -342,12 +424,12 @@ class CopyTradingEngine extends ChangeNotifier {
     master.lastLatencyMs = masterLatency;
     master.totalCopiedOrders++;
 
-    // 2. Execute Active Child Legs (if Copy Trading Active)
+    // 2. Execute Active Child Legs (if Copy Trading Active and no specific account was pinned)
     int totalQty = baseQty;
     double totalCapital = masterAmount;
     int latencySum = masterLatency;
 
-    if (_isCopyTradingActive) {
+    if (_isCopyTradingActive && specificAccount == null) {
       for (final child in activeChildAccounts) {
         // Mode filter: If mode is INVERSE, flip side
         String childSide = side;
@@ -395,7 +477,7 @@ class CopyTradingEngine extends ChangeNotifier {
       orderType: orderType,
       productType: productType,
       timestamp: DateTime.now(),
-      totalAccountsTargeted: _isCopyTradingActive ? _accounts.length : 1,
+      totalAccountsTargeted: (specificAccount != null || !_isCopyTradingActive) ? 1 : _accounts.length,
       totalAccountsFilled: legs.length,
       aggregateQty: totalQty,
       aggregateCapital: totalCapital,

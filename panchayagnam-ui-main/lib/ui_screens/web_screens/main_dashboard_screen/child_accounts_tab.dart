@@ -826,7 +826,7 @@ class _ChildAccountsTabState extends State<ChildAccountsTab> {
   // ── Broker filter chips ─────────────────────────────────────────────────────
   Widget _buildBrokerFilterChips() {
     final brokers = [
-      ('ALL', 'All Brokers (35+)', null),
+      ('ALL', 'All Connected Brokers', null),
       ('DHAN', 'Dhan', const Color(0xFFD97706)),
       ('ANGELONE', 'Angel One', const Color(0xFFB45309)),
       ('ZERODHA', 'Zerodha', const Color(0xFFEA580C)),
