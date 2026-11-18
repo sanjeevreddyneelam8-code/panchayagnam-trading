@@ -312,6 +312,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     });
 
     final messenger = ScaffoldMessenger.of(context);
+    LiveMarketDataService().pauseBriefly(const Duration(seconds: 15));
     final endpoint = _side == 'BUY'
         ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
         : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
@@ -440,23 +441,27 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
         );
       }
     } catch (e) {
+      final raw = e.toString();
+      final friendlyErr = raw.contains('Failed to fetch') || raw.contains('XMLHttpRequest')
+          ? 'Broker server is temporarily cooling down from too many requests. Please keep only one Panchayagnam tab open, wait 30 seconds, and click Place Order again.'
+          : 'Unable to reach broker server: $e';
       if (mounted) {
         setState(() {
           _isSubmitting = false;
-          _orderErrorMessage = 'Unable to reach broker server: $e';
+          _orderErrorMessage = friendlyErr;
         });
       }
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Unable to place order with broker server: $e',
+            friendlyErr,
             style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
           ),
           backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 6),
         ),
       );
     }

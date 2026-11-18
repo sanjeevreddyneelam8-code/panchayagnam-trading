@@ -423,9 +423,8 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
 
   void _startLiveTickEngine() {
     _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _tickTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted) return;
-      LiveMarketDataService().fetchNow();
       setState(() {
         _now = DateTime.now();
       });

@@ -338,9 +338,8 @@ class _OptionsChainViewState extends State<OptionsChainView> {
 
   void _startLivePriceTicker() {
     _liveTicker?.cancel();
-    _liveTicker = Timer.periodic(const Duration(seconds: 6), (_) {
+    _liveTicker = Timer.periodic(const Duration(seconds: 25), (_) {
       if (!mounted) return;
-      LiveMarketDataService().fetchNow();
       _fetchLiveOptionChain();
     });
   }

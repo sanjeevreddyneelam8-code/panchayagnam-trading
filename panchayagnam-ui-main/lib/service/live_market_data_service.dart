@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_url_constants.dart';
@@ -52,18 +53,62 @@ class LiveMarketDataService extends ChangeNotifier {
 
   final Map<String, LiveQuote> _quotes = {};
   final Map<String, LiveQuote> _commodities = {};
+  final Map<String, Map<String, dynamic>> _optionChainCache = {};
+  final Map<String, DateTime> _lastOptionChainFetch = {};
+  final Set<String> _inFlightOptionChains = {};
   Timer? _pollTimer;
   bool _isFetching = false;
   bool _isFetchingCommodities = false;
   bool _isLiveConnected = false;
   DateTime? _lastUpdated;
+  DateTime? _lastQuotesFetch;
+  DateTime? _lastCommoditiesFetch;
+  DateTime? _backoffUntil;
+  int _backoffSeconds = 30;
   String _serverOutboundIp = '178.214.212.207';
+
+  static const Duration _quotesPollInterval = Duration(seconds: 20);
+  static const Duration _minQuotesCooldown = Duration(seconds: 15);
+  static const Duration _minCommoditiesCooldown = Duration(seconds: 18);
+  static const Duration _minOptionChainCooldown = Duration(seconds: 18);
 
   bool get isLiveConnected => _isLiveConnected;
   DateTime? get lastUpdated => _lastUpdated;
   String get serverOutboundIp => _serverOutboundIp;
   Map<String, LiveQuote> get allQuotes => Map.unmodifiable(_quotes);
   Map<String, LiveQuote> get allCommodities => Map.unmodifiable(_commodities);
+
+  bool get _isTabHidden {
+    try {
+      return html.document.hidden == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get _isBackingOff {
+    final until = _backoffUntil;
+    return until != null && DateTime.now().isBefore(until);
+  }
+
+  void _triggerBackoff({int? overrideSeconds}) {
+    final secs = overrideSeconds ?? _backoffSeconds;
+    _backoffUntil = DateTime.now().add(Duration(seconds: secs));
+    _backoffSeconds = (_backoffSeconds * 2).clamp(30, 180);
+  }
+
+  void _resetBackoff() {
+    _backoffUntil = null;
+    _backoffSeconds = 30;
+  }
+
+  /// Temporarily pauses background polling (e.g., while placing a live broker order)
+  void pauseBriefly([Duration duration = const Duration(seconds: 12)]) {
+    final target = DateTime.now().add(duration);
+    if (_backoffUntil == null || target.isAfter(_backoffUntil!)) {
+      _backoffUntil = target;
+    }
+  }
 
   LiveQuote? getQuote(String rawSymbol) {
     final clean = rawSymbol
@@ -90,19 +135,25 @@ class LiveMarketDataService extends ChangeNotifier {
     if (_pollTimer != null && _pollTimer!.isActive) return;
     _fetchServerModeAndIp();
     fetchNow();
-    fetchCommoditiesNow();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Poll quotes every 20s only while the tab is visible to prevent Render/Cloudflare 429 rate limits.
+    _pollTimer = Timer.periodic(_quotesPollInterval, (_) {
+      if (_isTabHidden || _isBackingOff) return;
       fetchNow();
-      fetchCommoditiesNow();
     });
   }
 
   Future<void> _fetchServerModeAndIp() async {
+    if (_isBackingOff) return;
     try {
       final resp = await http
           .get(Uri.parse('${ApiUrls.baseUrl}/api/v1/market/mode'))
           .timeout(const Duration(seconds: 8));
+      if (resp.statusCode == 429 || resp.statusCode == 503) {
+        _triggerBackoff();
+        return;
+      }
       if (resp.statusCode == 200) {
+        _resetBackoff();
         final decoded = jsonDecode(resp.body);
         if (decoded is Map<String, dynamic>) {
           final ip = (decoded['serverOutboundIp'] ?? '').toString().trim();
@@ -112,18 +163,33 @@ class LiveMarketDataService extends ChangeNotifier {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      _triggerBackoff();
+    }
   }
 
-  Future<void> fetchNow() async {
+  Future<void> fetchNow({bool force = false}) async {
     if (_isFetching) return;
+    if (!force && (_isTabHidden || _isBackingOff)) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastQuotesFetch != null &&
+        now.difference(_lastQuotesFetch!) < _minQuotesCooldown) {
+      return;
+    }
     _isFetching = true;
+    _lastQuotesFetch = now;
     try {
       final resp = await http
           .get(Uri.parse('${ApiUrls.baseUrl}/api/v1/market/quotes'))
           .timeout(const Duration(seconds: 10));
 
+      if (resp.statusCode == 429 || resp.statusCode == 503) {
+        _triggerBackoff();
+        return;
+      }
       if (resp.statusCode == 200) {
+        _resetBackoff();
         final decoded = jsonDecode(resp.body);
         if (decoded is Map<String, dynamic> && decoded['data'] is Map) {
           final dataMap = Map<String, dynamic>.from(decoded['data'] as Map);
@@ -145,20 +211,34 @@ class LiveMarketDataService extends ChangeNotifier {
         }
       }
     } catch (_) {
+      _triggerBackoff();
     } finally {
       _isFetching = false;
     }
   }
 
-  Future<void> fetchCommoditiesNow() async {
+  Future<void> fetchCommoditiesNow({bool force = false}) async {
     if (_isFetchingCommodities) return;
+    if (!force && (_isTabHidden || _isBackingOff)) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastCommoditiesFetch != null &&
+        now.difference(_lastCommoditiesFetch!) < _minCommoditiesCooldown) {
+      return;
+    }
     _isFetchingCommodities = true;
+    _lastCommoditiesFetch = now;
     try {
       final resp = await http
           .get(Uri.parse('${ApiUrls.baseUrl}/api/v1/market/commodities'))
           .timeout(const Duration(seconds: 12));
 
+      if (resp.statusCode == 429 || resp.statusCode == 503) {
+        _triggerBackoff();
+        return;
+      }
       if (resp.statusCode == 200) {
+        _resetBackoff();
         final decoded = jsonDecode(resp.body);
         if (decoded is Map<String, dynamic> && decoded['data'] is Map) {
           final dataMap = Map<String, dynamic>.from(decoded['data'] as Map);
@@ -180,24 +260,53 @@ class LiveMarketDataService extends ChangeNotifier {
         }
       }
     } catch (_) {
+      _triggerBackoff();
     } finally {
       _isFetchingCommodities = false;
     }
   }
 
-  Future<Map<String, dynamic>?> fetchOptionChain(String underlying) async {
+  Future<Map<String, dynamic>?> fetchOptionChain(String underlying, {bool force = false}) async {
+    final key = underlying.toUpperCase().trim();
+    if (_inFlightOptionChains.contains(key)) {
+      return _optionChainCache[key];
+    }
+    if (!force && (_isTabHidden || _isBackingOff)) {
+      return _optionChainCache[key];
+    }
+    final now = DateTime.now();
+    final lastFetch = _lastOptionChainFetch[key];
+    if (!force &&
+        lastFetch != null &&
+        now.difference(lastFetch) < _minOptionChainCooldown &&
+        _optionChainCache.containsKey(key)) {
+      return _optionChainCache[key];
+    }
+
+    _inFlightOptionChains.add(key);
+    _lastOptionChainFetch[key] = now;
     try {
       final resp = await http
-          .get(Uri.parse('${ApiUrls.baseUrl}/api/v1/market/option-chain?underlying=${Uri.encodeComponent(underlying)}'))
+          .get(Uri.parse('${ApiUrls.baseUrl}/api/v1/market/option-chain?underlying=${Uri.encodeComponent(key)}'))
           .timeout(const Duration(seconds: 12));
+      if (resp.statusCode == 429 || resp.statusCode == 503) {
+        _triggerBackoff();
+        return _optionChainCache[key];
+      }
       if (resp.statusCode == 200) {
+        _resetBackoff();
         final decoded = jsonDecode(resp.body);
         if (decoded is Map<String, dynamic> && decoded['status'] == 'SUCCESS') {
+          _optionChainCache[key] = decoded;
           return decoded;
         }
       }
-    } catch (_) {}
-    return null;
+    } catch (_) {
+      _triggerBackoff();
+    } finally {
+      _inFlightOptionChains.remove(key);
+    }
+    return _optionChainCache[key];
   }
 
   Future<double?> fetchLiveFunds({String? clientId}) async {

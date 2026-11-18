@@ -523,13 +523,10 @@ class _MarketWatchViewState extends State<MarketWatchView> {
     }
   }
 
-  /// Poll real live NSE/Angel One quotes every 5 seconds
+  /// Central LiveMarketDataService listener delivers live NSE/Angel One updates
   void _startLiveTickerSimulation() {
     _liveTickerTimer?.cancel();
-    _liveTickerTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_isDisposed || !mounted) return;
-      LiveMarketDataService().fetchNow();
-    });
+    LiveMarketDataService().start();
   }
 
   Future<void> _initializeMarketData() async {

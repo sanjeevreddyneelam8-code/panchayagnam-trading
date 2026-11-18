@@ -427,10 +427,6 @@ class _PositionsViewState extends State<PositionsView> {
     LiveMarketDataService().addListener(_syncLivePositions);
     LiveMarketDataService().start();
     _syncLivePositions();
-    _ticker = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      LiveMarketDataService().fetchNow();
-    });
   }
 
   void _syncLivePositions() {

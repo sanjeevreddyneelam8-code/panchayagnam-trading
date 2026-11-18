@@ -680,7 +680,7 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
 
   void _startLiveTicks() {
     _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _tickTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       LiveMarketDataService().fetchCommoditiesNow();
       setState(() {
