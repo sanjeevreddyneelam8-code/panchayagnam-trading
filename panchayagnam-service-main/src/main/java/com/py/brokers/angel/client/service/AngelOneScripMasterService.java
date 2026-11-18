@@ -70,6 +70,7 @@ public class AngelOneScripMasterService {
     private final Map<String, List<ScripEntry>> optionsByUnderlying = new ConcurrentHashMap<>();
 
     private volatile long lastLoadedMs = 0L;
+    private volatile long lastAttemptMs = 0L;
     private final Object loadLock = new Object();
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -78,8 +79,11 @@ public class AngelOneScripMasterService {
 
     public void ensureLoaded() {
         long now = System.currentTimeMillis();
-        // Refresh every 6 hours
+        // Refresh every 6 hours; back off 60s after a failed attempt
         if (!equityMap.isEmpty() && (now - lastLoadedMs) < 21_600_000L) {
+            return;
+        }
+        if (equityMap.isEmpty() && lastAttemptMs > 0 && (now - lastAttemptMs) < 60_000L) {
             return;
         }
         synchronized (loadLock) {
@@ -87,17 +91,21 @@ public class AngelOneScripMasterService {
             if (!equityMap.isEmpty() && (now - lastLoadedMs) < 21_600_000L) {
                 return;
             }
+            if (equityMap.isEmpty() && lastAttemptMs > 0 && (now - lastAttemptMs) < 60_000L) {
+                return;
+            }
+            lastAttemptMs = now;
             loadStreaming();
         }
     }
 
     private void loadStreaming() {
         long start = System.currentTimeMillis();
-        Map<String, ScripEntry> newEquities = new HashMap<>(4096);
-        Map<String, List<ScripEntry>> newFutures = new HashMap<>(128);
-        Map<String, List<ScripEntry>> newOptions = new HashMap<>(64);
+        Map<String, ScripEntry> newEquities = new HashMap<>(2500);
+        Map<String, List<ScripEntry>> newFutures = new HashMap<>(64);
+        Map<String, List<ScripEntry>> newOptions = new HashMap<>(16);
         LocalDate today = LocalDate.now();
-        LocalDate maxOptionDate = today.plusDays(65); // Keep nearest ~2 months of options to save RAM
+        LocalDate maxOptionDate = today.plusDays(35); // Keep nearest ~1 month of index options to minimize RAM
 
         try {
             HttpRequest req = HttpRequest.newBuilder()
@@ -151,14 +159,10 @@ public class AngelOneScripMasterService {
                     String nameUpper = name.toUpperCase();
                     String instUpper = instType.toUpperCase();
 
-                    // 1. NSE / BSE Equities
+                    // 1. NSE Equities
                     if ("NSE".equals(ex) && symUpper.endsWith("-EQ")) {
                         String base = symUpper.substring(0, symUpper.length() - 3);
                         newEquities.put("NSE:" + base, new ScripEntry(token, symbol, nameUpper, ex, "EQ", "", null, 0, 1));
-                        continue;
-                    }
-                    if ("BSE".equals(ex) && instUpper.isEmpty() && !nameUpper.isEmpty()) {
-                        newEquities.putIfAbsent("BSE:" + nameUpper, new ScripEntry(token, symbol, nameUpper, ex, "EQ", "", null, 0, 1));
                         continue;
                     }
 
@@ -174,13 +178,10 @@ public class AngelOneScripMasterService {
                         continue;
                     }
 
-                    // 3. Active Index Options (NFO/BFO OPTIDX) & MCX Commodity Options (OPTFUT)
-                    boolean isTrackedIdxOpt = ("NFO".equals(ex) || "BFO".equals(ex))
+                    // 3. Active Index Options (NFO/BFO OPTIDX)
+                    if (("NFO".equals(ex) || "BFO".equals(ex))
                             && "OPTIDX".equals(instUpper)
-                            && TRACKED_INDICES.contains(nameUpper);
-                    boolean isMcxOpt = "MCX".equals(ex) && "OPTFUT".equals(instUpper);
-
-                    if (isTrackedIdxOpt || isMcxOpt) {
+                            && TRACKED_INDICES.contains(nameUpper)) {
                         LocalDate expDate = parseExpiry(expiry);
                         if (expDate != null && !expDate.isBefore(today) && !expDate.isAfter(maxOptionDate)) {
                             int strikeInt = parseStrike(strikeRaw);
