@@ -139,11 +139,41 @@ public class LiveMarketDataController {
     private volatile String lastSource = "LIVE_NSE";
     private static final long CACHE_TTL_MS = 3500L;
 
-    // MCX commodity active future token cache (refreshed every 30 min)
+    // MCX commodity active future token cache (refreshed every 6 hours)
     private final Map<String, String[]> mcxTokenCache = new ConcurrentHashMap<>(); // sym -> [token, tradingsymbol]
     private volatile long lastMcxTokenResolveMs = 0L;
+    private volatile boolean mcxWarmupRunning = false;
     private volatile Map<String, Map<String, Object>> cachedCommodityQuotes = new ConcurrentHashMap<>();
     private volatile long lastCommodityCacheMs = 0L;
+
+    // Rate limiter lock for Angel One searchScrip (max ~2 req/sec to avoid AB1004/rate-limit)
+    private final Object searchRateLock = new Object();
+    private volatile long lastSearchEpochMs = 0L;
+
+    private JSONArray angelSearchScrip(String apiKey, String accessToken, String exchange, String query) {
+        synchronized (searchRateLock) {
+            long waitMs = 450L - (System.currentTimeMillis() - lastSearchEpochMs);
+            if (waitMs > 0) {
+                try {
+                    Thread.sleep(waitMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            lastSearchEpochMs = System.currentTimeMillis();
+            try {
+                JSONObject sp = new JSONObject();
+                sp.put("exchange", exchange);
+                sp.put("searchscrip", query);
+                JSONObject resp = apiRequestHandler.postRequest(
+                        apiKey, routes.get("api.search.script.data"), sp, accessToken);
+                return resp != null ? resp.optJSONArray("data") : null;
+            } catch (Throwable e) {
+                log.debug("searchScrip failed for {} {}: {}", exchange, query, e.getMessage());
+                return null;
+            }
+        }
+    }
 
     // Option chain token cache: key = underlying_atm -> { expiry, tokenMap }
     private final Map<String, Map<String, Object>> optionTokenCache = new ConcurrentHashMap<>();
@@ -356,51 +386,30 @@ public class LiveMarketDataController {
         }
 
         long now = System.currentTimeMillis();
-        if (mcxTokenCache.isEmpty() || (now - lastMcxTokenResolveMs) > 1_800_000L) {
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for (String comm : DEFAULT_COMMODITIES) {
-                futures.add(CompletableFuture.runAsync(() -> {
-                    try {
-                        JSONObject sp = new JSONObject();
-                        sp.put("exchange", "MCX");
-                        sp.put("searchscrip", comm);
-                        JSONObject resp = apiRequestHandler.postRequest(
-                                apiKey, routes.get("api.search.script.data"), sp, accessToken);
-                        JSONArray arr = resp != null ? resp.optJSONArray("data") : null;
-                        if (arr != null && arr.length() > 0) {
-                            JSONObject best = null;
-                            for (int i = 0; i < arr.length(); i++) {
-                                JSONObject item = arr.optJSONObject(i);
-                                if (item == null) continue;
-                                String ts = item.optString("tradingsymbol", "").toUpperCase();
-                                if (ts.startsWith(comm) && ts.endsWith("FUT")) {
-                                    // Distinguish CRUDEOIL vs CRUDEOILM, GOLD vs GOLDM, SILVER vs SILVERM, ZINC vs ZINCMINI
-                                    String after = ts.substring(comm.length());
-                                    if (!after.isEmpty() && Character.isDigit(after.charAt(0))) {
-                                        best = item;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (best != null) {
-                                String tok = best.optString("symboltoken", "");
-                                String ts = best.optString("tradingsymbol", "");
-                                if (!tok.isBlank()) {
-                                    mcxTokenCache.put(comm, new String[]{tok, ts});
-                                }
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
-                }, executor));
-            }
-            try {
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(8, TimeUnit.SECONDS);
-                if (!mcxTokenCache.isEmpty()) {
-                    lastMcxTokenResolveMs = now;
+        boolean cacheStale = (now - lastMcxTokenResolveMs) > 21_600_000L;
+        if ((mcxTokenCache.size() < 12 || cacheStale) && !mcxWarmupRunning) {
+            mcxWarmupRunning = true;
+            // Resolve top 4 commodities immediately if cache is empty, then resolve the rest in background
+            List<String> priority = List.of("CRUDEOIL", "GOLD", "SILVER", "NATURALGAS");
+            if (mcxTokenCache.isEmpty()) {
+                for (String comm : priority) {
+                    resolveMcxSymbol(apiKey, accessToken, comm);
                 }
-            } catch (Exception ignored) {
             }
+            CompletableFuture.runAsync(() -> {
+                try {
+                    for (String comm : DEFAULT_COMMODITIES) {
+                        if (!mcxTokenCache.containsKey(comm) || cacheStale) {
+                            resolveMcxSymbol(apiKey, accessToken, comm);
+                        }
+                    }
+                    if (!mcxTokenCache.isEmpty()) {
+                        lastMcxTokenResolveMs = System.currentTimeMillis();
+                    }
+                } finally {
+                    mcxWarmupRunning = false;
+                }
+            }, executor);
         }
 
         if (mcxTokenCache.isEmpty()) {
@@ -465,6 +474,31 @@ public class LiveMarketDataController {
         return out;
     }
 
+    private void resolveMcxSymbol(String apiKey, String accessToken, String comm) {
+        JSONArray arr = angelSearchScrip(apiKey, accessToken, "MCX", comm);
+        if (arr == null || arr.length() == 0) return;
+        JSONObject best = null;
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject item = arr.optJSONObject(i);
+            if (item == null) continue;
+            String ts = item.optString("tradingsymbol", "").toUpperCase();
+            if (ts.startsWith(comm) && ts.endsWith("FUT")) {
+                String after = ts.substring(comm.length());
+                if (!after.isEmpty() && Character.isDigit(after.charAt(0))) {
+                    best = item;
+                    break;
+                }
+            }
+        }
+        if (best != null) {
+            String tok = best.optString("symboltoken", "");
+            String ts = best.optString("tradingsymbol", "");
+            if (!tok.isBlank()) {
+                mcxTokenCache.put(comm, new String[]{tok, ts});
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> buildLiveOptionChain(String underlying) {
         Map<String, Object> out = new LinkedHashMap<>();
@@ -505,53 +539,41 @@ public class LiveMarketDataController {
         long now = System.currentTimeMillis();
         Map<String, Object> cachedMeta = optionTokenCache.get(cacheKey);
         Long metaTime = optionTokenCacheTime.get(cacheKey);
-        if (cachedMeta == null || metaTime == null || (now - metaTime) > 600_000L) {
-            // Resolve 11 strikes (-5..+5) around ATM -> 22 CE/PE contracts
-            Map<Integer, String[]> ceTokens = new ConcurrentHashMap<>();
-            Map<Integer, String[]> peTokens = new ConcurrentHashMap<>();
-            List<CompletableFuture<Void>> futs = new ArrayList<>();
-            final String[] detectedExpiry = new String[]{""};
+        if (cachedMeta == null || metaTime == null || (now - metaTime) > 1_800_000L) {
+            // Resolve 9 strikes (-4..+4) around ATM sequentially with rate-limit spacing
+            Map<Integer, String[]> ceTokens = new LinkedHashMap<>();
+            Map<Integer, String[]> peTokens = new LinkedHashMap<>();
+            String detectedExpiry = "";
             Pattern expPattern = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})\\d+(CE|PE)$");
 
-            for (int offset = -5; offset <= 5; offset++) {
-                final int strikeInt = (int) (atm + (offset * step));
-                futs.add(CompletableFuture.runAsync(() -> {
-                    try {
-                        JSONObject sp = new JSONObject();
-                        sp.put("exchange", exchange);
-                        sp.put("searchscrip", underlying + strikeInt);
-                        JSONObject resp = apiRequestHandler.postRequest(
-                                apiKey, routes.get("api.search.script.data"), sp, accessToken);
-                        JSONArray arr = resp != null ? resp.optJSONArray("data") : null;
-                        if (arr == null) return;
-                        for (int i = 0; i < arr.length(); i++) {
-                            JSONObject item = arr.optJSONObject(i);
-                            if (item == null) continue;
-                            String ts = item.optString("tradingsymbol", "").toUpperCase();
-                            String tok = item.optString("symboltoken", "");
-                            if (tok.isBlank()) continue;
-                            if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "CE") && !ceTokens.containsKey(strikeInt)) {
-                                ceTokens.put(strikeInt, new String[]{tok, ts});
-                                Matcher m = expPattern.matcher(ts);
-                                if (m.matches() && detectedExpiry[0].isEmpty()) detectedExpiry[0] = m.group(1);
-                            } else if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "PE") && !peTokens.containsKey(strikeInt)) {
-                                peTokens.put(strikeInt, new String[]{tok, ts});
-                                Matcher m = expPattern.matcher(ts);
-                                if (m.matches() && detectedExpiry[0].isEmpty()) detectedExpiry[0] = m.group(1);
-                            }
-                        }
-                    } catch (Throwable ignored) {
+            for (int offset = -4; offset <= 4; offset++) {
+                int strikeInt = (int) (atm + (offset * step));
+                JSONArray arr = angelSearchScrip(apiKey, accessToken, exchange, underlying + " " + strikeInt);
+                if (arr == null || arr.length() == 0) {
+                    arr = angelSearchScrip(apiKey, accessToken, exchange, underlying + strikeInt);
+                }
+                if (arr == null) continue;
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject item = arr.optJSONObject(i);
+                    if (item == null) continue;
+                    String ts = item.optString("tradingsymbol", "").toUpperCase();
+                    String tok = item.optString("symboltoken", "");
+                    if (tok.isBlank()) continue;
+                    if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "CE") && !ceTokens.containsKey(strikeInt)) {
+                        ceTokens.put(strikeInt, new String[]{tok, ts});
+                        Matcher m = expPattern.matcher(ts);
+                        if (m.matches() && detectedExpiry.isEmpty()) detectedExpiry = m.group(1);
+                    } else if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "PE") && !peTokens.containsKey(strikeInt)) {
+                        peTokens.put(strikeInt, new String[]{tok, ts});
+                        Matcher m = expPattern.matcher(ts);
+                        if (m.matches() && detectedExpiry.isEmpty()) detectedExpiry = m.group(1);
                     }
-                }, executor));
-            }
-            try {
-                CompletableFuture.allOf(futs.toArray(new CompletableFuture[0])).get(8, TimeUnit.SECONDS);
-            } catch (Exception ignored) {
+                }
             }
 
             if (!ceTokens.isEmpty() || !peTokens.isEmpty()) {
                 cachedMeta = new LinkedHashMap<>();
-                cachedMeta.put("expiry", detectedExpiry[0]);
+                cachedMeta.put("expiry", detectedExpiry);
                 cachedMeta.put("ceTokens", ceTokens);
                 cachedMeta.put("peTokens", peTokens);
                 optionTokenCache.put(cacheKey, cachedMeta);
