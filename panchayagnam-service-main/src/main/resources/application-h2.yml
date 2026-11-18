@@ -34,4 +34,6 @@ app:
 
 trading:
   paper-trading:
+    enabled: false
+  live-trading:
     enabled: true
