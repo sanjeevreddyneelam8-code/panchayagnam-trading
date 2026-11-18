@@ -31,51 +31,48 @@ public class ApiResponseHandler {
 	private static final Logger log = LoggerFactory.getLogger(ApiResponseHandler.class);
 
 	public JSONObject handle(Response response, String body) throws IOException, SmartAPIException, JSONException {
-//		log.info("***************************");
-		if (response.header("Content-Type").contains("json")) {
+		String contentType = response.header("Content-Type");
+		if (contentType != null && contentType.contains("json")) {
 			JSONObject jsonObject = new JSONObject(body);
 
-//			if (jsonObject.optString("data") == null || jsonObject.optString("data") == "") {
 			if (!jsonObject.has("status") || jsonObject.has("success")) {
-				if (jsonObject.has("errorcode")) {
-					throw dealWithException(jsonObject, jsonObject.getString("errorcode"));
-				} else if (jsonObject.has("errorCode")) {
-
-					throw dealWithException(jsonObject, jsonObject.getString("errorCode"));
+				if (jsonObject.has("errorcode") && !jsonObject.optString("errorcode", "").isBlank()) {
+					throw dealWithException(jsonObject, jsonObject.optString("errorcode", ""));
+				} else if (jsonObject.has("errorCode") && !jsonObject.optString("errorCode", "").isBlank()) {
+					throw dealWithException(jsonObject, jsonObject.optString("errorCode", ""));
 				}
 			}
-			//System.out.println(jsonObject);
 			return jsonObject;
 		} else {
-			throw new DataException("Unexpected content type received from server: " + response.header("Content-Type")
-					+ " " + response.body().string(), "AG8001");
+			throw new DataException("Unexpected response from Angel One (HTTP " + response.code() + "): "
+					+ (body != null && body.length() > 160 ? body.substring(0, 160) : body), "AG8001");
 		}
 	}
 
 	private SmartAPIException dealWithException(JSONObject jsonObject, String code) throws JSONException {
+		String msg = jsonObject.optString("message", "Broker error: " + code);
 
 		switch (code) {
-		// if there is a token exception, generate a signal to logout the user.
 		case "AG8003":
 		case "AB8050":
 		case "AB8051":
 		case "AB1010":
-			return new TokenException(jsonObject.getString("message"), code);
+			return new TokenException(msg, code);
 
 		case "AG8001":
-                return new TokenException(TOKEN_EXCEPTION_MESSAGE, code);
-            case "AG8002":
-                return new DataException(jsonObject.getString("message"), code);
+			return new TokenException(TOKEN_EXCEPTION_MESSAGE, code);
+		case "AG8002":
+			return new DataException(msg, code);
 
 		case "AB1004":
 		case "AB2000":
-			return new GeneralException(jsonObject.getString("message"), code);
+			return new GeneralException(msg, code);
 
 		case "AB1003":
 		case "AB1005":
 		case "AB1012":
 		case "AB1002":
-			return new InputException(jsonObject.getString("message"), code);
+			return new InputException(msg, code);
 
 		case "AB1008":
 		case "AB1009":
@@ -84,19 +81,19 @@ public class ApiResponseHandler {
 		case "AB1015":
 		case "AB1016":
 		case "AB1017":
-			return new OrderException(jsonObject.getString("message"), code);
+			return new OrderException(msg, code);
 
 		case "NetworkException":
-			return new NetworkException(jsonObject.getString("message"), code);
+			return new NetworkException(msg, code);
 
 		case "AB1000":
 		case "AB1001":
 		case "AB1011":
-			return new PermissionException(jsonObject.getString("message"), code);
-            case "AG8004":
-                return new ApiKeyException(APIKEY_EXCEPTION_MESSAGE, code);
+			return new PermissionException(msg, code);
+		case "AG8004":
+			return new ApiKeyException(APIKEY_EXCEPTION_MESSAGE, code);
 		default:
-			return new SmartAPIException(jsonObject.getString("data not found"));
+			return new SmartAPIException(msg + " (" + code + ")", code);
 		}
 	}
 

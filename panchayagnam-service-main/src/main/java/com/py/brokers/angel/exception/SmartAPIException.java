@@ -9,12 +9,14 @@ public class SmartAPIException extends Throwable {
 
 	// constructor that sets the message and code
 	public SmartAPIException(String message, String code) {
+		super(message);
 		this.message = message;
 		this.code = code;
 	}
 
 	// constructor that sets the message
 	public SmartAPIException(String message) {
+		super(message);
 		this.message = message;
 	}
 

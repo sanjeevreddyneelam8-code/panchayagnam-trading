@@ -255,10 +255,13 @@ public class SmartConnect {
                 params.put("transactiontype", orderParams.getTransactiontype());
             }
             if (orderParams.getQuantity() != null) {
-                params.put("quantity", orderParams.getQuantity());
+                params.put("quantity", String.valueOf(orderParams.getQuantity()));
             }
             if (orderParams.getPrice() != null) {
-                params.put("price", orderParams.getPrice());
+                boolean isMarket = "MARKET".equalsIgnoreCase(orderParams.getOrdertype());
+                params.put("price", isMarket ? "0" : String.valueOf(orderParams.getPrice()));
+            } else {
+                params.put("price", "0");
             }
             if (orderParams.getProducttype() != null) {
                 params.put("producttype", orderParams.getProducttype());
@@ -272,32 +275,38 @@ public class SmartConnect {
             if (orderParams.getSymboltoken() != null) {
                 params.put("symboltoken", orderParams.getSymboltoken());
             }
-            if (orderParams.getSquareoff() != null) {
-                params.put("squareoff", orderParams.getSquareoff());
-            }
-            if (orderParams.getStoploss() != null) {
-                params.put("stoploss", orderParams.getStoploss());
-            }
+            params.put("squareoff", orderParams.getSquareoff() != null ? orderParams.getSquareoff() : "0");
+            params.put("stoploss", orderParams.getStoploss() != null ? orderParams.getStoploss() : "0");
+            params.put("disclosedquantity", "0");
             if (orderParams.getTriggerprice() != null) {
                 params.put("triggerprice", orderParams.getTriggerprice());
             }
-            params.put("variety", variety);
+            params.put("variety", variety != null ? variety : "NORMAL");
 
             JSONObject jsonObject = smartAPIRequestHandler.postRequest(
                     this.apiKey, url, params, this.getAccessToken());
 
             // ✅ Check status in response
-            if (!jsonObject.optBoolean("status", false)) {
+            boolean statusOk = jsonObject.optBoolean("status", false)
+                    || "true".equalsIgnoreCase(jsonObject.optString("status", ""));
+            if (!statusOk) {
                 String errorMsg = jsonObject.optString("message", "Unknown error from Angel One");
-                String errorCode = jsonObject.optString("errorcode", "");
-                log.error("❌ placeOrder failed — errorCode: {} message: {}", errorCode, errorMsg);
-                throw new RuntimeException("Order failed: " + errorMsg
+                String errorCode = jsonObject.optString("errorcode", jsonObject.optString("errorCode", ""));
+                log.error("❌ placeOrder failed — errorCode: {} message: {} full: {}", errorCode, errorMsg, jsonObject);
+                throw new RuntimeException("Angel One rejected order: " + errorMsg
                         + (errorCode.isBlank() ? "" : " (Code: " + errorCode + ")"));
             }
 
+            JSONObject dataObj = jsonObject.optJSONObject("data");
+            if (dataObj == null || dataObj.optString("orderid", "").isBlank()) {
+                log.error("❌ placeOrder returned empty data block: {}", jsonObject);
+                throw new RuntimeException("Angel One did not return an Order ID: "
+                        + jsonObject.optString("message", "Unknown response"));
+            }
+
             Order order = new Order();
-            order.orderId = jsonObject.getJSONObject("data").getString("orderid");
-            order.uniqueOrderId = jsonObject.getJSONObject("data").getString("uniqueorderid");
+            order.orderId = dataObj.optString("orderid", "");
+            order.uniqueOrderId = dataObj.optString("uniqueorderid", order.orderId);
             log.info("✅ Order placed: {}", order);
             return order;
 

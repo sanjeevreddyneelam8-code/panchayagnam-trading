@@ -33,6 +33,9 @@ public class PyTokenValidationService {
     private static final Logger log = LoggerFactory
             .getLogger(PyTokenValidationService.class);
 
+    @Autowired(required = false)
+    private com.py.trading.service.PaperTradingService paperTradingService;
+
     @Value("${trading.paper-trading.enabled:${PAPER_TRADING_ENABLED:false}}")
     private boolean paperTradingEnabled;
 
@@ -61,7 +64,10 @@ public class PyTokenValidationService {
     private DhanMicroserviceClient dhanClient;
 
     public boolean isProtectedAccount(PyBrokerAccountEntity account) {
-        if (paperTradingEnabled) {
+        boolean isPaper = paperTradingService != null
+                ? paperTradingService.isPaperTradingEnabled()
+                : paperTradingEnabled;
+        if (isPaper) {
             return true;
         }
         if (account == null) {
@@ -70,14 +76,9 @@ public class PyTokenValidationService {
         String clientId = account.getClientId();
         if (clientId != null && (
                 clientId.equals("1100345678") ||
-                clientId.startsWith("ZR") ||
-                clientId.startsWith("UP") ||
-                clientId.startsWith("AG") ||
-                clientId.startsWith("MO") ||
-                clientId.startsWith("PM") ||
-                clientId.startsWith("GW") ||
-                clientId.startsWith("GR") ||
-                clientId.toLowerCase().contains("demo")
+                clientId.equals("AG_LIVE") ||
+                clientId.toLowerCase().contains("demo") ||
+                clientId.toLowerCase().contains("mock")
         )) {
             return true;
         }

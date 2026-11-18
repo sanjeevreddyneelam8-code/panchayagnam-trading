@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../service/theme_mode_service.dart';
 
 /// TradeMarketStockGroView
@@ -109,6 +110,9 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     );
     _initMarketData();
     _initAiChat();
+    LiveMarketDataService().addListener(_syncLiveQuotes);
+    LiveMarketDataService().start();
+    _syncLiveQuotes();
     _startLiveTickEngine();
   }
 
@@ -317,56 +321,74 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
     ];
   }
 
-  void _startLiveTickEngine() {
-    _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
-      if (!mounted) return;
+  void _syncLiveQuotes() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool updated = false;
+
+    const indexKeyMap = {
+      'NIFTY 50': 'NIFTY',
+      'BANK NIFTY': 'BANKNIFTY',
+      'FINNIFTY': 'FINNIFTY',
+      'SENSEX': 'SENSEX',
+      'MIDCAP NIFTY': 'MIDCPNIFTY',
+      'INDIA VIX': 'INDIAVIX',
+    };
+
+    for (final idx in _liveIndices) {
+      final key = indexKeyMap[idx['name']?.toString() ?? ''];
+      if (key != null) {
+        final q = svc.getQuote(key);
+        if (q != null && q.ltp > 0) {
+          idx['price'] = q.ltp;
+          idx['prev'] = q.prevClose > 0 ? q.prevClose : q.ltp;
+          updated = true;
+        }
+      }
+    }
+
+    for (final m in _allMovers) {
+      final sym = (m['symbol'] ?? '').toString().toUpperCase();
+      final q = svc.getQuote(sym);
+      if (q != null && q.ltp > 0) {
+        m['ltp'] = q.ltp;
+        m['prev'] = q.prevClose > 0 ? q.prevClose : q.ltp;
+        if (q.high > 0) m['high'] = q.high;
+        if (q.low > 0) m['low'] = q.low;
+        updated = true;
+      }
+    }
+
+    for (final call in _alphaCalls) {
+      final sym = (call['symbol'] ?? '').toString().toUpperCase();
+      final q = svc.getQuote(sym);
+      if (q != null && q.ltp > 0) {
+        call['ltp'] = q.ltp;
+        updated = true;
+      }
+    }
+
+    if (updated && mounted) {
       setState(() {
         _now = DateTime.now();
+      });
+    }
+  }
 
-        for (final idx in _liveIndices) {
-          final p = (idx['price'] as num).toDouble();
-          final scale = math.max(0.02, p * 0.00035);
-          final delta = (_rand.nextDouble() - 0.485) * scale * 2;
-          final nextP = double.parse(math.max(1.0, p + delta).toStringAsFixed(2));
-          idx['price'] = nextP;
-          final spark = List<double>.from(idx['spark'] as List);
-          spark.removeAt(0);
-          spark.add((spark.last + (delta >= 0 ? -0.05 : 0.05)).clamp(0.10, 0.88));
-          idx['spark'] = spark;
-        }
-
-        for (final call in _alphaCalls) {
-          final ltp = (call['ltp'] as num).toDouble();
-          final step = math.max(0.05, ltp * 0.0012);
-          final delta = (_rand.nextDouble() - 0.47) * step;
-          call['ltp'] = double.parse(math.max(0.5, ltp + delta).toStringAsFixed(2));
-        }
-
-        for (final m in _allMovers) {
-          final ltp = (m['ltp'] as num).toDouble();
-          final step = math.max(0.05, ltp * 0.0008);
-          final delta = (_rand.nextDouble() - 0.485) * step;
-          final nextP = double.parse(math.max(1.0, ltp + delta).toStringAsFixed(2));
-          m['ltp'] = nextP;
-          m['high'] = math.max((m['high'] as num).toDouble(), nextP);
-          m['low'] = math.min((m['low'] as num).toDouble(), nextP);
-        }
-
-        for (final pos in _virtualPositions) {
-          final ltp = (pos['ltp'] as num).toDouble();
-          final step = math.max(0.1, ltp * 0.0015);
-          final delta = (_rand.nextDouble() - 0.47) * step;
-          pos['ltp'] = double.parse(math.max(0.5, ltp + delta).toStringAsFixed(2));
-          final avg = (pos['avg'] as num).toDouble();
-          pos['isUp'] = (pos['ltp'] as double) >= avg;
-        }
+  void _startLiveTickEngine() {
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      LiveMarketDataService().fetchNow();
+      setState(() {
+        _now = DateTime.now();
       });
     });
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_syncLiveQuotes);
     _tickTimer?.cancel();
     _tabController.dispose();
     _aiQueryController.dispose();

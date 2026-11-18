@@ -136,6 +136,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   String _orderType = 'MARKET'; // 'MARKET', 'LIMIT'
   int _selectedAccountIndex = 0;
   bool _isSubmitting = false;
+  bool _isAmo = false;
+  String? _orderErrorMessage;
 
   late int _quantity;
   late double _limitPrice;
@@ -289,7 +291,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final idempotencyKey =
         'UI-${DateTime.now().millisecondsSinceEpoch}-${widget.symbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-$_quantity';
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _orderErrorMessage = null;
+    });
 
     final messenger = ScaffoldMessenger.of(context);
     final endpoint = _side == 'BUY'
@@ -314,7 +319,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               'orderType': _orderType,
               'price': _orderType == 'MARKET' ? 0.0 : _limitPrice,
               'productType': apiProductType,
-              'variety': 'NORMAL',
+              'variety': _isAmo ? 'AMO' : 'NORMAL',
+              'amo': _isAmo ? 'Y' : 'N',
               'idempotencyKey': idempotencyKey,
             }),
           )
@@ -377,7 +383,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             .toString();
 
         if (mounted) {
-          setState(() => _isSubmitting = false);
+          setState(() {
+            _isSubmitting = false;
+            _orderErrorMessage = errMsg;
+          });
         }
         messenger.showSnackBar(
           SnackBar(
@@ -414,7 +423,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _orderErrorMessage = 'Unable to reach broker server: $e';
+        });
       }
       messenger.showSnackBar(
         SnackBar(
@@ -658,7 +670,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity - (widget.lotSize > 1 ? widget.lotSize : 25)),
+                          onPressed: () => _onQtyChanged(_quantity - (widget.lotSize > 1 ? widget.lotSize : 1)),
                         ),
                         Expanded(
                           child: TextField(
@@ -675,23 +687,46 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                         ),
                         IconButton(
                           icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity + (widget.lotSize > 1 ? widget.lotSize : 25)),
+                          onPressed: () => _onQtyChanged(_quantity + (widget.lotSize > 1 ? widget.lotSize : 1)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
 
-                  // Limit / Market Price
+                  // Limit / Market Price + AMO toggle
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Limit / Market Price', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                      const Text('Order Type', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
                       Row(
                         children: [
                           _buildTypeChip('MARKET'),
                           const SizedBox(width: 6),
                           _buildTypeChip('LIMIT'),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: () => setState(() => _isAmo = !_isAmo),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _isAmo ? const Color(0xFFD97706) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _isAmo ? const Color(0xFFB45309) : const Color(0xFFCBD5E1),
+                                ),
+                              ),
+                              child: Text(
+                                'AMO',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: _isAmo ? Colors.white : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -906,7 +941,38 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
+
+                          if (_orderErrorMessage != null) ...[
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFFCA5A5)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 17),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _orderErrorMessage!,
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF991B1B),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
 
                           // Place Buy / Sell Order CTA
                           SizedBox(

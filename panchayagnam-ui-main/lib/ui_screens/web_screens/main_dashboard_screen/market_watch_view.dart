@@ -13,6 +13,7 @@ import '../../../reusable_widets/stock_search_widget.dart';
 import '../../../service/individual_drop_down_service.dart';
 import '../../../service/individual_investment_service.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
 /// Connection states for market data feeds
@@ -422,10 +423,45 @@ class _MarketWatchViewState extends State<MarketWatchView> {
   final TradingRemoteDataSource _tradingService = TradingRemoteDataSourceImpl();
 
   @override
+  static const Map<String, String> _tokenToLiveSymbol = {
+    '99926000': 'NIFTY',
+    '99926009': 'BANKNIFTY',
+    '99919000': 'SENSEX',
+    '99926037': 'FINNIFTY',
+    '99926014': 'MIDCPNIFTY',
+    '99926074': 'MIDCPNIFTY',
+    '99926017': 'INDIAVIX',
+    '2885': 'RELIANCE',
+    '1333': 'HDFCBANK',
+    '1594': 'INFY',
+    '11536': 'TCS',
+    '3045': 'SBIN',
+    '4963': 'ICICIBANK',
+    '10604': 'BHARTIARTL',
+    '1660': 'ITC',
+    '11483': 'LT',
+    '3456': 'TATAMOTORS',
+    '1922': 'KOTAKBANK',
+    '5900': 'AXISBANK',
+    '317': 'BAJFINANCE',
+    '7229': 'HCLTECH',
+    '3787': 'WIPRO',
+    '10999': 'MARUTI',
+    '3499': 'TATASTEEL',
+    '3351': 'SUNPHARMA',
+    '25': 'ADANIENT',
+    '3506': 'TITAN',
+    '14366': 'IDEA',
+    '11915': 'YESBANK',
+  };
+
+  @override
   void initState() {
     super.initState();
-    // 1. Pre-populate all quotes with authentic benchmark data so 0 gaps exist
     _quotes.addAll(_defaultMarketQuotes);
+    LiveMarketDataService().addListener(_syncFromLiveMarketService);
+    LiveMarketDataService().start();
+    _syncFromLiveMarketService();
     _initializeMarketData();
     _startLiveTickerSimulation();
   }
@@ -433,45 +469,66 @@ class _MarketWatchViewState extends State<MarketWatchView> {
   @override
   void dispose() {
     _isDisposed = true;
+    LiveMarketDataService().removeListener(_syncFromLiveMarketService);
     _liveTickerTimer?.cancel();
     _wsSubscription?.cancel();
     _wsChannel?.sink.close(1000);
     super.dispose();
   }
 
-  /// Live price ticker simulating real Indian market ticks every 2 seconds
+  void _syncFromLiveMarketService() {
+    if (_isDisposed || !mounted) return;
+    final svc = LiveMarketDataService();
+    bool changed = false;
+    _tokenToLiveSymbol.forEach((token, sym) {
+      final live = svc.getQuote(sym);
+      if (live != null && live.ltp > 0) {
+        final existing = _quotes[token] ?? _defaultMarketQuotes[token];
+        _quotes[token] = (existing ?? const MarketWatchQuote()).copyWith(
+          ltp: live.ltp,
+          change: live.change,
+          percentChange: live.changePct,
+          high: live.high > 0 ? live.high : live.ltp,
+          low: live.low > 0 ? live.low : live.ltp,
+          close: live.prevClose > 0 ? live.prevClose : live.ltp,
+          volume: live.volume > 0 ? live.volume : existing?.volume,
+          lastUpdated: DateTime.now(),
+          isLiveTick: true,
+        );
+        changed = true;
+      }
+    });
+    // Also match any watchlist item by tradingSymbol
+    for (final item in _currentWatchlist) {
+      final sym = item.tradingSymbol.replaceAll('-EQ', '').trim().toUpperCase();
+      final live = svc.getQuote(sym);
+      if (live != null && live.ltp > 0) {
+        final existing = _quotes[item.symbolToken] ?? _defaultMarketQuotes[item.symbolToken];
+        _quotes[item.symbolToken] = (existing ?? const MarketWatchQuote()).copyWith(
+          ltp: live.ltp,
+          change: live.change,
+          percentChange: live.changePct,
+          high: live.high > 0 ? live.high : live.ltp,
+          low: live.low > 0 ? live.low : live.ltp,
+          close: live.prevClose > 0 ? live.prevClose : live.ltp,
+          volume: live.volume > 0 ? live.volume : existing?.volume,
+          lastUpdated: DateTime.now(),
+          isLiveTick: true,
+        );
+        changed = true;
+      }
+    }
+    if (changed && mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Poll real live NSE/Angel One quotes every 5 seconds
   void _startLiveTickerSimulation() {
     _liveTickerTimer?.cancel();
-    _liveTickerTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    _liveTickerTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_isDisposed || !mounted) return;
-      final rand = math.Random();
-
-      setState(() {
-        for (final item in _currentWatchlist) {
-          final q = _quotes[item.symbolToken] ?? _defaultMarketQuotes[item.symbolToken];
-          if (q != null && q.ltp != null && q.ltp! > 0) {
-            final delta = (rand.nextDouble() - 0.48) * (q.ltp! * 0.0006);
-            final newLtp = double.parse((q.ltp! + delta).toStringAsFixed(2));
-            final base = q.open ?? (q.ltp! - (q.change ?? 0.0));
-            final newChange = double.parse((newLtp - base).toStringAsFixed(2));
-            final newPct = double.parse(((newChange / base) * 100).toStringAsFixed(2));
-            final newHigh = math.max(q.high ?? newLtp, newLtp);
-            final newLow = math.min(q.low ?? newLtp, newLtp);
-            final newVol = (q.volume ?? 50000) + rand.nextInt(350);
-
-            _quotes[item.symbolToken] = q.copyWith(
-              ltp: newLtp,
-              change: newChange,
-              percentChange: newPct,
-              high: newHigh,
-              low: newLow,
-              volume: newVol,
-              lastUpdated: DateTime.now(),
-              isLiveTick: true,
-            );
-          }
-        }
-      });
+      LiveMarketDataService().fetchNow();
     });
   }
 

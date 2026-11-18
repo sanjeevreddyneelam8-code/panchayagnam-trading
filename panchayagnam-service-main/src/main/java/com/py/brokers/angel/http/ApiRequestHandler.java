@@ -61,15 +61,25 @@ public class ApiRequestHandler {
 
     }
 
+    private String resolveClientPublicIp() {
+        String ip = getPublicIp();
+        if (ip != null && ip.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
+            return ip;
+        }
+        return "13.235.14.89";
+    }
+
     public Request createPostRequest(String apiKey, String url, JSONObject params) {
         try {
 
             MediaType JSON = MediaType.parse("application/json; charset=utf-8");
             RequestBody body = RequestBody.create(params.toString(), JSON);
 
-            Request request = new Request.Builder().url(url).post(body).header("Content-Type", "application/json")
-                    .header("X-ClientLocalIP", "192")
-                    .header("X-ClientPublicIP", "127.0.0.1")
+            Request request = new Request.Builder().url(url).post(body)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("X-ClientLocalIP", "192.168.1.1")
+                    .header("X-ClientPublicIP", resolveClientPublicIp())
                     .header("X-MACAddress", "00:00:00:00:00:00")
                     .header("X-PrivateKey", apiKey)
                     .header("X-UserType", "USER")
@@ -105,9 +115,11 @@ public class ApiRequestHandler {
 
         HttpUrl.Builder httpBuilder = HttpUrl.parse(url).newBuilder();
         return new Request.Builder().url(httpBuilder.build()).header("User-Agent", USER_AGENT)
-                .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
-                .header("X-ClientLocalIP", "192")
-                .header("X-ClientPublicIP", "127.0.0.1")
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .header("X-ClientLocalIP", "192.168.1.1")
+                .header("X-ClientPublicIP", resolveClientPublicIp())
                 .header("X-MACAddress", "00:00:00:00:00:00")
                 .header("X-PrivateKey", apiKey)
                 .header("X-UserType", "USER")
@@ -164,10 +176,12 @@ public class ApiRequestHandler {
 
             String privateKey = apiKey;
 
-            Request request = new Request.Builder().url(url).post(body).header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
-                    .header("X-ClientLocalIP", "192")
-                    .header("X-ClientPublicIP", "127.0.0.1")
+            Request request = new Request.Builder().url(url).post(body)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("X-ClientLocalIP", "192.168.1.1")
+                    .header("X-ClientPublicIP", resolveClientPublicIp())
                     .header("X-MACAddress", "00:00:00:00:00:00")
                     .header("X-PrivateKey", apiKey)
                     .header("X-UserType", "USER")
