@@ -213,7 +213,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
         'score': '94% QUANT SCORE',
         'analyst': 'Panchayagnam Institutional Desk (SEBI Regd. INH000012891)',
         'rationale': 'Heavy call unwinding at 24,200 strike + 3.5x metal sector momentum. 2.8M contracts covered.',
-        'lot': 25,
+        'lot': 65,
       },
       {
         'symbol': 'TATASTEEL',
@@ -243,7 +243,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
         'score': '88% QUANT SCORE',
         'analyst': 'Derivatives Alpha Desk (SEBI Regd. INH000015674)',
         'rationale': 'Rejection at 52,000 round number resistance + high put IV spike. Risk hedged.',
-        'lot': 15,
+        'lot': 30,
       },
       {
         'symbol': 'PERSISTENT',
@@ -273,7 +273,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
         'score': '93% QUANT SCORE',
         'analyst': 'Panchayagnam Institutional Desk (SEBI Regd. INH000012891)',
         'rationale': 'Sustained institutional VWAP reclaim with positive FII index futures net long rollover (+68.4%).',
-        'lot': 25,
+        'lot': 65,
       },
       {
         'symbol': 'HDFCBANK 1740 CE',

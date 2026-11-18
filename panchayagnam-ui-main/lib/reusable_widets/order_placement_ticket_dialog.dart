@@ -184,7 +184,21 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       _selectedExchange = 'NSE';
     }
 
-    _quantity = widget.lotSize > 1 ? widget.lotSize : 1;
+    int autoLot = widget.lotSize;
+    if (isFnO) {
+      if (upperSym.contains('BANKNIFTY')) {
+        autoLot = 30;
+      } else if (upperSym.contains('FINNIFTY')) {
+        autoLot = 60;
+      } else if (upperSym.contains('MIDCPNIFTY') || upperSym.contains('MIDCAPNIFTY')) {
+        autoLot = 120;
+      } else if (upperSym.contains('SENSEX')) {
+        autoLot = 20;
+      } else if (upperSym.contains('NIFTY')) {
+        autoLot = 65;
+      }
+    }
+    _quantity = autoLot > 1 ? autoLot : (widget.lotSize > 1 ? widget.lotSize : 1);
     final liveQuote = LiveMarketDataService().getQuote(widget.symbol);
     _limitPrice = (!isFnO && !isCommodity && liveQuote != null && liveQuote.ltp > 0)
         ? liveQuote.ltp
@@ -231,8 +245,18 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     return totalValue; // 1x delivery
   }
 
+  int get _effectiveLotSize {
+    final upperSym = widget.symbol.toUpperCase();
+    if (upperSym.contains('BANKNIFTY')) return 30;
+    if (upperSym.contains('FINNIFTY')) return 60;
+    if (upperSym.contains('MIDCPNIFTY') || upperSym.contains('MIDCAPNIFTY')) return 120;
+    if (upperSym.contains('SENSEX')) return 20;
+    if (upperSym.contains('NIFTY') && !upperSym.contains('BANK') && !upperSym.contains('FIN') && !upperSym.contains('MID')) return 65;
+    return widget.lotSize > 1 ? widget.lotSize : 1;
+  }
+
   void _onQtyChanged(int newQty) {
-    final minQty = widget.lotSize > 1 ? widget.lotSize : 1;
+    final minQty = _effectiveLotSize;
     if (newQty < minQty) newQty = minQty;
     setState(() {
       _quantity = newQty;
@@ -703,7 +727,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity - (widget.lotSize > 1 ? widget.lotSize : 1)),
+                          onPressed: () => _onQtyChanged(_quantity - _effectiveLotSize),
                         ),
                         Expanded(
                           child: TextField(
@@ -720,7 +744,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                         ),
                         IconButton(
                           icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity + (widget.lotSize > 1 ? widget.lotSize : 1)),
+                          onPressed: () => _onQtyChanged(_quantity + _effectiveLotSize),
                         ),
                       ],
                     ),

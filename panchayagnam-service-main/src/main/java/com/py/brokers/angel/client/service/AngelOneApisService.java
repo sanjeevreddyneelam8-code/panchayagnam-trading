@@ -230,9 +230,10 @@ public class AngelOneApisService {
             }
 
             if (resolvedLotSize > 1 && request.getQuantity() != null && request.getQuantity() % resolvedLotSize != 0) {
-                throw new RuntimeException("Invalid quantity " + request.getQuantity() + " for " + tradingSymbol
-                        + ". Angel One lot size is " + resolvedLotSize + " Qty (enter " + resolvedLotSize
-                        + ", " + (resolvedLotSize * 2) + ", etc.).");
+                int origQty = request.getQuantity();
+                int adjustedQty = Math.max(resolvedLotSize, Math.round((float) origQty / resolvedLotSize) * resolvedLotSize);
+                log.info("Auto-adjusted quantity from {} to lot multiple {} for {}", origQty, adjustedQty, tradingSymbol);
+                request.setQuantity(adjustedQty);
             }
 
             // 2. Fallback to Angel One searchScrip API if not in ScripMaster
