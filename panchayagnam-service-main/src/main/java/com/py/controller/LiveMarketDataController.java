@@ -38,6 +38,12 @@ public class LiveMarketDataController {
     @Autowired(required = false)
     private Routes routes;
 
+    @Autowired(required = false)
+    private com.py.trading.service.PaperTradingService paperTradingService;
+
+    @Autowired(required = false)
+    private org.springframework.core.env.Environment environment;
+
     private static final Set<String> NSE_INDICES = Set.of(
             "NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "INDIAVIX");
     private static final Set<String> BSE_INDICES = Set.of("SENSEX", "BANKEX");
@@ -91,6 +97,15 @@ public class LiveMarketDataController {
     private volatile long lastCacheEpochMs = 0L;
     private volatile String lastSource = "LIVE_NSE";
     private static final long CACHE_TTL_MS = 3500L;
+
+    @GetMapping("/mode")
+    public ResponseEntity<Map<String, Object>> getTradingMode() {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("paperTradingEnabled", paperTradingService != null && paperTradingService.isPaperTradingEnabled());
+        body.put("liveTradingEnabled", paperTradingService == null || paperTradingService.isLiveTradingEnabled());
+        body.put("activeProfiles", environment != null ? Arrays.asList(environment.getActiveProfiles()) : List.of());
+        return ResponseEntity.ok(body);
+    }
 
     @GetMapping("/quotes")
     public ResponseEntity<Map<String, Object>> getLiveQuotes(

@@ -218,7 +218,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   }
 
   void _onQtyChanged(int newQty) {
-    if (newQty < 1) newQty = 1;
+    final minQty = widget.lotSize > 1 ? widget.lotSize : 1;
+    if (newQty < minQty) newQty = minQty;
     setState(() {
       _quantity = newQty;
       _qtyCtrl.text = '$_quantity';
@@ -654,8 +655,18 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(widget.lotSize > 1 ? 'No. of shares (Lots)' : 'No. of shares', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                      Text(widget.lotSize > 1 ? '1 Lot = ${widget.lotSize} Qty' : 'Max Qty: 50,000', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                      Text(
+                        widget.lotSize > 1
+                            ? 'Quantity (Multiples of ${widget.lotSize})'
+                            : 'Quantity (Shares)',
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
+                      Text(
+                        widget.lotSize > 1
+                            ? '1 Lot = ${widget.lotSize} Qty'
+                            : 'Min: 1 Share',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),

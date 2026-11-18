@@ -28,12 +28,12 @@ public class PaperTradingService {
     @Value("${trading.live-trading.enabled:true}")
     private boolean liveTradingEnabled;
 
-    private boolean isProdProfile() {
+    private boolean isTestOrH2Profile() {
         if (environment == null) {
             return false;
         }
         for (String profile : environment.getActiveProfiles()) {
-            if ("prod".equalsIgnoreCase(profile)) {
+            if ("h2".equalsIgnoreCase(profile) || "test".equalsIgnoreCase(profile)) {
                 return true;
             }
         }
@@ -42,10 +42,10 @@ public class PaperTradingService {
 
     /**
      * Returns true if paper trading is active.
-     * Always false in production so real broker accounts execute live on the exchange.
+     * Always false outside H2/test profiles so real broker accounts ALWAYS execute live on Render/prod.
      */
     public boolean isPaperTradingEnabled() {
-        if (isProdProfile()) {
+        if (!isTestOrH2Profile()) {
             return false;
         }
         return paperTradingEnabled;
@@ -55,7 +55,7 @@ public class PaperTradingService {
      * Returns true if live trading is explicitly permitted.
      */
     public boolean isLiveTradingEnabled() {
-        if (isProdProfile()) {
+        if (!isTestOrH2Profile()) {
             return true;
         }
         return liveTradingEnabled;
