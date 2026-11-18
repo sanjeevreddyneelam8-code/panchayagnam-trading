@@ -17,6 +17,7 @@ import com.py.brokers.angel.http.ApiRequestHandler;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -251,7 +252,7 @@ public class AngelOneApisService {
                         LocalDate bestExpiry = null;
                         LocalDate today = LocalDate.now();
                         Pattern expPat = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})" + Pattern.quote(strike + optType) + "$");
-                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
+                        DateTimeFormatter dtf = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("ddMMMyy").toFormatter(Locale.ENGLISH);
 
                         for (String q : queries) {
                             JSONObject searchParams = new JSONObject();
@@ -306,7 +307,7 @@ public class AngelOneApisService {
                             LocalDate bestExpiry = null;
                             LocalDate today = LocalDate.now();
                             Pattern expPat = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})FUT$");
-                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
+                            DateTimeFormatter dtf = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("ddMMMyy").toFormatter(Locale.ENGLISH);
                             for (int i = 0; i < dataArr.length(); i++) {
                                 JSONObject item = dataArr.optJSONObject(i);
                                 if (item == null) continue;

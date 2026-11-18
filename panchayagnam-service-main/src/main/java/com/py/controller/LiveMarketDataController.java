@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -500,7 +501,10 @@ public class LiveMarketDataController {
         return out;
     }
 
-    private static final DateTimeFormatter ANGEL_EXPIRY_FMT = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
+    private static final DateTimeFormatter ANGEL_EXPIRY_FMT = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendPattern("ddMMMyy")
+            .toFormatter(Locale.ENGLISH);
 
     private void resolveMcxSymbol(String apiKey, String accessToken, String comm) {
         JSONArray arr = angelSearchScrip(apiKey, accessToken, "MCX", comm);

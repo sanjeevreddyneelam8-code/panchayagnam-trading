@@ -3,10 +3,12 @@ package com.py.brokers.angel.client.service;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,8 +17,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Ultra-lightweight streaming loader for Angel One's OpenAPIScripMaster.json.
@@ -29,8 +33,15 @@ public class AngelOneScripMasterService {
     private static final Logger log = LoggerFactory.getLogger(AngelOneScripMasterService.class);
     private static final String SCRIP_MASTER_URL =
             "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json";
-    private static final DateTimeFormatter EXPIRY_FMT =
-            DateTimeFormatter.ofPattern("ddMMMyyyy", Locale.ENGLISH);
+    private static final DateTimeFormatter EXPIRY_FMT = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendPattern("ddMMMyyyy")
+            .toFormatter(Locale.ENGLISH);
+
+    private static final DateTimeFormatter EXPIRY_FMT_SHORT = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendPattern("ddMMMyy")
+            .toFormatter(Locale.ENGLISH);
 
     private static final Set<String> TRACKED_INDICES = Set.of(
             "NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX"
@@ -74,8 +85,22 @@ public class AngelOneScripMasterService {
     private final Object loadLock = new Object();
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(12))
             .build();
+
+    @PostConstruct
+    public void warmUpAsync() {
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                ensureLoaded();
+            } catch (Throwable e) {
+                log.warn("Background AngelOneScripMaster warmup skipped: {}", e.getMessage());
+            }
+        }, "angel-scrip-master-warmup");
+        t.setDaemon(true);
+        t.start();
+    }
 
     public void ensureLoaded() {
         long now = System.currentTimeMillis();
@@ -111,7 +136,8 @@ public class AngelOneScripMasterService {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(SCRIP_MASTER_URL))
                     .header("User-Agent", "Mozilla/5.0")
-                    .timeout(Duration.ofSeconds(25))
+                    .header("Accept-Encoding", "gzip")
+                    .timeout(Duration.ofSeconds(45))
                     .GET()
                     .build();
 
@@ -121,8 +147,15 @@ public class AngelOneScripMasterService {
                 return;
             }
 
+            boolean isGzip = resp.headers().firstValue("Content-Encoding")
+                    .map(v -> v.toLowerCase(Locale.ENGLISH).contains("gzip"))
+                    .orElse(false);
+
             JsonFactory factory = new JsonFactory();
-            try (InputStream is = resp.body(); JsonParser parser = factory.createParser(is)) {
+            try (InputStream rawIs = resp.body();
+                 InputStream decodedIs = isGzip ? new GZIPInputStream(rawIs, 65536) : rawIs;
+                 InputStream is = new BufferedInputStream(decodedIs, 65536);
+                 JsonParser parser = factory.createParser(is)) {
                 if (parser.nextToken() != JsonToken.START_ARRAY) {
                     return;
                 }
@@ -314,10 +347,15 @@ public class AngelOneScripMasterService {
 
     private LocalDate parseExpiry(String raw) {
         if (raw == null || raw.isBlank()) return null;
+        String cleaned = raw.trim().toUpperCase(Locale.ENGLISH);
         try {
-            return LocalDate.parse(raw.trim().toUpperCase(), EXPIRY_FMT);
-        } catch (Exception e) {
-            return null;
+            return LocalDate.parse(cleaned, EXPIRY_FMT);
+        } catch (Exception ignored) {
+            try {
+                return LocalDate.parse(cleaned, EXPIRY_FMT_SHORT);
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 
