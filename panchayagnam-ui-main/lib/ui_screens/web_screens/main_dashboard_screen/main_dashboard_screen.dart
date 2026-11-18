@@ -19,6 +19,7 @@ import '../../../bloc/auth_bloc/auth_event.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
 import '../../../service/static_ip_service.dart';
 import '../../../reusable_widets/signal_bridge_dialog.dart';
@@ -107,17 +108,18 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   Timer? _marketTickerTimer;
-  final math.Random _tickerRand = math.Random();
-  double _niftyLivePrice = 24228.30;
-  double _niftyLiveChange = 0.32;
-  double _bankNiftyLivePrice = 51820.00;
-  double _bankNiftyLiveChange = 0.62;
-  double _relianceLivePrice = 2940.50;
-  double _relianceLiveChange = 0.85;
+  double _niftyLivePrice = 25278.70;
+  double _niftyLiveChange = 0.0;
+  double _bankNiftyLivePrice = 52125.00;
+  double _bankNiftyLiveChange = 0.0;
+  double _relianceLivePrice = 1358.70;
+  double _relianceLiveChange = 0.0;
   double _hdfcLivePrice = 1650.00;
-  double _hdfcLiveChange = -0.20;
+  double _hdfcLiveChange = 0.0;
   double _infyLivePrice = 1785.40;
-  double _infyLiveChange = 1.10;
+  double _infyLiveChange = 0.0;
+  double _vixLivePrice = 14.22;
+  double _vixLiveChange = 0.0;
   DateTime _tickerClock = DateTime.now();
 
   @override
@@ -125,6 +127,9 @@ class _MainDashboardState extends State<MainDashboard> {
     super.initState();
     MainDashboard.onNavigateToBrokersGlobal = _navigateToBrokers;
     _hydrateSession();
+    LiveMarketDataService().addListener(_onLiveMarketQuotesUpdated);
+    LiveMarketDataService().start();
+    _onLiveMarketQuotesUpdated();
     _startMarketLiveTicker();
   }
 
@@ -133,29 +138,55 @@ class _MainDashboardState extends State<MainDashboard> {
     if (MainDashboard.onNavigateToBrokersGlobal == _navigateToBrokers) {
       MainDashboard.onNavigateToBrokersGlobal = null;
     }
+    LiveMarketDataService().removeListener(_onLiveMarketQuotesUpdated);
     _marketTickerTimer?.cancel();
     super.dispose();
   }
 
+  void _onLiveMarketQuotesUpdated() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    final nifty = svc.getQuote('NIFTY');
+    final bankNifty = svc.getQuote('BANKNIFTY');
+    final rel = svc.getQuote('RELIANCE');
+    final hdfc = svc.getQuote('HDFCBANK');
+    final infy = svc.getQuote('INFY');
+    final vix = svc.getQuote('INDIAVIX');
+    setState(() {
+      _tickerClock = DateTime.now();
+      if (nifty != null && nifty.ltp > 0) {
+        _niftyLivePrice = nifty.ltp;
+        _niftyLiveChange = nifty.changePct;
+      }
+      if (bankNifty != null && bankNifty.ltp > 0) {
+        _bankNiftyLivePrice = bankNifty.ltp;
+        _bankNiftyLiveChange = bankNifty.changePct;
+      }
+      if (rel != null && rel.ltp > 0) {
+        _relianceLivePrice = rel.ltp;
+        _relianceLiveChange = rel.changePct;
+      }
+      if (hdfc != null && hdfc.ltp > 0) {
+        _hdfcLivePrice = hdfc.ltp;
+        _hdfcLiveChange = hdfc.changePct;
+      }
+      if (infy != null && infy.ltp > 0) {
+        _infyLivePrice = infy.ltp;
+        _infyLiveChange = infy.changePct;
+      }
+      if (vix != null && vix.ltp > 0) {
+        _vixLivePrice = vix.ltp;
+        _vixLiveChange = vix.changePct;
+      }
+    });
+  }
+
   void _startMarketLiveTicker() {
     _marketTickerTimer?.cancel();
-    _marketTickerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+    _marketTickerTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
         _tickerClock = DateTime.now();
-        final dNifty = (_tickerRand.nextDouble() * 2.8) - 1.3;
-        _niftyLivePrice = double.parse((_niftyLivePrice + dNifty).toStringAsFixed(2));
-        _niftyLiveChange = double.parse((((_niftyLivePrice - 24150.0) / 24150.0) * 100).toStringAsFixed(2));
-
-        final dBank = (_tickerRand.nextDouble() * 6.5) - 3.1;
-        _bankNiftyLivePrice = double.parse((_bankNiftyLivePrice + dBank).toStringAsFixed(2));
-        _bankNiftyLiveChange = double.parse((((_bankNiftyLivePrice - 51500.0) / 51500.0) * 100).toStringAsFixed(2));
-
-        final dRel = (_tickerRand.nextDouble() * 0.9) - 0.42;
-        _relianceLivePrice = double.parse((_relianceLivePrice + dRel).toStringAsFixed(2));
-
-        final dHdfc = (_tickerRand.nextDouble() * 0.7) - 0.35;
-        _hdfcLivePrice = double.parse((_hdfcLivePrice + dHdfc).toStringAsFixed(2));
       });
     });
   }
@@ -3366,13 +3397,13 @@ class _MainDashboardState extends State<MainDashboard> {
             _buildTickerDivider(),
             _buildTickerItem('BANK NIFTY', _formatNumWithCommas(_bankNiftyLivePrice), '${_bankNiftyLiveChange >= 0 ? '+' : ''}${_bankNiftyLiveChange.toStringAsFixed(2)}%', _bankNiftyLiveChange >= 0),
             _buildTickerDivider(),
-            _buildTickerItem('RELIANCE', _formatNumWithCommas(_relianceLivePrice), '+0.85%', true),
+            _buildTickerItem('RELIANCE', _formatNumWithCommas(_relianceLivePrice), '${_relianceLiveChange >= 0 ? '+' : ''}${_relianceLiveChange.toStringAsFixed(2)}%', _relianceLiveChange >= 0),
             _buildTickerDivider(),
             _buildTickerItem('HDFCBANK', _formatNumWithCommas(_hdfcLivePrice), '${_hdfcLiveChange >= 0 ? '+' : ''}${_hdfcLiveChange.toStringAsFixed(2)}%', _hdfcLiveChange >= 0),
             _buildTickerDivider(),
-            _buildTickerItem('INFY', '1,785.40', '+1.10%', true),
+            _buildTickerItem('INFY', _formatNumWithCommas(_infyLivePrice), '${_infyLiveChange >= 0 ? '+' : ''}${_infyLiveChange.toStringAsFixed(2)}%', _infyLiveChange >= 0),
             _buildTickerDivider(),
-            _buildTickerItem('INDIA VIX', '14.22', '-1.25%', false),
+            _buildTickerItem('INDIA VIX', _vixLivePrice.toStringAsFixed(2), '${_vixLiveChange >= 0 ? '+' : ''}${_vixLiveChange.toStringAsFixed(2)}%', _vixLiveChange >= 0),
             const SizedBox(width: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

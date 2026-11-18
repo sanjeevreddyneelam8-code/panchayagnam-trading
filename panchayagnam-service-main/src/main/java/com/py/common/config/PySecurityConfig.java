@@ -85,7 +85,8 @@ public class PySecurityConfig {
                             "/api/v1/pyauth/send-otp",
                             "/api/v1/pyauth/reset-mpin",
                             "/actuator/health",
-                            "/api/smart/login/validate"
+                            "/api/smart/login/validate",
+                            "/api/v1/market/**"
                     ).permitAll();
 
                     // Broker OAuth browser handoff & redirect callbacks

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../constants/api_url_constants.dart';
 import '../constants/auth_header_helper.dart';
 import '../service/copy_trading_engine.dart';
+import '../service/live_market_data_service.dart';
 import '../service/static_ip_service.dart';
 import '../service/theme_mode_service.dart';
 import '../ui_screens/web_screens/main_dashboard_screen/main_dashboard_screen.dart';
@@ -156,9 +157,35 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       _selectedAccountIndex = 0;
     }
     _side = widget.side.toUpperCase();
-    _selectedExchange = widget.category.toUpperCase() == 'COMMODITY' ? 'MCX' : 'NSE';
-    _quantity = widget.lotSize > 1 ? widget.lotSize : 25;
-    _limitPrice = widget.ltp;
+    final upperSym = widget.symbol.toUpperCase();
+    final upperCat = widget.category.toUpperCase();
+    final isCommodity = upperCat == 'COMMODITY' ||
+        upperSym.startsWith('CRUDEOIL') ||
+        upperSym.startsWith('GOLD') ||
+        upperSym.startsWith('SILVER') ||
+        upperSym.startsWith('NATURALGAS') ||
+        upperSym.startsWith('COPPER') ||
+        upperSym.startsWith('ZINC');
+    final isBfo = upperSym.startsWith('SENSEX') || upperSym.startsWith('BANKEX');
+    final isFnO = upperCat == 'F&O' ||
+        upperSym.endsWith(' CE') ||
+        upperSym.endsWith(' PE') ||
+        upperSym.contains(' FUT') ||
+        upperSym.endsWith('FUT');
+
+    if (isCommodity) {
+      _selectedExchange = 'MCX';
+    } else if (isFnO) {
+      _selectedExchange = isBfo ? 'BFO' : 'NFO';
+    } else {
+      _selectedExchange = 'NSE';
+    }
+
+    _quantity = widget.lotSize > 1 ? widget.lotSize : 1;
+    final liveQuote = LiveMarketDataService().getQuote(widget.symbol);
+    _limitPrice = (!isFnO && !isCommodity && liveQuote != null && liveQuote.ltp > 0)
+        ? liveQuote.ltp
+        : widget.ltp;
     _slTriggerPrice = _side == 'BUY' ? (_limitPrice * 0.90) : (_limitPrice * 1.10);
     _targetPrice = _side == 'BUY' ? (_limitPrice * 1.20) : (_limitPrice * 0.80);
 
@@ -252,10 +279,13 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
     final selectedAcc = accounts[safeIdx];
 
-    final effectivePrice = _orderType == 'MARKET' ? widget.ltp : _limitPrice;
+    final effectivePrice = _orderType == 'MARKET' ? _limitPrice : _limitPrice;
+    final isDerivativeEx = _selectedExchange == 'NFO' || _selectedExchange == 'BFO' || _selectedExchange == 'MCX';
     final apiProductType = _productType == 'INTRADAY'
         ? 'INTRADAY'
-        : (_productType == 'PAY_LATER' ? 'MARGIN' : 'DELIVERY');
+        : (_productType == 'PAY_LATER'
+            ? (isDerivativeEx ? 'CARRYFORWARD' : 'MARGIN')
+            : (isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY'));
     final idempotencyKey =
         'UI-${DateTime.now().millisecondsSinceEpoch}-${widget.symbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-$_quantity';
 
@@ -506,17 +536,17 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   ),
                   const SizedBox(height: 10),
 
-                  // Exchange Selector Radios (MCX/NSE for Commodity, NSE/BSE for Equities & F&O)
+                  // Exchange Selector Radios (MCX for Commodity, NFO/BFO for F&O, NSE/BSE for Equities)
                   Row(
                     children: [
-                      if (widget.category.toUpperCase() == 'COMMODITY') ...[
-                        _buildExchangeRadio('MCX', '₹${widget.ltp.toStringAsFixed(2)}', '+1.42%'),
-                        const SizedBox(width: 14),
-                        _buildExchangeRadio('NSE', '₹${(widget.ltp * 0.998).toStringAsFixed(2)}', '+1.38%'),
+                      if (_selectedExchange == 'MCX') ...[
+                        _buildExchangeRadio('MCX', '₹${_limitPrice.toStringAsFixed(2)}', 'LIVE'),
+                      ] else if (_selectedExchange == 'NFO' || _selectedExchange == 'BFO') ...[
+                        _buildExchangeRadio(_selectedExchange, '₹${_limitPrice.toStringAsFixed(2)}', 'F&O'),
                       ] else ...[
-                        _buildExchangeRadio('NSE', '₹${widget.ltp.toStringAsFixed(2)}', '+2.09%'),
+                        _buildExchangeRadio('NSE', '₹${_limitPrice.toStringAsFixed(2)}', 'LIVE'),
                         const SizedBox(width: 14),
-                        _buildExchangeRadio('BSE', '₹${(widget.ltp * 0.996).toStringAsFixed(2)}', '+1.98%'),
+                        _buildExchangeRadio('BSE', '₹${_limitPrice.toStringAsFixed(2)}', 'BSE'),
                       ],
                     ],
                   ),

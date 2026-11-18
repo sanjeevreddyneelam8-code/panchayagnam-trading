@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 
 /// Represents strike-level data in the Option Chain
@@ -173,11 +174,11 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   };
 
   static final Map<String, double> _spotPrices = {
-    'NIFTY': 24228.31,
-    'BANKNIFTY': 51820.00,
-    'FINNIFTY': 23410.00,
-    'MIDCPNIFTY': 13050.80,
-    'SENSEX': 79402.20,
+    'NIFTY': 25278.70,
+    'BANKNIFTY': 52125.00,
+    'FINNIFTY': 24100.00,
+    'MIDCPNIFTY': 12950.00,
+    'SENSEX': 82500.00,
   };
 
   static final Map<String, double> _strikeSteps = {
@@ -189,73 +190,91 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   };
 
   static final Map<String, int> _lotSizes = {
-    'NIFTY': 25,
-    'BANKNIFTY': 15,
-    'FINNIFTY': 25,
-    'MIDCPNIFTY': 50,
-    'SENSEX': 10,
+    'NIFTY': 75,
+    'BANKNIFTY': 30,
+    'FINNIFTY': 65,
+    'MIDCPNIFTY': 120,
+    'SENSEX': 20,
   };
 
   List<OptionStrikeData> _strikesData = [];
   Timer? _liveTicker;
-  double _spotPrice = 24150.50;
-  double _spotChange = 108.20;
-  double _spotChangePct = 0.45;
+  double _spotPrice = 25278.70;
+  double _spotChange = 0.0;
+  double _spotChangePct = 0.0;
   double _pcr = 1.08;
-  double _maxPain = 24200.0;
+  double _maxPain = 25300.0;
   double _vix = 14.22;
   int _tradeLots = 1;
+  double? _lastGeneratedAtm;
 
   @override
   void initState() {
     super.initState();
     _activeSubTab = widget.initialTabIndex;
     _expiry = _expiriesPerIndex[_underlying]!.first;
-    _spotPrice = _spotPrices[_underlying]!;
+    LiveMarketDataService().addListener(_syncWithLiveMarketQuotes);
+    LiveMarketDataService().start();
+    _syncWithLiveMarketQuotes();
     _generateFullOptionChain();
     _startLivePriceTicker();
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_syncWithLiveMarketQuotes);
     _liveTicker?.cancel();
     super.dispose();
   }
 
+  void _syncWithLiveMarketQuotes() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool spotUpdated = false;
+
+    for (final idx in _indices) {
+      final q = svc.getQuote(idx);
+      if (q != null && q.ltp > 0) {
+        _spotPrices[idx] = q.ltp;
+        if (idx == _underlying) {
+          _spotPrice = q.ltp;
+          _spotChange = q.change;
+          _spotChangePct = q.changePct;
+          spotUpdated = true;
+        }
+      }
+    }
+    final vixQ = svc.getQuote('INDIAVIX');
+    if (vixQ != null && vixQ.ltp > 0) {
+      _vix = vixQ.ltp;
+    }
+
+    if (spotUpdated) {
+      final step = _strikeSteps[_underlying] ?? 50.0;
+      final newAtm = (_spotPrice / step).round() * step;
+      if (_lastGeneratedAtm == null || (newAtm - _lastGeneratedAtm!).abs() >= step) {
+        setState(() {
+          _generateFullOptionChain();
+        });
+      } else {
+        setState(() {});
+      }
+    }
+  }
+
   void _startLivePriceTicker() {
     _liveTicker?.cancel();
-    _liveTicker = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted || _strikesData.isEmpty) return;
-      final rand = math.Random();
-      final baseSpot = _spotPrices[_underlying] ?? 24000.0;
-      final delta = (rand.nextDouble() - 0.48) * (baseSpot * 0.0004);
-
-      setState(() {
-        _spotPrice = double.parse((_spotPrice + delta).toStringAsFixed(2));
-        _spotChange = _spotPrice - baseSpot;
-        _spotChangePct = (_spotChange / baseSpot) * 100;
-
-        for (int i = 0; i < _strikesData.length; i++) {
-          final s = _strikesData[i];
-          final callDeltaTick = (rand.nextDouble() - 0.49) * 0.4;
-          final putDeltaTick = (rand.nextDouble() - 0.49) * 0.4;
-
-          final newCallLtp = math.max(0.50, double.parse((s.callLtp + callDeltaTick).toStringAsFixed(2)));
-          final newPutLtp = math.max(0.50, double.parse((s.putLtp + putDeltaTick).toStringAsFixed(2)));
-
-          _strikesData[i] = s.copyWith(
-            callLtp: newCallLtp,
-            putLtp: newPutLtp,
-          );
-        }
-      });
+    _liveTicker = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      LiveMarketDataService().fetchNow();
     });
   }
 
   void _generateFullOptionChain() {
     final double step = _strikeSteps[_underlying] ?? 50.0;
-    final double baseSpot = _spotPrices[_underlying] ?? 24228.31;
+    final double baseSpot = _spotPrices[_underlying] ?? 25278.70;
     final double atm = (baseSpot / step).round() * step;
+    _lastGeneratedAtm = atm;
     _maxPain = atm;
 
     final List<OptionStrikeData> list = [];

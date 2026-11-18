@@ -3,20 +3,24 @@ package com.py.trading.service;
 import com.py.common.enums.BrokerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 /**
  * Service to manage server-side paper trading safeguards.
- * When enabled (default for dev/local/test), orders are simulated and
- * will NEVER reach live broker APIs.
+ * In production (profile=prod), real live broker execution is always active.
  */
 @Service
 public class PaperTradingService {
 
     private static final Logger log = LoggerFactory.getLogger(PaperTradingService.class);
+
+    @Autowired(required = false)
+    private Environment environment;
 
     @Value("${trading.paper-trading.enabled:false}")
     private boolean paperTradingEnabled;
@@ -24,10 +28,26 @@ public class PaperTradingService {
     @Value("${trading.live-trading.enabled:true}")
     private boolean liveTradingEnabled;
 
+    private boolean isProdProfile() {
+        if (environment == null) {
+            return false;
+        }
+        for (String profile : environment.getActiveProfiles()) {
+            if ("prod".equalsIgnoreCase(profile)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Returns true if paper trading is active.
+     * Always false in production so real broker accounts execute live on the exchange.
      */
     public boolean isPaperTradingEnabled() {
+        if (isProdProfile()) {
+            return false;
+        }
         return paperTradingEnabled;
     }
 
@@ -35,6 +55,9 @@ public class PaperTradingService {
      * Returns true if live trading is explicitly permitted.
      */
     public boolean isLiveTradingEnabled() {
+        if (isProdProfile()) {
+            return true;
+        }
         return liveTradingEnabled;
     }
 
@@ -55,11 +78,11 @@ public class PaperTradingService {
      * Asserts that live orders cannot execute if paper trading is enabled or live trading is not explicitly authorized.
      */
     public void validateLiveOrderAllowed() {
-        if (paperTradingEnabled) {
+        if (isPaperTradingEnabled()) {
             log.error("CRITICAL: Live order blocked because paper-trading mode is ENABLED!");
             throw new IllegalStateException("Accidental live trade blocked: paper-trading mode is enabled");
         }
-        if (!liveTradingEnabled) {
+        if (!isLiveTradingEnabled()) {
             log.error("CRITICAL: Live order blocked because live trading is not enabled in configuration (trading.live-trading.enabled=false)!");
             throw new IllegalStateException("Live trade blocked: live trading is not enabled in configuration (trading.live-trading.enabled=false)");
         }

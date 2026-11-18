@@ -15,6 +15,8 @@ import com.py.brokers.angel.dto.OrderParams;
 import com.py.brokers.angel.exception.SmartAPIException;
 import com.py.brokers.angel.http.ApiRequestHandler;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -155,49 +157,168 @@ public class AngelOneApisService {
                     : "NSE";
             String tradingSymbol = request.getTradingsymbol() != null ? request.getTradingsymbol().trim() : "";
             String symbolToken = request.getSymboltoken() != null ? request.getSymboltoken().trim() : "";
+            String productType = (request.getProducttype() != null && !request.getProducttype().isBlank())
+                    ? request.getProducttype().trim().toUpperCase()
+                    : "INTRADAY";
+
+            String upperSym = tradingSymbol.replaceAll("\\s+", " ").trim().toUpperCase();
+
+            // Detect Options (e.g. "NIFTY 25300 CE", "BANKNIFTY 52000 PE", "SENSEX 82000 CE")
+            Matcher optMatcher = Pattern.compile("^([A-Z]+)\\s+(\\d+)\\s+(CE|PE)$").matcher(upperSym);
+            boolean isOption = optMatcher.matches() || upperSym.endsWith("CE") || upperSym.endsWith("PE");
+            boolean isFuture = upperSym.contains(" FUT") || upperSym.endsWith("FUT");
+            boolean isCommodity = upperSym.startsWith("CRUDEOIL") || upperSym.startsWith("GOLD")
+                    || upperSym.startsWith("SILVER") || upperSym.startsWith("NATURALGAS")
+                    || upperSym.startsWith("COPPER") || upperSym.startsWith("ZINC")
+                    || upperSym.startsWith("ALUMINIUM") || upperSym.startsWith("LEAD")
+                    || upperSym.startsWith("NICKEL");
+
+            if (isCommodity) {
+                exchange = "MCX";
+            } else if (isOption || isFuture) {
+                if (upperSym.startsWith("SENSEX") || upperSym.startsWith("BANKEX")) {
+                    exchange = "BFO";
+                } else if ("NSE".equals(exchange) || "BSE".equals(exchange)) {
+                    exchange = "NFO";
+                }
+            }
+
+            // Angel One requires CARRYFORWARD instead of DELIVERY for NFO / BFO / MCX
+            if (("NFO".equals(exchange) || "BFO".equals(exchange) || "MCX".equals(exchange))
+                    && ("DELIVERY".equals(productType) || "CNC".equals(productType) || "NRML".equals(productType))) {
+                productType = "CARRYFORWARD";
+            } else if ("CNC".equals(productType)) {
+                productType = "DELIVERY";
+            } else if ("MIS".equals(productType)) {
+                productType = "INTRADAY";
+            }
 
             // Auto-resolve exact Angel One tradingsymbol & symboltoken via searchScrip when symbolToken is omitted
-            if (symbolToken.isEmpty() && !tradingSymbol.isEmpty()) {
-                String cleanQuery = tradingSymbol.replaceAll("\\s+", " ").trim().toUpperCase();
-                String baseTicker = cleanQuery.split("[\\s-]")[0];
+            if (symbolToken.isEmpty() && !upperSym.isEmpty()) {
                 try {
-                    JSONObject searchParams = new JSONObject();
-                    searchParams.put("exchange", exchange);
-                    searchParams.put("searchscrip", baseTicker);
-                    JSONObject searchResp = apiRequestHandler.postRequest(
-                            request.getApiKey(),
-                            routes.get("api.search.script.data"),
-                            searchParams,
-                            request.getAccessToken());
-                    JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
-                    if (dataArr != null && dataArr.length() > 0) {
+                    if (optMatcher.matches()) {
+                        String underlying = optMatcher.group(1);
+                        String strike = optMatcher.group(2);
+                        String optType = optMatcher.group(3);
+                        String[] queries = new String[]{
+                                underlying + strike + optType,
+                                underlying + " " + strike + " " + optType,
+                                underlying + strike
+                        };
                         JSONObject bestMatch = null;
-                        String eqTarget = baseTicker + "-EQ";
-                        for (int i = 0; i < dataArr.length(); i++) {
-                            JSONObject item = dataArr.optJSONObject(i);
-                            if (item == null) continue;
-                            String sym = item.optString("tradingsymbol", "").toUpperCase();
-                            if (sym.equals(cleanQuery) || sym.equals(eqTarget)) {
-                                bestMatch = item;
-                                break;
+                        for (String q : queries) {
+                            JSONObject searchParams = new JSONObject();
+                            searchParams.put("exchange", exchange);
+                            searchParams.put("searchscrip", q);
+                            JSONObject searchResp = apiRequestHandler.postRequest(
+                                    request.getApiKey(),
+                                    routes.get("api.search.script.data"),
+                                    searchParams,
+                                    request.getAccessToken());
+                            JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                            if (dataArr != null && dataArr.length() > 0) {
+                                for (int i = 0; i < dataArr.length(); i++) {
+                                    JSONObject item = dataArr.optJSONObject(i);
+                                    if (item == null) continue;
+                                    String sym = item.optString("tradingsymbol", "").toUpperCase();
+                                    if (sym.startsWith(underlying) && sym.endsWith(strike + optType)) {
+                                        bestMatch = item;
+                                        break;
+                                    }
+                                }
+                                if (bestMatch != null) break;
                             }
-                            if (bestMatch == null && sym.startsWith(baseTicker)) {
-                                bestMatch = item;
-                            }
-                        }
-                        if (bestMatch == null) {
-                            bestMatch = dataArr.optJSONObject(0);
                         }
                         if (bestMatch != null) {
                             tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
                             symbolToken = bestMatch.optString("symboltoken", symbolToken);
-                            log.info("Auto-resolved AngelOne scrip | query={} -> exchange={} symbol={} token={}",
-                                    cleanQuery, exchange, tradingSymbol, symbolToken);
+                            log.info("Auto-resolved AngelOne option | query={} -> exchange={} symbol={} token={}",
+                                    upperSym, exchange, tradingSymbol, symbolToken);
+                        }
+                    } else if (isFuture) {
+                        String underlying = upperSym.split("[\\s-]")[0];
+                        JSONObject searchParams = new JSONObject();
+                        searchParams.put("exchange", exchange);
+                        searchParams.put("searchscrip", underlying + "FUT");
+                        JSONObject searchResp = apiRequestHandler.postRequest(
+                                request.getApiKey(),
+                                routes.get("api.search.script.data"),
+                                searchParams,
+                                request.getAccessToken());
+                        JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                        if (dataArr == null || dataArr.length() == 0) {
+                            searchParams.put("searchscrip", underlying);
+                            searchResp = apiRequestHandler.postRequest(
+                                    request.getApiKey(),
+                                    routes.get("api.search.script.data"),
+                                    searchParams,
+                                    request.getAccessToken());
+                            dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                        }
+                        if (dataArr != null && dataArr.length() > 0) {
+                            JSONObject bestMatch = null;
+                            for (int i = 0; i < dataArr.length(); i++) {
+                                JSONObject item = dataArr.optJSONObject(i);
+                                if (item == null) continue;
+                                String sym = item.optString("tradingsymbol", "").toUpperCase();
+                                if (sym.startsWith(underlying) && sym.endsWith("FUT")) {
+                                    bestMatch = item;
+                                    break;
+                                }
+                            }
+                            if (bestMatch == null) bestMatch = dataArr.optJSONObject(0);
+                            if (bestMatch != null) {
+                                tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
+                                symbolToken = bestMatch.optString("symboltoken", symbolToken);
+                                log.info("Auto-resolved AngelOne future | query={} -> exchange={} symbol={} token={}",
+                                        upperSym, exchange, tradingSymbol, symbolToken);
+                            }
+                        }
+                    } else {
+                        String baseTicker = upperSym.split("[\\s-]")[0];
+                        JSONObject searchParams = new JSONObject();
+                        searchParams.put("exchange", exchange);
+                        searchParams.put("searchscrip", baseTicker);
+                        JSONObject searchResp = apiRequestHandler.postRequest(
+                                request.getApiKey(),
+                                routes.get("api.search.script.data"),
+                                searchParams,
+                                request.getAccessToken());
+                        JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                        if (dataArr != null && dataArr.length() > 0) {
+                            JSONObject bestMatch = null;
+                            String eqTarget = baseTicker + "-EQ";
+                            for (int i = 0; i < dataArr.length(); i++) {
+                                JSONObject item = dataArr.optJSONObject(i);
+                                if (item == null) continue;
+                                String sym = item.optString("tradingsymbol", "").toUpperCase();
+                                if (sym.equals(upperSym) || sym.equals(eqTarget)) {
+                                    bestMatch = item;
+                                    break;
+                                }
+                                if (bestMatch == null && sym.startsWith(baseTicker)) {
+                                    bestMatch = item;
+                                }
+                            }
+                            if (bestMatch == null) {
+                                bestMatch = dataArr.optJSONObject(0);
+                            }
+                            if (bestMatch != null) {
+                                tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
+                                symbolToken = bestMatch.optString("symboltoken", symbolToken);
+                                log.info("Auto-resolved AngelOne equity | query={} -> exchange={} symbol={} token={}",
+                                        upperSym, exchange, tradingSymbol, symbolToken);
+                            }
                         }
                     }
                 } catch (Exception | SmartAPIException ex) {
                     log.warn("AngelOne searchScrip auto-resolve failed for {}: {}", tradingSymbol, ex.getMessage());
                 }
+            }
+
+            if (symbolToken.isEmpty()) {
+                throw new RuntimeException("Could not find live Angel One contract for '" + tradingSymbol
+                        + "' on " + exchange + ". Please verify the strike/symbol is active today.");
             }
 
             SmartConnect smartConnect = new SmartConnect(request.getApiKey());
@@ -208,7 +329,7 @@ public class AngelOneApisService {
             orderParams.setTradingsymbol(tradingSymbol);
             orderParams.setSymboltoken(symbolToken);
             orderParams.setOrdertype(request.getOrdertype());
-            orderParams.setProducttype(request.getProducttype());
+            orderParams.setProducttype(productType);
             orderParams.setQuantity(request.getQuantity());
             orderParams.setPrice(request.getPrice());
             orderParams.setDuration(request.getDuration() != null ? request.getDuration() : "DAY");
