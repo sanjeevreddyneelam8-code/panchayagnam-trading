@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../service/theme_mode_service.dart';
 import 'main_dashboard_screen.dart';
 
@@ -62,6 +63,10 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
         _selectedCommodityIdx = firstMatch;
       }
     }
+    LiveMarketDataService().addListener(_syncLiveCommodities);
+    LiveMarketDataService().start();
+    LiveMarketDataService().fetchCommoditiesNow();
+    _syncLiveCommodities();
     _startLiveTicks();
 
     if (widget.initialShowOptionChain) {
@@ -631,35 +636,62 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
     ];
   }
 
-  void _startLiveTicks() {
-    _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
-      if (!mounted) return;
+  void _syncLiveCommodities() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool updated = false;
+    for (final c in _commodities) {
+      final sym = (c['symbol'] ?? '').toString().toUpperCase();
+      final q = svc.getCommodityQuote(sym);
+      if (q != null && q.ltp > 0) {
+        final prevSpot = (c['spot'] as num).toDouble();
+        c['spot'] = q.ltp;
+        c['prevClose'] = q.prevClose > 0 ? q.prevClose : q.ltp;
+        c['high'] = q.high > 0 ? q.high : q.ltp;
+        c['low'] = q.low > 0 ? q.low : q.ltp;
+        if (q.volume > 0) {
+          c['vol'] = q.volume >= 1000
+              ? '${(q.volume / 1000.0).toStringAsFixed(1)}K'
+              : '${q.volume}';
+        }
+        if (q.oi > 0) {
+          c['oi'] = q.oi >= 100000
+              ? '${(q.oi / 100000.0).toStringAsFixed(1)}L'
+              : '${(q.oi / 1000.0).toStringAsFixed(1)}K';
+        }
+        final step = (c['step'] as num?)?.toInt() ?? 50;
+        if (step > 0) {
+          c['atm'] = ((q.ltp / step).round() * step);
+        }
+        // Clear old preset option prices when real live MCX price differs from template
+        if (c['presetCalls'] is Map && (c['presetCalls'] as Map).isNotEmpty) {
+          c['presetCalls'] = <int, double>{};
+        }
+        c['flash'] = q.ltp > prevSpot ? 1 : (q.ltp < prevSpot ? -1 : 0);
+        updated = true;
+      }
+    }
+    if (updated && mounted) {
       setState(() {
         _now = DateTime.now();
-        for (final c in _commodities) {
-          final oldSpot = (c['spot'] as num).toDouble();
-          final scale = math.max(0.1, oldSpot * 0.00045);
-          final delta = (_rand.nextDouble() - 0.485) * scale * 2;
-          final newSpot = double.parse(math.max(1.0, oldSpot + delta).toStringAsFixed(2));
-          c['spot'] = newSpot;
-          c['high'] = math.max((c['high'] as num).toDouble(), newSpot);
-          c['low'] = math.min((c['low'] as num).toDouble(), newSpot);
-          c['flash'] = delta > 0.02 ? 1 : (delta < -0.02 ? -1 : 0);
-          final bp = ((c['buyPressure'] as double) + (delta >= 0 ? 0.015 : -0.015)).clamp(0.35, 0.80);
-          c['buyPressure'] = bp;
+      });
+    }
+  }
 
-          final spark = List<double>.from(c['spark'] as List);
-          spark.removeAt(0);
-          spark.add((spark.last + (delta >= 0 ? -0.035 : 0.035)).clamp(0.08, 0.88));
-          c['spark'] = spark;
-        }
+  void _startLiveTicks() {
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      LiveMarketDataService().fetchCommoditiesNow();
+      setState(() {
+        _now = DateTime.now();
       });
     });
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_syncLiveCommodities);
     _tickTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();

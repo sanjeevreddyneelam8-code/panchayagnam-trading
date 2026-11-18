@@ -138,6 +138,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   bool _isSubmitting = false;
   bool _isAmo = false;
   String? _orderErrorMessage;
+  double? _liveAvailableMargin;
 
   late int _quantity;
   late double _limitPrice;
@@ -195,6 +196,19 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     _priceCtrl = TextEditingController(text: _limitPrice.toStringAsFixed(2));
     _slCtrl = TextEditingController(text: _slTriggerPrice.toStringAsFixed(2));
     _targetCtrl = TextEditingController(text: _targetPrice.toStringAsFixed(2));
+
+    _loadLiveBrokerMargin(engine);
+  }
+
+  Future<void> _loadLiveBrokerMargin(CopyTradingEngine engine) async {
+    if (engine.accounts.isEmpty) return;
+    final acc = engine.accounts[_selectedAccountIndex < engine.accounts.length ? _selectedAccountIndex : 0];
+    final cash = await LiveMarketDataService().fetchLiveFunds(clientId: acc.clientId);
+    if (mounted && cash != null) {
+      setState(() {
+        _liveAvailableMargin = cash;
+      });
+    }
   }
 
   @override
@@ -376,12 +390,15 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
           ),
         );
       } else {
-        final errMsg = (decoded['message'] ??
+        final rawErr = (decoded['message'] ??
                 decoded['error'] ??
                 (response.body.isNotEmpty && response.body.length < 220
                     ? response.body
                     : 'Order rejected by broker (HTTP ${response.statusCode})'))
             .toString();
+        final errMsg = rawErr.contains('AG7002') || rawErr.toLowerCase().contains('not a registered ip')
+            ? '$rawErr\n\nFix: Go to smartapi.angelone.in → My Apps → Edit your App → set Static IP to ${LiveMarketDataService().serverOutboundIp} and save.'
+            : rawErr;
 
         if (mounted) {
           setState(() {
@@ -879,7 +896,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                 final isSingleAccount = brokerCount <= 1;
                 final primaryBroker = selectedAcc.broker;
                 final primaryName = selectedAcc.name;
-                final availableMargin = selectedAcc.balance > 0 ? selectedAcc.balance : 1500000.0;
+                final availableMargin = _liveAvailableMargin ?? (selectedAcc.balance > 0 ? selectedAcc.balance : 0.0);
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,

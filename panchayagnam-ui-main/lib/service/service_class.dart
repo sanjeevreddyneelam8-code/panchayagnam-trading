@@ -524,7 +524,7 @@ class ServiceClass {
           'password': request.password,
           'mobileNumber': request.mobileNumber,
           'assignedTo': (request.isOwn == true) ? 'Master Trading Desk' : 'Connected Demat Account',
-          'ip': request.ip.isNotEmpty ? request.ip : '13.235.14.89',
+          'ip': request.ip.isNotEmpty ? request.ip : '74.220.52.132',
           'apiSecretKey': request.apiSecretKey,
           'vendorInfo': request.vendorInfo,
           'tokenUpdated': true,

@@ -355,6 +355,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
         m['prev'] = q.prevClose > 0 ? q.prevClose : q.ltp;
         if (q.high > 0) m['high'] = q.high;
         if (q.low > 0) m['low'] = q.low;
+        m['tag'] = q.changePct >= 0 ? 'GAINER' : 'LOSER';
         updated = true;
       }
     }
@@ -364,6 +365,17 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
       final q = svc.getQuote(sym);
       if (q != null && q.ltp > 0) {
         call['ltp'] = q.ltp;
+        updated = true;
+      }
+    }
+
+    for (final pos in _virtualPositions) {
+      final sym = (pos['symbol'] ?? '').toString().toUpperCase();
+      final q = svc.getQuote(sym);
+      if (q != null && q.ltp > 0) {
+        pos['ltp'] = q.ltp;
+        final avg = (pos['avg'] as num).toDouble();
+        pos['isUp'] = q.ltp >= avg;
         updated = true;
       }
     }

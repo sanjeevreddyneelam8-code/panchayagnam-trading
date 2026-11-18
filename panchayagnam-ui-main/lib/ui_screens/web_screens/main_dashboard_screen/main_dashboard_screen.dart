@@ -842,7 +842,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       }
 
                       return Tooltip(
-                        message: isOwner ? '👑 Dedicated Owner IP: 13.235.14.89 (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: 13.235.14.89 · Click to Copy',
+                        message: isOwner ? '👑 Dedicated Owner IP: 74.220.52.132 (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: 74.220.52.132 · Click to Copy',
                         child: InkWell(
                           onTap: () {
                             if (isOwner) {
@@ -854,7 +854,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Dedicated Static IP copied: 13.235.14.89'),
+                                  content: Text('Dedicated Static IP copied: 74.220.52.132'),
                                   backgroundColor: Color(0xFF059669),
                                   behavior: SnackBarBehavior.floating,
                                   duration: Duration(seconds: 2),
@@ -875,7 +875,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               children: [
                                 Icon(isOwner ? Icons.admin_panel_settings_rounded : Icons.router_rounded, size: 13, color: isOwner ? const Color(0xFFFCD34D) : const Color(0xFF34D399)),
                                 const SizedBox(width: 5),
-                                Text(isOwner ? '👑 IP Pool: 13.235.14.89' : '13.235.14.89', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isOwner ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0))),
+                                Text(isOwner ? '👑 IP Pool: 74.220.52.132' : '74.220.52.132', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isOwner ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0))),
                               ],
                             ),
                           ),
@@ -1172,7 +1172,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                               children: [
                                                 Icon(Icons.router_rounded, size: 12, color: isOwner ? const Color(0xFFFBBF24) : const Color(0xFF10B981)),
                                                 const SizedBox(width: 4),
-                                                Text(isOwner ? 'Static IP: 13.235.14.89 (Dedicated Owner)' : 'Static IP: 13.235.14.89', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
+                                                Text(isOwner ? 'Static IP: 74.220.52.132 (Dedicated Owner)' : 'Static IP: 74.220.52.132', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
                                               ],
                                             ),
                                             InkWell(
@@ -1180,7 +1180,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                                 Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
                                                 Navigator.pop(ctx);
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
+                                                  const SnackBar(content: Text('Static IP copied: 74.220.52.132'), backgroundColor: Color(0xFF059669)),
                                                 );
                                               },
                                               child: const Padding(

@@ -113,8 +113,11 @@ public class PyBrokerIpConfigService {
             ipConfig = ipConfigOpt.get();
         }
 
-        // Allow shared platform cloud IP (13.235.14.89 / 127.0.0.1) across accounts
-        boolean isSharedCloudIp = "13.235.14.89".equals(ipAddress) || "127.0.0.1".equals(ipAddress);
+        // Allow shared platform cloud IPs across accounts
+        boolean isSharedCloudIp = "13.235.14.89".equals(ipAddress)
+                || "74.220.52.132".equals(ipAddress)
+                || "127.0.0.1".equals(ipAddress)
+                || ipAddress.startsWith("74.220.");
         if (!isSharedCloudIp) {
             // Rule 2: same broker type cannot be assigned to same IP twice (active accounts)
             boolean sameBrokerTypeExists = pyBrokerAccountRepository.existsActiveAccountWithIpAndBrokerType(

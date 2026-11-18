@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/add_demat_account/add_demat_bloc.dart';
 import '../constants/colors.dart';
+import '../service/live_market_data_service.dart';
 import '../service/service_class.dart';
 
 enum AccountDialogAction { add, update }
@@ -268,9 +269,10 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
     if (_isUpdate && widget.existingAccount != null) {
       _prefillFromExisting(widget.existingAccount!);
     } else {
-      _ipController.text = '13.235.14.89';
+      final liveIp = LiveMarketDataService().serverOutboundIp;
+      _ipController.text = liveIp;
       _ipStatus = IpValidationStatus.valid;
-      _ipStatusMessage = 'Platform Static IP (13.235.14.89) ready';
+      _ipStatusMessage = 'Server Static IP ($liveIp) ready — whitelist this IP in Angel One SmartAPI';
       _validatedPort = 8082;
     }
   }
@@ -384,7 +386,8 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _totpKeyGoodWellController.clear();
       _apiSecretKeyController.clear();
       _dobTextController.clear();
-      _ipController.text = '13.235.14.89';
+      final liveIp = LiveMarketDataService().serverOutboundIp;
+      _ipController.text = liveIp;
       _selectedDob = null;
       _dobError = false;
       _dobErrMsg = 'Please enter or select Date of Birth';
@@ -393,7 +396,7 @@ class _AddChildAccountDialogState extends State<AddChildAccountDialog>
       _ownAccount = null;
       _ownAccountError = false;
       _ipStatus = IpValidationStatus.valid;
-      _ipStatusMessage = 'Platform Static IP (13.235.14.89) ready';
+      _ipStatusMessage = 'Server Static IP ($liveIp) ready — whitelist this IP in Angel One SmartAPI';
       _validatedPort = 8082;
       _showMpin = _showTotpAngel = _showApiKey = false;
       _showTotpMotilal = _showApiSecretKey = _showTotpDhan = false;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../service/theme_mode_service.dart';
 
 /// Stock Item representation for F&O Stock Watchlist
@@ -115,16 +116,16 @@ class _StockOptionsViewState extends State<StockOptionsView> {
     '29 Jan 2027 M',
   ];
 
-  // Benchmark index values matching Image 2 & 4
-  final double _niftySpot = 25144.30;
-  final double _niftyChange = -155.05;
-  final double _niftyChangePct = -0.61;
+  // Benchmark index values synced with live Angel One NSE/BSE feed
+  double _niftySpot = 25227.95;
+  double _niftyChange = 0.0;
+  double _niftyChangePct = 0.0;
 
-  final double _sensexSpot = 81592.45;
-  final double _sensexChange = -318.56;
-  final double _sensexChangePct = -0.39;
+  double _sensexSpot = 82030.21;
+  double _sensexChange = 0.0;
+  double _sensexChangePct = 0.0;
 
-  // Master list of stocks from Image 2
+  // Master list of stocks synced with live Angel One feed
   late List<StockWatchItem> _allStocks;
 
   @override
@@ -132,11 +133,74 @@ class _StockOptionsViewState extends State<StockOptionsView> {
     super.initState();
     _initStockData();
     _selectedStock = _allStocks.first;
+    LiveMarketDataService().addListener(_syncLiveStockPrices);
+    LiveMarketDataService().start();
+    _syncLiveStockPrices();
     _searchCtrl.addListener(() {
       setState(() {
         _searchQuery = _searchCtrl.text.trim().toLowerCase();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    LiveMarketDataService().removeListener(_syncLiveStockPrices);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _syncLiveStockPrices() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool changed = false;
+
+    final nq = svc.getQuote('NIFTY');
+    if (nq != null && nq.ltp > 0) {
+      _niftySpot = nq.ltp;
+      _niftyChange = nq.change;
+      _niftyChangePct = nq.changePct;
+      changed = true;
+    }
+    final sq = svc.getQuote('SENSEX');
+    if (sq != null && sq.ltp > 0) {
+      _sensexSpot = sq.ltp;
+      _sensexChange = sq.change;
+      _sensexChangePct = sq.changePct;
+      changed = true;
+    }
+
+    for (int i = 0; i < _allStocks.length; i++) {
+      final item = _allStocks[i];
+      final q = svc.getQuote(item.symbol);
+      if (q != null && q.ltp > 0) {
+        final updated = StockWatchItem(
+          symbol: item.symbol,
+          companyName: item.companyName,
+          exchange: item.exchange,
+          token: item.token,
+          ltp: q.ltp,
+          change: q.change,
+          changePercent: q.changePct,
+          open: item.open,
+          high: q.high > 0 ? q.high : q.ltp,
+          low: q.low > 0 ? q.low : q.ltp,
+          prevClose: q.prevClose > 0 ? q.prevClose : item.prevClose,
+          lotSize: item.lotSize,
+          volume: q.volume > 0 ? q.volume : item.volume,
+          category: item.category,
+        );
+        _allStocks[i] = updated;
+        if (_selectedStock.symbol == item.symbol) {
+          _selectedStock = updated;
+        }
+        changed = true;
+      }
+    }
+
+    if (changed && mounted) {
+      setState(() {});
+    }
   }
 
   void _initStockData() {
@@ -324,12 +388,6 @@ class _StockOptionsViewState extends State<StockOptionsView> {
         volume: 7200000,
       ),
     ];
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
   }
 
   List<StockWatchItem> get _filteredStocks {

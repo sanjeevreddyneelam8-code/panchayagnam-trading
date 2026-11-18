@@ -208,6 +208,8 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   int _tradeLots = 1;
   double? _lastGeneratedAtm;
 
+  bool _hasLiveOptionChain = false;
+
   @override
   void initState() {
     super.initState();
@@ -217,6 +219,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     LiveMarketDataService().start();
     _syncWithLiveMarketQuotes();
     _generateFullOptionChain();
+    _fetchLiveOptionChain();
     _startLivePriceTicker();
   }
 
@@ -252,7 +255,7 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     if (spotUpdated) {
       final step = _strikeSteps[_underlying] ?? 50.0;
       final newAtm = (_spotPrice / step).round() * step;
-      if (_lastGeneratedAtm == null || (newAtm - _lastGeneratedAtm!).abs() >= step) {
+      if (!_hasLiveOptionChain && (_lastGeneratedAtm == null || (newAtm - _lastGeneratedAtm!).abs() >= step)) {
         setState(() {
           _generateFullOptionChain();
         });
@@ -262,11 +265,79 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     }
   }
 
+  Future<void> _fetchLiveOptionChain() async {
+    final target = _underlying;
+    final data = await LiveMarketDataService().fetchOptionChain(target);
+    if (!mounted || target != _underlying || data == null) return;
+    final rawStrikes = data['strikes'];
+    if (rawStrikes is! List || rawStrikes.isEmpty) return;
+
+    final liveList = <OptionStrikeData>[];
+    final spot = (data['spot'] as num?)?.toDouble() ?? _spotPrice;
+    final step = _strikeSteps[_underlying] ?? 50.0;
+
+    for (final item in rawStrikes) {
+      if (item is! Map) continue;
+      final strike = (item['strike'] as num?)?.toDouble() ?? 0.0;
+      if (strike <= 0) continue;
+      final distSteps = (strike - spot) / step;
+      final callDelta = double.parse((1.0 / (1.0 + math.exp(distSteps * 0.65))).toStringAsFixed(2));
+      final putDelta = double.parse((callDelta - 1.0).toStringAsFixed(2));
+      liveList.add(OptionStrikeData(
+        strike: strike,
+        isAtm: item['isAtm'] == true,
+        callLtp: (item['callLtp'] as num?)?.toDouble() ?? 0.0,
+        callChange: (item['callChange'] as num?)?.toDouble() ?? 0.0,
+        callChangePercent: (item['callChangePct'] as num?)?.toDouble() ?? 0.0,
+        callOi: (item['callOi'] as num?)?.toDouble() ?? 0.0,
+        callOiChange: 0.0,
+        callIv: _vix,
+        callDelta: callDelta,
+        callVolume: (item['callVolume'] as num?)?.toInt() ?? 0,
+        putLtp: (item['putLtp'] as num?)?.toDouble() ?? 0.0,
+        putChange: (item['putChange'] as num?)?.toDouble() ?? 0.0,
+        putChangePercent: (item['putChangePct'] as num?)?.toDouble() ?? 0.0,
+        putOi: (item['putOi'] as num?)?.toDouble() ?? 0.0,
+        putOiChange: 0.0,
+        putIv: _vix,
+        putDelta: putDelta,
+        putVolume: (item['putVolume'] as num?)?.toInt() ?? 0,
+      ));
+    }
+
+    if (liveList.isNotEmpty && mounted) {
+      final liveExp = (data['expiry'] ?? '').toString().trim();
+      final totalCallOi = liveList.fold(0.0, (acc, s) => acc + s.callOi);
+      final totalPutOi = liveList.fold(0.0, (acc, s) => acc + s.putOi);
+      setState(() {
+        _hasLiveOptionChain = true;
+        _spotPrice = spot;
+        _spotChange = (data['spotChange'] as num?)?.toDouble() ?? _spotChange;
+        _spotChangePct = (data['spotChangePct'] as num?)?.toDouble() ?? _spotChangePct;
+        _maxPain = (data['atm'] as num?)?.toDouble() ?? _maxPain;
+        _lastGeneratedAtm = _maxPain;
+        _strikesData = liveList;
+        if (totalCallOi > 0) {
+          _pcr = double.parse((totalPutOi / totalCallOi).toStringAsFixed(2));
+        }
+        if (liveExp.isNotEmpty) {
+          final label = '$liveExp (Live Expiry)';
+          final list = _expiriesPerIndex[_underlying];
+          if (list != null && !list.contains(label)) {
+            list.insert(0, label);
+          }
+          _expiry = label;
+        }
+      });
+    }
+  }
+
   void _startLivePriceTicker() {
     _liveTicker?.cancel();
-    _liveTicker = Timer.periodic(const Duration(seconds: 5), (_) {
+    _liveTicker = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted) return;
       LiveMarketDataService().fetchNow();
+      _fetchLiveOptionChain();
     });
   }
 
@@ -354,10 +425,12 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     if (sym == _underlying) return;
     setState(() {
       _underlying = sym;
+      _hasLiveOptionChain = false;
       _expiry = _expiriesPerIndex[_underlying]!.first;
       _spotPrice = _spotPrices[_underlying]!;
       _generateFullOptionChain();
     });
+    _fetchLiveOptionChain();
   }
 
   void _executeOptionOrder({
