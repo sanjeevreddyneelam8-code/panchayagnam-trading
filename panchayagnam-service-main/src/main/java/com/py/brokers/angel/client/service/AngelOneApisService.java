@@ -31,6 +31,8 @@ public class AngelOneApisService {
 
     private final ApiRequestHandler apiRequestHandler;
     private final Routes routes;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AngelOneScripMasterService scripMasterService;
     private static final Logger log = LoggerFactory.getLogger(AngelOneApisService.class);
 
     public AngelOneApisService(ApiRequestHandler apiRequestHandler, Routes routes) {
@@ -164,14 +166,19 @@ public class AngelOneApisService {
                     ? request.getProducttype().trim().toUpperCase()
                     : "INTRADAY";
 
-            String upperSym = tradingSymbol.replaceAll("\\s+", " ").trim().toUpperCase();
+            String upperSym = tradingSymbol
+                    .replaceAll("\\([^)]*\\)", "") // strip trailing "(Dec MCX)" etc.
+                    .replaceAll("\\s+", " ")
+                    .trim()
+                    .toUpperCase();
 
-            // Detect Options (e.g. "NIFTY 25300 CE", "BANKNIFTY 52000 PE", "SENSEX 82000 CE")
+            // Detect Options (e.g. "NIFTY 24800 CE", "BANKNIFTY 62000 PE", "CRUDEOIL 8100 CE")
             Matcher optMatcher = Pattern.compile("^([A-Z]+)\\s+(\\d+)\\s+(CE|PE)$").matcher(upperSym);
             boolean isOption = optMatcher.matches() || upperSym.endsWith("CE") || upperSym.endsWith("PE");
             boolean isFuture = upperSym.contains(" FUT") || upperSym.endsWith("FUT");
             boolean isCommodity = upperSym.startsWith("CRUDEOIL") || upperSym.startsWith("GOLD")
                     || upperSym.startsWith("SILVER") || upperSym.startsWith("NATURALGAS")
+                    || upperSym.startsWith("NATGASMINI")
                     || upperSym.startsWith("COPPER") || upperSym.startsWith("ZINC")
                     || upperSym.startsWith("ALUMINIUM") || upperSym.startsWith("LEAD")
                     || upperSym.startsWith("NICKEL");
@@ -196,7 +203,38 @@ public class AngelOneApisService {
                 productType = "INTRADAY";
             }
 
-            // Auto-resolve exact Angel One tradingsymbol & symboltoken via searchScrip when symbolToken is omitted
+            // 1. Instant O(1) lookup from Angel One official OpenAPIScripMaster (zero rate limit, exact nearest expiry!)
+            int resolvedLotSize = 1;
+            if (symbolToken.isEmpty() && !upperSym.isEmpty() && scripMasterService != null) {
+                AngelOneScripMasterService.ScripEntry match = null;
+                if (optMatcher.matches()) {
+                    String underlying = optMatcher.group(1);
+                    int strikeInt = Integer.parseInt(optMatcher.group(2));
+                    String optType = optMatcher.group(3);
+                    match = scripMasterService.findNearestOption(underlying, strikeInt, optType);
+                } else if (isFuture) {
+                    String underlying = upperSym.split("[\\s-]")[0];
+                    match = scripMasterService.findNearestFuture(exchange, underlying);
+                } else {
+                    match = scripMasterService.findEquity(exchange, upperSym);
+                }
+                if (match != null) {
+                    exchange = match.exchange;
+                    tradingSymbol = match.symbol;
+                    symbolToken = match.token;
+                    resolvedLotSize = match.lotSize;
+                    log.info("✅ Resolved from AngelOneScripMaster | query={} -> exchange={} symbol={} token={} lot={}",
+                            upperSym, exchange, tradingSymbol, symbolToken, resolvedLotSize);
+                }
+            }
+
+            if (resolvedLotSize > 1 && request.getQuantity() != null && request.getQuantity() % resolvedLotSize != 0) {
+                throw new RuntimeException("Invalid quantity " + request.getQuantity() + " for " + tradingSymbol
+                        + ". Angel One lot size is " + resolvedLotSize + " Qty (enter " + resolvedLotSize
+                        + ", " + (resolvedLotSize * 2) + ", etc.).");
+            }
+
+            // 2. Fallback to Angel One searchScrip API if not in ScripMaster
             if (symbolToken.isEmpty() && !upperSym.isEmpty()) {
                 try {
                     if (optMatcher.matches()) {

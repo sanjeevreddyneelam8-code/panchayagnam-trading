@@ -2,6 +2,7 @@ package com.py.controller;
 
 import com.py.brokers.angel.client.Routes;
 import com.py.brokers.angel.client.service.AngelOneApisService;
+import com.py.brokers.angel.client.service.AngelOneScripMasterService;
 import com.py.brokers.angel.dto.AngelOneRMSRequest;
 import com.py.brokers.angel.http.ApiRequestHandler;
 import com.py.common.enums.BrokerType;
@@ -49,6 +50,9 @@ public class LiveMarketDataController {
 
     @Autowired(required = false)
     private AngelOneApisService angelOneApisService;
+
+    @Autowired(required = false)
+    private AngelOneScripMasterService scripMasterService;
 
     @Autowired(required = false)
     private PyTokenValidationService pyTokenValidationService;
@@ -397,9 +401,19 @@ public class LiveMarketDataController {
             return out;
         }
 
+        // Prefer instant nearest-expiry resolution from Angel One official OpenAPIScripMaster
+        if (scripMasterService != null) {
+            for (String comm : DEFAULT_COMMODITIES) {
+                AngelOneScripMasterService.ScripEntry entry = scripMasterService.findNearestFuture("MCX", comm);
+                if (entry != null) {
+                    mcxTokenCache.put(comm, new String[]{entry.token, entry.symbol});
+                }
+            }
+        }
+
         long now = System.currentTimeMillis();
         boolean cacheStale = (now - lastMcxTokenResolveMs) > 21_600_000L;
-        if ((mcxTokenCache.size() < 12 || cacheStale) && !mcxWarmupRunning) {
+        if ((mcxTokenCache.size() < 10 || cacheStale) && !mcxWarmupRunning) {
             mcxWarmupRunning = true;
             // Resolve top 4 commodities immediately if cache is empty, then resolve the rest in background
             List<String> priority = List.of("CRUDEOIL", "GOLD", "SILVER", "NATURALGAS");
@@ -557,76 +571,43 @@ public class LiveMarketDataController {
             default -> spot > 3000 ? 50.0 : (spot > 1000 ? 20.0 : (spot > 500 ? 10.0 : 5.0));
         };
         double atm = Math.round(spot / step) * step;
-        String cacheKey = underlying + "_" + (int) atm;
+        int lotSize = switch (underlying) {
+            case "NIFTY" -> 65;
+            case "BANKNIFTY" -> 30;
+            case "FINNIFTY" -> 60;
+            case "MIDCPNIFTY" -> 120;
+            case "SENSEX" -> 20;
+            default -> 1;
+        };
 
-        long now = System.currentTimeMillis();
-        Map<String, Object> cachedMeta = optionTokenCache.get(cacheKey);
-        Long metaTime = optionTokenCacheTime.get(cacheKey);
-        if (cachedMeta == null || metaTime == null || (now - metaTime) > 1_800_000L) {
-            // Resolve 9 strikes (-4..+4) around ATM using strike+"CE"/"PE" (matches NIFTY19NOV2625250CE)
-            Map<Integer, String[]> ceTokens = new LinkedHashMap<>();
-            Map<Integer, String[]> peTokens = new LinkedHashMap<>();
-            String detectedExpiry = "";
-            LocalDate today = LocalDate.now();
-            Pattern expPattern = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})\\d+(CE|PE)$");
+        Map<Integer, String[]> ceTokens = new LinkedHashMap<>();
+        Map<Integer, String[]> peTokens = new LinkedHashMap<>();
+        String expiry = "";
 
-            for (int offset = -4; offset <= 4; offset++) {
-                int strikeInt = (int) (atm + (offset * step));
-                for (String optType : new String[]{"CE", "PE"}) {
-                    JSONArray arr = angelSearchScrip(apiKey, accessToken, exchange, strikeInt + optType);
-                    if (arr == null || arr.length() == 0) continue;
-                    String[] bestPair = null;
-                    LocalDate bestExp = null;
-                    String bestExpStr = "";
-                    for (int i = 0; i < arr.length(); i++) {
-                        JSONObject item = arr.optJSONObject(i);
-                        if (item == null) continue;
-                        String ts = item.optString("tradingsymbol", "").toUpperCase();
-                        String tok = item.optString("symboltoken", "");
-                        if (tok.isBlank()) continue;
-                        Matcher m = expPattern.matcher(ts);
-                        if (m.matches() && ts.endsWith(strikeInt + optType)) {
-                            try {
-                                LocalDate exp = LocalDate.parse(m.group(1), ANGEL_EXPIRY_FMT);
-                                if (!exp.isBefore(today) && (bestExp == null || exp.isBefore(bestExp))) {
-                                    bestExp = exp;
-                                    bestExpStr = m.group(1);
-                                    bestPair = new String[]{tok, ts};
-                                }
-                            } catch (Exception ignored) {
-                                if (bestPair == null) {
-                                    bestExpStr = m.group(1);
-                                    bestPair = new String[]{tok, ts};
-                                }
-                            }
-                        }
-                    }
-                    if (bestPair != null) {
-                        if ("CE".equals(optType)) ceTokens.put(strikeInt, bestPair);
-                        else peTokens.put(strikeInt, bestPair);
-                        if (detectedExpiry.isEmpty() && !bestExpStr.isEmpty()) detectedExpiry = bestExpStr;
-                    }
+        // 1. Instant O(1) lookup from Angel One official OpenAPIScripMaster (exact nearest expiry, zero rate limit!)
+        if (scripMasterService != null) {
+            Map<String, Object> masterChain = scripMasterService.getNearestExpiryOptionChainEntries(underlying, spot, step, 7);
+            if (!masterChain.isEmpty()) {
+                expiry = String.valueOf(masterChain.getOrDefault("expiry", ""));
+                lotSize = ((Number) masterChain.getOrDefault("lotSize", lotSize)).intValue();
+                exchange = String.valueOf(masterChain.getOrDefault("exchange", exchange));
+                Map<Integer, AngelOneScripMasterService.ScripEntry> ceMap =
+                        (Map<Integer, AngelOneScripMasterService.ScripEntry>) masterChain.get("ceMap");
+                Map<Integer, AngelOneScripMasterService.ScripEntry> peMap =
+                        (Map<Integer, AngelOneScripMasterService.ScripEntry>) masterChain.get("peMap");
+                if (ceMap != null) {
+                    ceMap.forEach((k, v) -> ceTokens.put(k, new String[]{v.token, v.symbol}));
                 }
-            }
-
-            if (!ceTokens.isEmpty() || !peTokens.isEmpty()) {
-                cachedMeta = new LinkedHashMap<>();
-                cachedMeta.put("expiry", detectedExpiry);
-                cachedMeta.put("ceTokens", ceTokens);
-                cachedMeta.put("peTokens", peTokens);
-                optionTokenCache.put(cacheKey, cachedMeta);
-                optionTokenCacheTime.put(cacheKey, now);
+                if (peMap != null) {
+                    peMap.forEach((k, v) -> peTokens.put(k, new String[]{v.token, v.symbol}));
+                }
             }
         }
 
-        if (cachedMeta == null) {
+        if (ceTokens.isEmpty() && peTokens.isEmpty()) {
             out.put("status", "UNAVAILABLE");
             return out;
         }
-
-        Map<Integer, String[]> ceTokens = (Map<Integer, String[]>) cachedMeta.get("ceTokens");
-        Map<Integer, String[]> peTokens = (Map<Integer, String[]>) cachedMeta.get("peTokens");
-        String expiry = String.valueOf(cachedMeta.getOrDefault("expiry", ""));
 
         JSONArray allTokens = new JSONArray();
         for (String[] pair : ceTokens.values()) allTokens.put(pair[0]);
@@ -657,7 +638,7 @@ public class LiveMarketDataController {
         }
 
         List<Map<String, Object>> strikes = new ArrayList<>();
-        for (int offset = -5; offset <= 5; offset++) {
+        for (int offset = -7; offset <= 7; offset++) {
             int strikeInt = (int) (atm + (offset * step));
             String[] cePair = ceTokens.get(strikeInt);
             String[] pePair = peTokens.get(strikeInt);
@@ -704,6 +685,7 @@ public class LiveMarketDataController {
         out.put("underlying", underlying);
         out.put("exchange", exchange);
         out.put("expiry", expiry);
+        out.put("lotSize", lotSize);
         out.put("spot", round2(spot));
         out.put("spotChange", round2(spotChange));
         out.put("spotChangePct", round2(spotChangePct));

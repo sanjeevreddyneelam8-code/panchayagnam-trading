@@ -841,8 +841,9 @@ class _MainDashboardState extends State<MainDashboard> {
                         );
                       }
 
+                      final liveIp = LiveMarketDataService().serverOutboundIp;
                       return Tooltip(
-                        message: isOwner ? '👑 Dedicated Owner IP: 74.220.52.132 (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: 74.220.52.132 · Click to Copy',
+                        message: isOwner ? '👑 Dedicated Owner IP: $liveIp (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: $liveIp · Click to Copy',
                         child: InkWell(
                           onTap: () {
                             if (isOwner) {
@@ -851,13 +852,13 @@ class _MainDashboardState extends State<MainDashboard> {
                                 _bodyKey = UniqueKey();
                               });
                             } else {
-                              Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
+                              Clipboard.setData(ClipboardData(text: liveIp));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Dedicated Static IP copied: 74.220.52.132'),
-                                  backgroundColor: Color(0xFF059669),
+                                SnackBar(
+                                  content: Text('Dedicated Static IP copied: $liveIp'),
+                                  backgroundColor: const Color(0xFF059669),
                                   behavior: SnackBarBehavior.floating,
-                                  duration: Duration(seconds: 2),
+                                  duration: const Duration(seconds: 2),
                                 ),
                               );
                             }
@@ -875,7 +876,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               children: [
                                 Icon(isOwner ? Icons.admin_panel_settings_rounded : Icons.router_rounded, size: 13, color: isOwner ? const Color(0xFFFCD34D) : const Color(0xFF34D399)),
                                 const SizedBox(width: 5),
-                                Text(isOwner ? '👑 IP Pool: 74.220.52.132' : '74.220.52.132', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isOwner ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0))),
+                                Text(isOwner ? '👑 IP Pool: $liveIp' : liveIp, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isOwner ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0))),
                               ],
                             ),
                           ),

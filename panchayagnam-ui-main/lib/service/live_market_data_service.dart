@@ -57,7 +57,7 @@ class LiveMarketDataService extends ChangeNotifier {
   bool _isFetchingCommodities = false;
   bool _isLiveConnected = false;
   DateTime? _lastUpdated;
-  String _serverOutboundIp = '74.220.52.132';
+  String _serverOutboundIp = '178.214.212.207';
 
   bool get isLiveConnected => _isLiveConnected;
   DateTime? get lastUpdated => _lastUpdated;

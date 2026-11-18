@@ -190,9 +190,9 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   };
 
   static final Map<String, int> _lotSizes = {
-    'NIFTY': 75,
+    'NIFTY': 65,
     'BANKNIFTY': 30,
-    'FINNIFTY': 65,
+    'FINNIFTY': 60,
     'MIDCPNIFTY': 120,
     'SENSEX': 20,
   };
@@ -310,6 +310,10 @@ class _OptionsChainViewState extends State<OptionsChainView> {
       final totalCallOi = liveList.fold(0.0, (acc, s) => acc + s.callOi);
       final totalPutOi = liveList.fold(0.0, (acc, s) => acc + s.putOi);
       setState(() {
+        final liveLot = (data['lotSize'] as num?)?.toInt();
+        if (liveLot != null && liveLot > 0) {
+          _lotSizes[_underlying] = liveLot;
+        }
         _hasLiveOptionChain = true;
         _spotPrice = spot;
         _spotChange = (data['spotChange'] as num?)?.toDouble() ?? _spotChange;

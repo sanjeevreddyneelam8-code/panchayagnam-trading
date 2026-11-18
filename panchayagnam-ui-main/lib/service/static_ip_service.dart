@@ -7,7 +7,7 @@ import '../reusable_widets/payment_gateway_dialog.dart';
 /// It becomes visible and active only AFTER payment, adding money to wallet,
 /// or scanning the UPI QR code.
 class StaticIpService {
-  static const String staticIp = '74.220.52.132';
+  static const String staticIp = '178.214.212.207';
   static const String storageKey = 'has_paid_static_ip';
 
   static final ValueNotifier<bool> isUnlockedNotifier =

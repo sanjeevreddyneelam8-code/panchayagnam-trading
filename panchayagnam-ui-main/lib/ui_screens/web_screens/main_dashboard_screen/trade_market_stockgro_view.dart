@@ -378,7 +378,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
         if (nq != null && nq.ltp > 0) {
           final atm = ((nq.ltp / 50.0).round() * 50);
           call['symbol'] = 'NIFTY $atm CE';
-          call['lot'] = 75;
+          call['lot'] = 65;
           updated = true;
         }
       } else if (sym.startsWith('BANKNIFTY ') && sym.contains('PE')) {
@@ -397,7 +397,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
           call['tgt1'] = double.parse((nq.ltp + 120).toStringAsFixed(2));
           call['tgt2'] = double.parse((nq.ltp + 250).toStringAsFixed(2));
           call['sl'] = double.parse((nq.ltp - 120).toStringAsFixed(2));
-          call['lot'] = 75;
+          call['lot'] = 65;
           updated = true;
         }
       }
@@ -2161,7 +2161,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                     return InkWell(
                       onTap: () {
                         final isOpt = sym.contains(' CE') || sym.contains(' PE');
-                        final lot = sym.startsWith('NIFTY ') ? 75 : (sym.startsWith('BANKNIFTY ') ? 30 : 1);
+                        final lot = sym.startsWith('NIFTY ') ? 65 : (sym.startsWith('BANKNIFTY ') ? 30 : 1);
                         OrderPlacementTicketDialog.show(
                           context,
                           symbol: sym,
