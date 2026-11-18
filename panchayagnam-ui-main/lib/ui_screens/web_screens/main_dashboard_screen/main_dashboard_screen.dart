@@ -1911,7 +1911,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               children: [
                                 _buildTableCell('Today, 11:30 AM'),
                                 _buildTableCell('TXN_PY_892110'),
-                                _buildTableCell('Dedicated Static IP (13.235.14.89 · 30 Days)'),
+                                _buildTableCell('Dedicated Static IP (74.220.52.132 · 30 Days)'),
                                 _buildTableCell('₹1,500.00', isBold: true),
                                 _buildReceiptDownloadCell('Download PDF'),
                               ],
@@ -1995,7 +1995,7 @@ class _MainDashboardState extends State<MainDashboard> {
               const Divider(height: 16),
               _buildProfileDetailRow('Phone Number', html.window.sessionStorage['user_phoneNumber'] ?? '+91 98480 22338'),
               const Divider(height: 16),
-              _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '13.235.14.89 (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
+              _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '74.220.52.132 (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
               const Divider(height: 16),
               _buildProfileDetailRow('Multi-Broker Status', '${CopyTradingEngine().totalAccountsCount} Brokers Whitelisted & Connected'),
             ],

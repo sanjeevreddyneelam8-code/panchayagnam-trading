@@ -2990,7 +2990,7 @@ class _ReportsViewState extends State<ReportsView> with SingleTickerProviderStat
         children: [
           const Text('Multi-Broker API Execution Latency & Parallel Fan-Out SLA', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A))),
           const SizedBox(height: 4),
-          Text('Real-time telemetry measured from Panchayagnam Dedicated Gateway 13.235.14.89 to broker exchange endpoints.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text('Real-time telemetry measured from Panchayagnam Dedicated Gateway 74.220.52.132 to broker exchange endpoints.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           const SizedBox(height: 16),
           Expanded(
             child: ListView.separated(
@@ -3076,7 +3076,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       'id': 'AL-902',
       'title': 'TradingView Pine Script Webhook Received',
       'category': 'WEBHOOK',
-      'description': 'Supertrend (10, 2) 15m Long Trigger received from dedicated IP 13.235.14.89. Secret signature verified.',
+      'description': 'Supertrend (10, 2) 15m Long Trigger received from dedicated IP 74.220.52.132. Secret signature verified.',
       'time': '5 min ago • 14:27:00 IST',
       'latency': '4ms',
       'icon': Icons.sensors_rounded,

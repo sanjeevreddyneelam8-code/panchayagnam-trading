@@ -1132,7 +1132,7 @@ class _PaymentGatewayDialogState extends State<PaymentGatewayDialog> {
                       const SizedBox(height: 2),
                       Text(
                         isOwner
-                            ? 'Static IP: 13.235.14.89 (Dedicated Owner Gateway · 30 Days)'
+                            ? 'Static IP: 74.220.52.132 (Dedicated Owner Gateway · 30 Days)'
                             : 'Your Static IP will activate immediately once the owner confirms payment receipt on PhonePe. Please await approval (usually 5–15 mins).',
                         style: TextStyle(
                           fontSize: 11.5,

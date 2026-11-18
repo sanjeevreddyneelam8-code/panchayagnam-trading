@@ -677,9 +677,9 @@ class _ClientKnowledgeCenterDialogState extends State<ClientKnowledgeCenterDialo
         ),
         const SizedBox(height: 12),
         _buildSafetyRuleCard(
-          title: 'Dedicated Whitelisted Static IP (13.235.14.89)',
+          title: 'Dedicated Whitelisted Static IP (74.220.52.132)',
           desc:
-              'Indian exchanges (NSE, BSE & MCX) enforce strict security policies regarding IP changes during live trading. Panchayagnam routes all connected broker orders through your dedicated static IP gateway (13.235.14.89), preventing IP mismatch rejections.',
+              'Indian exchanges (NSE, BSE & MCX) enforce strict security policies regarding IP changes during live trading. Panchayagnam routes all connected broker orders through your dedicated static IP gateway (74.220.52.132), preventing IP mismatch rejections.',
           icon: Icons.router_rounded,
           accentCol: const Color(0xFF38BDF8),
           badge: 'EXCHANGE COMPLIANCE',

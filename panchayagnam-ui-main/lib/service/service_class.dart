@@ -565,7 +565,7 @@ class ServiceClass {
     }
     return {
       'status': 400,
-      'message': 'Please enter a valid IPv4 address (e.g. 13.235.14.89 or 103.159.214.88).',
+      'message': 'Please enter a valid IPv4 address (e.g. 74.220.52.132 or 103.159.214.88).',
     };
   }
 

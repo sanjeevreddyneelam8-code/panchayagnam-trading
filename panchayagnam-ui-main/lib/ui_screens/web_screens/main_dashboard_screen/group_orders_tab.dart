@@ -1884,7 +1884,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           children: [
             Text('Dedicated Low-Latency Mumbai Gateway IP:', style: TextStyle(fontSize: 12, color: Colors.grey)),
             SizedBox(height: 4),
-            Text('13.235.14.89 (Active)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+            Text('74.220.52.132 (Active)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
             SizedBox(height: 12),
             Text('Status: Whitelisted for 5Paisa, Dhan, Zerodha & AngelOne developer portals.\nEstimated routing latency: 11ms.', style: TextStyle(fontSize: 12.5, color: Color(0xFF374151), height: 1.4)),
           ],
@@ -9252,10 +9252,10 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                     builder: (context, isUnlocked, _) {
                       return _buildGuideStep(
                         2,
-                        isUnlocked ? 'Get your static IP (Active: 13.235.14.89)' : 'Get your static IP (🔒 Locked · Separate purchase)',
+                        isUnlocked ? 'Get your static IP (Active: 74.220.52.132)' : 'Get your static IP (🔒 Locked · Separate purchase)',
                         isDone: isUnlocked,
                         desc: isUnlocked
-                            ? 'Dedicated AWS Mumbai Static IP 13.235.14.89 is active and whitelisted for this demat.'
+                            ? 'Dedicated AWS Mumbai Static IP 74.220.52.132 is active and whitelisted for this demat.'
                             : 'Buy one from us or bring your own. Either way it costs money and is separate from your free trial. Pay via UPI QR or Add money to wallet to activate.',
                         trailingAction: !isUnlocked
                             ? InkWell(
@@ -9393,7 +9393,7 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                     child: ElevatedButton.icon(
                       onPressed: widget.onStaticIpPressed,
                       icon: const Icon(Icons.router_rounded, size: 16),
-                      label: const Text('Static IP (Assigned: 13.235.14.89)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                      label: const Text('Static IP (Assigned: 74.220.52.132)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
@@ -9406,13 +9406,13 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                   Row(
                     children: [
                       const Text('Assigned Static IP: ', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
-                      const Text('13.235.14.89', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+                      const Text('74.220.52.132', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: StaticIpService.staticIp));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Static IP copied: 13.235.14.89'), backgroundColor: Color(0xFF059669)),
+                            const SnackBar(content: Text('Static IP copied: 74.220.52.132'), backgroundColor: Color(0xFF059669)),
                           );
                         },
                         child: Container(
