@@ -4,7 +4,12 @@ import com.py.brokers.angel.exception.SmartAPIException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,6 +18,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.Route;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,16 +33,75 @@ public class ApiRequestHandler {
 
     private OkHttpClient client;
     private String USER_AGENT = "javasmartapiconnect/3.0.0";
+    private boolean proxyConfigured = false;
     private static final Logger log = LoggerFactory.getLogger(ApiRequestHandler.class);
 
     public ApiRequestHandler() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.connectTimeout(10000, TimeUnit.MILLISECONDS);
+        builder.connectTimeout(15000, TimeUnit.MILLISECONDS);
+        builder.readTimeout(20000, TimeUnit.MILLISECONDS);
+
+        configureStaticProxyIfPresent(builder);
 
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         client = builder.build();
+    }
+
+    private void configureStaticProxyIfPresent(OkHttpClient.Builder builder) {
+        String proxyUrl = firstNonBlank(
+                System.getenv("BROKER_STATIC_PROXY_URL"),
+                System.getenv("QUOTAGUARDSTATIC_URL"),
+                System.getenv("FIXIE_URL"),
+                System.getProperty("broker.static.proxy.url")
+        );
+        if (proxyUrl == null || proxyUrl.isBlank()) {
+            return;
+        }
+        try {
+            URI uri = URI.create(proxyUrl.trim());
+            String host = uri.getHost();
+            int port = uri.getPort() > 0 ? uri.getPort() : 9293;
+            if (host == null || host.isBlank()) {
+                log.warn("Invalid BROKER_STATIC_PROXY_URL (missing host): {}", proxyUrl);
+                return;
+            }
+            builder.proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port)));
+            String userInfo = uri.getUserInfo();
+            if (userInfo != null && userInfo.contains(":")) {
+                int colon = userInfo.indexOf(':');
+                String user = userInfo.substring(0, colon);
+                String pass = userInfo.substring(colon + 1);
+                String credential = Credentials.basic(user, pass);
+                builder.proxyAuthenticator(new Authenticator() {
+                    @Override
+                    public Request authenticate(Route route, Response response) {
+                        if (response.request().header("Proxy-Authorization") != null) {
+                            return null;
+                        }
+                        return response.request().newBuilder()
+                                .header("Proxy-Authorization", credential)
+                                .build();
+                    }
+                });
+            }
+            proxyConfigured = true;
+            log.info("✅ Dedicated Static IP Proxy configured for Angel One API: {}:{}", host, port);
+        } catch (Exception e) {
+            log.error("Failed to configure dedicated static proxy: {}", e.getMessage());
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String v : values) {
+            if (v != null && !v.isBlank()) return v.trim();
+        }
+        return null;
+    }
+
+    public boolean isStaticProxyConfigured() {
+        return proxyConfigured;
     }
 
     public JSONObject postRequest(String apiKey, String url, JSONObject params)
@@ -128,7 +193,7 @@ public class ApiRequestHandler {
 
     private String cachedPublicIp = null;
 
-    private String getPublicIp() {
+    public String getPublicIp() {
         if (cachedPublicIp == null) {
             try {
                 Request ipRequest = new Request.Builder()
@@ -136,7 +201,7 @@ public class ApiRequestHandler {
                         .build();
                 Response ipResponse = client.newCall(ipRequest).execute();
                 cachedPublicIp = ipResponse.body().string().trim();
-                log.info("Public IP resolved and cached: {}", cachedPublicIp);
+                log.info("Public IP resolved and cached (proxy={}): {}", proxyConfigured, cachedPublicIp);
             } catch (Exception e) {
                 log.warn("Could not fetch public IP: {}", e.getMessage());
                 cachedPublicIp = "unknown";

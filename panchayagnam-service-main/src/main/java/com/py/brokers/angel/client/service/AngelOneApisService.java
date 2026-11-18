@@ -15,6 +15,9 @@ import com.py.brokers.angel.dto.OrderParams;
 import com.py.brokers.angel.exception.SmartAPIException;
 import com.py.brokers.angel.http.ApiRequestHandler;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONArray;
@@ -200,12 +203,18 @@ public class AngelOneApisService {
                         String underlying = optMatcher.group(1);
                         String strike = optMatcher.group(2);
                         String optType = optMatcher.group(3);
+                        // Angel One tradingsymbol format: NIFTY19NOV2625250CE -> search by strike+optType ("25250CE")
                         String[] queries = new String[]{
-                                underlying + strike + optType,
+                                strike + optType,
                                 underlying + " " + strike + " " + optType,
-                                underlying + strike
+                                underlying + strike + optType
                         };
                         JSONObject bestMatch = null;
+                        LocalDate bestExpiry = null;
+                        LocalDate today = LocalDate.now();
+                        Pattern expPat = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})" + Pattern.quote(strike + optType) + "$");
+                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
+
                         for (String q : queries) {
                             JSONObject searchParams = new JSONObject();
                             searchParams.put("exchange", exchange);
@@ -221,9 +230,17 @@ public class AngelOneApisService {
                                     JSONObject item = dataArr.optJSONObject(i);
                                     if (item == null) continue;
                                     String sym = item.optString("tradingsymbol", "").toUpperCase();
-                                    if (sym.startsWith(underlying) && sym.endsWith(strike + optType)) {
-                                        bestMatch = item;
-                                        break;
+                                    Matcher m = expPat.matcher(sym);
+                                    if (m.matches()) {
+                                        try {
+                                            LocalDate expDate = LocalDate.parse(m.group(1), dtf);
+                                            if (!expDate.isBefore(today) && (bestExpiry == null || expDate.isBefore(bestExpiry))) {
+                                                bestExpiry = expDate;
+                                                bestMatch = item;
+                                            }
+                                        } catch (Exception ignored) {
+                                            if (bestMatch == null) bestMatch = item;
+                                        }
                                     }
                                 }
                                 if (bestMatch != null) break;
@@ -239,31 +256,34 @@ public class AngelOneApisService {
                         String underlying = upperSym.split("[\\s-]")[0];
                         JSONObject searchParams = new JSONObject();
                         searchParams.put("exchange", exchange);
-                        searchParams.put("searchscrip", underlying + "FUT");
+                        searchParams.put("searchscrip", underlying);
                         JSONObject searchResp = apiRequestHandler.postRequest(
                                 request.getApiKey(),
                                 routes.get("api.search.script.data"),
                                 searchParams,
                                 request.getAccessToken());
                         JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
-                        if (dataArr == null || dataArr.length() == 0) {
-                            searchParams.put("searchscrip", underlying);
-                            searchResp = apiRequestHandler.postRequest(
-                                    request.getApiKey(),
-                                    routes.get("api.search.script.data"),
-                                    searchParams,
-                                    request.getAccessToken());
-                            dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
-                        }
                         if (dataArr != null && dataArr.length() > 0) {
                             JSONObject bestMatch = null;
+                            LocalDate bestExpiry = null;
+                            LocalDate today = LocalDate.now();
+                            Pattern expPat = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})FUT$");
+                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
                             for (int i = 0; i < dataArr.length(); i++) {
                                 JSONObject item = dataArr.optJSONObject(i);
                                 if (item == null) continue;
                                 String sym = item.optString("tradingsymbol", "").toUpperCase();
-                                if (sym.startsWith(underlying) && sym.endsWith("FUT")) {
-                                    bestMatch = item;
-                                    break;
+                                Matcher m = expPat.matcher(sym);
+                                if (m.matches()) {
+                                    try {
+                                        LocalDate expDate = LocalDate.parse(m.group(1), dtf);
+                                        if (!expDate.isBefore(today) && (bestExpiry == null || expDate.isBefore(bestExpiry))) {
+                                            bestExpiry = expDate;
+                                            bestMatch = item;
+                                        }
+                                    } catch (Exception ignored) {
+                                        if (bestMatch == null) bestMatch = item;
+                                    }
                                 }
                             }
                             if (bestMatch == null) bestMatch = dataArr.optJSONObject(0);

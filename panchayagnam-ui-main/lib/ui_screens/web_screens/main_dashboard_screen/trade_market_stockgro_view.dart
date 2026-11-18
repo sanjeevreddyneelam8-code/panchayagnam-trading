@@ -364,8 +364,42 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
       final sym = (call['symbol'] ?? '').toString().toUpperCase();
       final q = svc.getQuote(sym);
       if (q != null && q.ltp > 0) {
+        final oldLtp = (call['ltp'] as num?)?.toDouble() ?? q.ltp;
         call['ltp'] = q.ltp;
+        if (oldLtp > 0 && (q.ltp - oldLtp).abs() / oldLtp > 0.15) {
+          call['entry'] = double.parse((q.ltp * 0.99).toStringAsFixed(2));
+          call['tgt1'] = double.parse((q.ltp * 1.04).toStringAsFixed(2));
+          call['tgt2'] = double.parse((q.ltp * 1.08).toStringAsFixed(2));
+          call['sl'] = double.parse((q.ltp * 0.96).toStringAsFixed(2));
+        }
         updated = true;
+      } else if (sym.startsWith('NIFTY ') && sym.contains('CE')) {
+        final nq = svc.getQuote('NIFTY');
+        if (nq != null && nq.ltp > 0) {
+          final atm = ((nq.ltp / 50.0).round() * 50);
+          call['symbol'] = 'NIFTY $atm CE';
+          call['lot'] = 75;
+          updated = true;
+        }
+      } else if (sym.startsWith('BANKNIFTY ') && sym.contains('PE')) {
+        final bq = svc.getQuote('BANKNIFTY');
+        if (bq != null && bq.ltp > 0) {
+          final atm = ((bq.ltp / 100.0).round() * 100);
+          call['symbol'] = 'BANKNIFTY $atm PE';
+          call['lot'] = 30;
+          updated = true;
+        }
+      } else if (sym.contains('NIFTY') && sym.contains('FUT')) {
+        final nq = svc.getQuote('NIFTY');
+        if (nq != null && nq.ltp > 0) {
+          call['ltp'] = nq.ltp;
+          call['entry'] = double.parse((nq.ltp - 25).toStringAsFixed(2));
+          call['tgt1'] = double.parse((nq.ltp + 120).toStringAsFixed(2));
+          call['tgt2'] = double.parse((nq.ltp + 250).toStringAsFixed(2));
+          call['sl'] = double.parse((nq.ltp - 120).toStringAsFixed(2));
+          call['lot'] = 75;
+          updated = true;
+        }
       }
     }
 
@@ -2108,19 +2142,33 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                   spacing: 10,
                   runSpacing: 8,
                   children: results.map((r) {
-                    final sym = r['sym'] as String;
-                    final ltp = (r['ltp'] as num).toDouble();
-                    final chg = r['chg'] as String;
+                    final rawSym = r['sym'] as String;
+                    final liveSvc = LiveMarketDataService();
+                    final liveQ = liveSvc.getQuote(rawSym);
+                    String sym = rawSym;
+                    if (rawSym == 'NIFTY 24200 CE') {
+                      final nq = liveSvc.getQuote('NIFTY');
+                      if (nq != null && nq.ltp > 0) sym = 'NIFTY ${(nq.ltp / 50.0).round() * 50} CE';
+                    } else if (rawSym == 'BANKNIFTY 51800 CE') {
+                      final bq = liveSvc.getQuote('BANKNIFTY');
+                      if (bq != null && bq.ltp > 0) sym = 'BANKNIFTY ${(bq.ltp / 100.0).round() * 100} CE';
+                    }
+                    final ltp = (liveQ != null && liveQ.ltp > 0) ? liveQ.ltp : (r['ltp'] as num).toDouble();
+                    final chg = (liveQ != null && liveQ.ltp > 0)
+                        ? '${liveQ.changePct >= 0 ? '+' : ''}${liveQ.changePct.toStringAsFixed(2)}%'
+                        : (r['chg'] as String);
 
                     return InkWell(
                       onTap: () {
+                        final isOpt = sym.contains(' CE') || sym.contains(' PE');
+                        final lot = sym.startsWith('NIFTY ') ? 75 : (sym.startsWith('BANKNIFTY ') ? 30 : 1);
                         OrderPlacementTicketDialog.show(
                           context,
                           symbol: sym,
                           side: 'BUY',
                           ltp: ltp,
-                          lotSize: 1,
-                          category: sym.contains('CE') || sym.contains('PE') ? 'OPTIONS' : 'EQUITY',
+                          lotSize: lot,
+                          category: isOpt ? 'F&O' : 'EQUITY',
                         );
                       },
                       borderRadius: BorderRadius.circular(8),

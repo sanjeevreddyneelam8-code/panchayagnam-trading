@@ -8,6 +8,7 @@ import '../../../constants/auth_header_helper.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../reusable_widets/order_placement_ticket_dialog.dart';
 
@@ -423,25 +424,33 @@ class _PositionsViewState extends State<PositionsView> {
   @override
   void initState() {
     super.initState();
-    // Realistic 1.5-second live fluctuation ticker
-    _ticker = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+    LiveMarketDataService().addListener(_syncLivePositions);
+    LiveMarketDataService().start();
+    _syncLivePositions();
+    _ticker = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
-      setState(() {
-        for (var p in _positions) {
-          final delta = (_rnd.nextDouble() - 0.49) * 0.40;
-          final currentLtp = p['ltp'] as double;
-          p['ltp'] = math.max(1.0, currentLtp + delta);
-        }
-        // Micro fluctuation in broker latencies
-        for (var b in _brokerLatencies) {
-          b['latency'] = math.max(6, (b['latency'] as int) + (_rnd.nextBool() ? 1 : -1));
-        }
-      });
+      LiveMarketDataService().fetchNow();
     });
+  }
+
+  void _syncLivePositions() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool changed = false;
+    for (var p in _positions) {
+      final sym = (p['symbol'] ?? '').toString().replaceAll(' EQ', '').trim().toUpperCase();
+      final q = svc.getQuote(sym);
+      if (q != null && q.ltp > 0) {
+        p['ltp'] = q.ltp;
+        changed = true;
+      }
+    }
+    if (changed && mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_syncLivePositions);
     _ticker?.cancel();
     super.dispose();
   }
@@ -1431,6 +1440,36 @@ class _HoldingsViewState extends State<HoldingsView> {
       'dayChange': 0.94,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    LiveMarketDataService().addListener(_syncLiveHoldings);
+    LiveMarketDataService().start();
+    _syncLiveHoldings();
+  }
+
+  @override
+  void dispose() {
+    LiveMarketDataService().removeListener(_syncLiveHoldings);
+    super.dispose();
+  }
+
+  void _syncLiveHoldings() {
+    if (!mounted) return;
+    final svc = LiveMarketDataService();
+    bool changed = false;
+    for (final h in _allHoldings) {
+      final sym = (h['symbol'] ?? '').toString().trim().toUpperCase();
+      final q = svc.getQuote(sym);
+      if (q != null && q.ltp > 0) {
+        h['ltp'] = q.ltp;
+        h['dayChange'] = q.changePct;
+        changed = true;
+      }
+    }
+    if (changed && mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {

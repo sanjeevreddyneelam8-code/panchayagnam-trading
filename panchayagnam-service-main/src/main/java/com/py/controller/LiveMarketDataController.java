@@ -25,6 +25,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -69,7 +71,10 @@ public class LiveMarketDataController {
             "HCLTECH", "TITAN", "TATASTEEL", "IDEA", "YESBANK",
             "PERSISTENT", "DIXON", "TRENT", "COFORGE", "NESTLEIND", "INDUSINDBK",
             "ABB", "BEL", "HAL", "IOC", "POLICYBZR", "POWERINDIA", "SIEMENS",
-            "ZOMATO", "ETERNAL", "PNB", "JIOFIN", "HINDALCO", "JSWSTEEL"
+            "ZOMATO", "PNB", "JIOFIN", "HINDALCO", "JSWSTEEL",
+            "ASIANPAINT", "DIVISLAB", "POLYCAB", "BHEL", "PFC", "REC",
+            "INDHOTEL", "MOTHERSON", "CGPOWER", "TATACOMM", "MAZDOCK",
+            "CHOLAFIN", "BHARATFORG", "SUPREMEIND", "SOLARINDS", "MCX", "BERGEPAINT"
     );
 
     private static final List<String> DEFAULT_COMMODITIES = List.of(
@@ -186,6 +191,12 @@ public class LiveMarketDataController {
     private volatile long lastIpFetchMs = 0L;
 
     private String resolveOutboundIp() {
+        if (apiRequestHandler != null && apiRequestHandler.isStaticProxyConfigured()) {
+            String proxyIp = apiRequestHandler.getPublicIp();
+            if (proxyIp != null && proxyIp.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
+                return proxyIp;
+            }
+        }
         long now = System.currentTimeMillis();
         if (cachedOutboundIp != null && (now - lastIpFetchMs) < 300_000L) {
             return cachedOutboundIp;
@@ -256,6 +267,7 @@ public class LiveMarketDataController {
         body.put("liveTradingEnabled", paperTradingService == null || paperTradingService.isLiveTradingEnabled());
         body.put("activeProfiles", environment != null ? Arrays.asList(environment.getActiveProfiles()) : List.of());
         body.put("serverOutboundIp", resolveOutboundIp());
+        body.put("staticProxyActive", apiRequestHandler != null && apiRequestHandler.isStaticProxyConfigured());
         return ResponseEntity.ok(body);
     }
 
@@ -474,19 +486,30 @@ public class LiveMarketDataController {
         return out;
     }
 
+    private static final DateTimeFormatter ANGEL_EXPIRY_FMT = DateTimeFormatter.ofPattern("ddMMMyy", Locale.ENGLISH);
+
     private void resolveMcxSymbol(String apiKey, String accessToken, String comm) {
         JSONArray arr = angelSearchScrip(apiKey, accessToken, "MCX", comm);
         if (arr == null || arr.length() == 0) return;
         JSONObject best = null;
+        LocalDate bestExpiry = null;
+        LocalDate today = LocalDate.now();
+        Pattern pat = Pattern.compile("^" + Pattern.quote(comm) + "(\\d{2}[A-Z]{3}\\d{2})FUT$");
+
         for (int i = 0; i < arr.length(); i++) {
             JSONObject item = arr.optJSONObject(i);
             if (item == null) continue;
             String ts = item.optString("tradingsymbol", "").toUpperCase();
-            if (ts.startsWith(comm) && ts.endsWith("FUT")) {
-                String after = ts.substring(comm.length());
-                if (!after.isEmpty() && Character.isDigit(after.charAt(0))) {
-                    best = item;
-                    break;
+            Matcher m = pat.matcher(ts);
+            if (m.matches()) {
+                try {
+                    LocalDate exp = LocalDate.parse(m.group(1), ANGEL_EXPIRY_FMT);
+                    if (!exp.isBefore(today) && (bestExpiry == null || exp.isBefore(bestExpiry))) {
+                        bestExpiry = exp;
+                        best = item;
+                    }
+                } catch (Exception ignored) {
+                    if (best == null) best = item;
                 }
             }
         }
@@ -540,33 +563,48 @@ public class LiveMarketDataController {
         Map<String, Object> cachedMeta = optionTokenCache.get(cacheKey);
         Long metaTime = optionTokenCacheTime.get(cacheKey);
         if (cachedMeta == null || metaTime == null || (now - metaTime) > 1_800_000L) {
-            // Resolve 9 strikes (-4..+4) around ATM sequentially with rate-limit spacing
+            // Resolve 9 strikes (-4..+4) around ATM using strike+"CE"/"PE" (matches NIFTY19NOV2625250CE)
             Map<Integer, String[]> ceTokens = new LinkedHashMap<>();
             Map<Integer, String[]> peTokens = new LinkedHashMap<>();
             String detectedExpiry = "";
+            LocalDate today = LocalDate.now();
             Pattern expPattern = Pattern.compile("^" + Pattern.quote(underlying) + "(\\d{2}[A-Z]{3}\\d{2})\\d+(CE|PE)$");
 
             for (int offset = -4; offset <= 4; offset++) {
                 int strikeInt = (int) (atm + (offset * step));
-                JSONArray arr = angelSearchScrip(apiKey, accessToken, exchange, underlying + " " + strikeInt);
-                if (arr == null || arr.length() == 0) {
-                    arr = angelSearchScrip(apiKey, accessToken, exchange, underlying + strikeInt);
-                }
-                if (arr == null) continue;
-                for (int i = 0; i < arr.length(); i++) {
-                    JSONObject item = arr.optJSONObject(i);
-                    if (item == null) continue;
-                    String ts = item.optString("tradingsymbol", "").toUpperCase();
-                    String tok = item.optString("symboltoken", "");
-                    if (tok.isBlank()) continue;
-                    if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "CE") && !ceTokens.containsKey(strikeInt)) {
-                        ceTokens.put(strikeInt, new String[]{tok, ts});
+                for (String optType : new String[]{"CE", "PE"}) {
+                    JSONArray arr = angelSearchScrip(apiKey, accessToken, exchange, strikeInt + optType);
+                    if (arr == null || arr.length() == 0) continue;
+                    String[] bestPair = null;
+                    LocalDate bestExp = null;
+                    String bestExpStr = "";
+                    for (int i = 0; i < arr.length(); i++) {
+                        JSONObject item = arr.optJSONObject(i);
+                        if (item == null) continue;
+                        String ts = item.optString("tradingsymbol", "").toUpperCase();
+                        String tok = item.optString("symboltoken", "");
+                        if (tok.isBlank()) continue;
                         Matcher m = expPattern.matcher(ts);
-                        if (m.matches() && detectedExpiry.isEmpty()) detectedExpiry = m.group(1);
-                    } else if (ts.startsWith(underlying) && ts.endsWith(strikeInt + "PE") && !peTokens.containsKey(strikeInt)) {
-                        peTokens.put(strikeInt, new String[]{tok, ts});
-                        Matcher m = expPattern.matcher(ts);
-                        if (m.matches() && detectedExpiry.isEmpty()) detectedExpiry = m.group(1);
+                        if (m.matches() && ts.endsWith(strikeInt + optType)) {
+                            try {
+                                LocalDate exp = LocalDate.parse(m.group(1), ANGEL_EXPIRY_FMT);
+                                if (!exp.isBefore(today) && (bestExp == null || exp.isBefore(bestExp))) {
+                                    bestExp = exp;
+                                    bestExpStr = m.group(1);
+                                    bestPair = new String[]{tok, ts};
+                                }
+                            } catch (Exception ignored) {
+                                if (bestPair == null) {
+                                    bestExpStr = m.group(1);
+                                    bestPair = new String[]{tok, ts};
+                                }
+                            }
+                        }
+                    }
+                    if (bestPair != null) {
+                        if ("CE".equals(optType)) ceTokens.put(strikeInt, bestPair);
+                        else peTokens.put(strikeInt, bestPair);
+                        if (detectedExpiry.isEmpty() && !bestExpStr.isEmpty()) detectedExpiry = bestExpStr;
                     }
                 }
             }
