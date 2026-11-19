@@ -405,6 +405,17 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final effectivePrice = _orderType == 'MARKET' ? _currentLtp : _limitPrice;
     final isDerivativeEx = _selectedExchange == 'NFO' || _selectedExchange == 'BFO' || _selectedExchange == 'MCX';
 
+    // Format proper equity symbol (-EQ for NSE cash equities)
+    final apiSymbol = (!_isFnO && !_isCommodity && _selectedExchange == 'NSE' && !widget.symbol.toUpperCase().endsWith('-EQ'))
+        ? '${widget.symbol.toUpperCase()}-EQ'
+        : widget.symbol;
+
+    // NSE & Angel One require LIMIT orders for Options (MARKET orders are rejected by exchange)
+    final apiOrderType = _isFnO ? 'LIMIT' : _orderType;
+    final apiPrice = _isFnO
+        ? (_currentLtp > 0 ? _currentLtp : _limitPrice)
+        : (_orderType == 'MARKET' ? 0.0 : _limitPrice);
+
     String apiProductType;
     if (_productType == 'INTRADAY') {
       apiProductType = 'INTRADAY';
@@ -441,12 +452,12 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             body: jsonEncode({
               'accId': int.tryParse(selectedAcc.id),
               'clientId': selectedAcc.clientId,
-              'tradingSymbol': widget.symbol,
+              'tradingSymbol': apiSymbol,
               'symbolToken': '',
               'exchange': _selectedExchange,
               'quantity': _quantity,
-              'orderType': _orderType,
-              'price': _orderType == 'MARKET' ? 0.0 : _limitPrice,
+              'orderType': apiOrderType,
+              'price': apiPrice,
               'productType': apiProductType,
               'variety': _isAmo ? 'AMO' : 'NORMAL',
               'amo': _isAmo ? 'Y' : 'N',
@@ -467,6 +478,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                 (decoded['data'] is Map ? decoded['data']['orderId'] : null) ??
                 'CONFIRMED')
             .toString();
+        final orderStatus = (decoded['orderStatus'] ?? 'CONFIRMED').toString().toUpperCase();
 
         if (mounted) {
           Navigator.pop(context);
@@ -483,12 +495,16 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Live Order Placed: $_side $_quantity Qty ${widget.symbol}',
+                        orderStatus == 'COMPLETE'
+                            ? 'Live Order Executed: $_side $_quantity Qty ${widget.symbol}'
+                            : (orderStatus == 'OPEN'
+                                ? 'Live Limit Order Open: $_side $_quantity Qty ${widget.symbol}'
+                                : 'Live Order Placed: $_side $_quantity Qty ${widget.symbol}'),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Sent to ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) @ ₹${effectivePrice.toStringAsFixed(2)} • Order ID: #$orderId',
+                        'Confirmed on ${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name}) @ ₹${effectivePrice.toStringAsFixed(2)} • Order ID: #$orderId',
                         style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9)),
                       ),
                     ],

@@ -15,7 +15,10 @@ import com.py.brokers.angel.dto.OrderParams;
 import com.py.brokers.angel.exception.SmartAPIException;
 import com.py.brokers.angel.http.ApiRequestHandler;
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.Locale;
@@ -400,26 +403,72 @@ public class AngelOneApisService {
                         + "' on " + exchange + ". Please verify the strike/symbol is active today.");
             }
 
+            // ── Market hours & variety auto-alignment ─────────────────────────
+            String variety = (request.getVariety() != null && !request.getVariety().isBlank())
+                    ? request.getVariety().trim().toUpperCase()
+                    : "NORMAL";
+
+            try {
+                ZoneId istZone = ZoneId.of("Asia/Kolkata");
+                ZonedDateTime nowIst = ZonedDateTime.now(istZone);
+                boolean isWeekend = nowIst.getDayOfWeek() == DayOfWeek.SATURDAY || nowIst.getDayOfWeek() == DayOfWeek.SUNDAY;
+                int istMinute = nowIst.getHour() * 60 + nowIst.getMinute();
+                boolean isMarketOpen = !isWeekend && (istMinute >= (9 * 60 + 15) && istMinute <= (15 * 60 + 30));
+
+                if (!isMarketOpen && "NORMAL".equalsIgnoreCase(variety)) {
+                    log.info("Market is closed in IST ({}). Auto-routing order for {} to AMO variety", nowIst, tradingSymbol);
+                    variety = "AMO";
+                } else if (isMarketOpen && "AMO".equalsIgnoreCase(variety)) {
+                    log.info("Market is currently open in IST ({}). Auto-routing order for {} to NORMAL variety", nowIst, tradingSymbol);
+                    variety = "NORMAL";
+                }
+            } catch (Exception ex) {
+                log.debug("Time zone check skipped: {}", ex.getMessage());
+            }
+
             SmartConnect smartConnect = new SmartConnect(request.getApiKey());
             smartConnect.setAccessToken(request.getAccessToken());
+
+            // ── Options ordertype check: NSE forbids MARKET orders on options ──
+            String orderType = request.getOrdertype() != null ? request.getOrdertype().trim().toUpperCase() : "LIMIT";
+            Double price = request.getPrice();
+
+            if (isOption && "MARKET".equals(orderType)) {
+                // Convert to LIMIT at LTP to prevent Angel One / NSE rejecting with "Market orders not allowed on options"
+                orderType = "LIMIT";
+                if (price == null || price <= 0.0) {
+                    try {
+                        JSONObject ltpObj = smartConnect.getLTP(exchange, tradingSymbol, symbolToken, request.getApiKey(), request.getAccessToken());
+                        if (ltpObj != null && ltpObj.has("ltp")) {
+                            price = ltpObj.optDouble("ltp", 0.0);
+                            log.info("Auto-converted Option MARKET order to LIMIT at live LTP ₹{} for {}", price, tradingSymbol);
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Could not fetch live LTP for Option MARKET conversion: {}", ex.getMessage());
+                    }
+                }
+            }
+
+            // ── Cash equity symbol check: NSE cash equities require -EQ ────────
+            if (!isOption && !isFuture && !isCommodity && "NSE".equals(exchange)) {
+                if (!tradingSymbol.endsWith("-EQ")) {
+                    tradingSymbol = tradingSymbol + "-EQ";
+                }
+            }
 
             OrderParams orderParams = new OrderParams();
             orderParams.setExchange(exchange);
             orderParams.setTradingsymbol(tradingSymbol);
             orderParams.setSymboltoken(symbolToken);
-            orderParams.setOrdertype(request.getOrdertype());
+            orderParams.setOrdertype(orderType);
             orderParams.setProducttype(productType);
             orderParams.setQuantity(request.getQuantity());
-            orderParams.setPrice(request.getPrice());
+            orderParams.setPrice(price != null ? price : 0.0);
             orderParams.setDuration(request.getDuration() != null ? request.getDuration() : "DAY");
             orderParams.setSquareoff(request.getSquareoff() != null ? request.getSquareoff() : "0");
             orderParams.setStoploss(request.getStoploss() != null ? request.getStoploss() : "0");
             orderParams.setTriggerprice(request.getTriggerprice() != null ? request.getTriggerprice().toString() : "0");
             orderParams.setTransactiontype(request.getTransactiontype());
-
-            String variety = (request.getVariety() != null && !request.getVariety().isBlank())
-                    ? request.getVariety()
-                    : "NORMAL";
 
             Order order = smartConnect.placeOrder(orderParams, variety);
 
@@ -427,9 +476,42 @@ public class AngelOneApisService {
                 throw new RuntimeException("Order failed — null response from broker");
             }
 
+            // ── Immediate RMS verification from order book ───────────────────
+            // Angel One assigns an orderId, but if margin is insufficient or contract is invalid,
+            // the order is rejected by RMS in <350ms. We verify this immediately so the user
+            // sees the exact broker error rather than wondering why Angel One rejected it!
+            String realStatus = "PENDING";
+            String rejectionReason = null;
+            try {
+                Thread.sleep(350);
+                JSONObject orderHistory = smartConnect.getOrderHistory();
+                JSONArray dataArr = orderHistory != null ? orderHistory.optJSONArray("data") : null;
+                if (dataArr != null && dataArr.length() > 0) {
+                    for (int i = 0; i < dataArr.length(); i++) {
+                        JSONObject item = dataArr.optJSONObject(i);
+                        if (item != null && order.orderId.equals(item.optString("orderid"))) {
+                            realStatus = item.optString("status", item.optString("orderstatus", "PENDING")).toUpperCase();
+                            String text = item.optString("text", "");
+                            if ("REJECTED".equals(realStatus) || "CANCELLED".equals(realStatus)) {
+                                rejectionReason = text.isEmpty() ? ("Rejected by Angel One RMS (" + realStatus + ")") : text;
+                            }
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Order verification check skipped: {}", ex.getMessage());
+            }
+
+            if (rejectionReason != null) {
+                log.error("❌ AngelOne order {} was REJECTED by RMS: {}", order.orderId, rejectionReason);
+                throw new RuntimeException("Angel One rejected: " + rejectionReason);
+            }
+
             JSONObject response = new JSONObject();
             response.put("orderId", order.orderId);
             response.put("uniqueOrderId", order.uniqueOrderId != null ? order.uniqueOrderId : order.orderId);
+            response.put("orderStatus", realStatus);
             response.put("status", "SUCCESS");
             return response;
 

@@ -150,32 +150,31 @@ class _OptionsChainViewState extends State<OptionsChainView> {
   final Map<String, List<String>> _expiriesPerIndex = {
     'NIFTY': [
       '23-NOV-2026 (Live Expiry)',
-      '28-NOV-2026 (Monthly Expiry)',
-      '05-DEC-2026 (Weekly)',
-      '26-DEC-2026 (Monthly Expiry)',
-      '31-DEC-2026 (Quarterly)',
+      '01-DEC-2026 (Weekly)',
+      '08-DEC-2026 (Weekly)',
+      '15-DEC-2026 (Weekly)',
+      '22-DEC-2026 (Weekly)',
+      '29-DEC-2026 (Monthly Expiry)',
     ],
     'BANKNIFTY': [
       '23-NOV-2026 (Live Expiry)',
-      '28-NOV-2026 (Monthly Expiry)',
-      '05-DEC-2026 (Weekly)',
-      '26-DEC-2026 (Monthly Expiry)',
-      '31-DEC-2026 (Quarterly)',
+      '29-DEC-2026 (Monthly Expiry)',
+      '25-JAN-2027 (Quarterly)',
     ],
     'FINNIFTY': [
       '23-NOV-2026 (Live Expiry)',
-      '26-NOV-2026 (Monthly Expiry)',
-      '02-DEC-2026 (Weekly)',
+      '29-DEC-2026 (Monthly Expiry)',
     ],
     'MIDCPNIFTY': [
       '23-NOV-2026 (Live Expiry)',
-      '25-NOV-2026 (Monthly Expiry)',
-      '01-DEC-2026 (Weekly)',
+      '29-DEC-2026 (Monthly Expiry)',
     ],
     'SENSEX': [
-      '23-NOV-2026 (Live Expiry)',
-      '29-NOV-2026 (Monthly Expiry)',
-      '06-DEC-2026 (Weekly)',
+      '19-NOV-2026 (Today\'s Expiry)',
+      '03-DEC-2026 (Weekly)',
+      '10-DEC-2026 (Weekly)',
+      '17-DEC-2026 (Weekly)',
+      '24-DEC-2026 (Monthly Expiry)',
     ],
   };
 
@@ -448,8 +447,22 @@ class _OptionsChainViewState extends State<OptionsChainView> {
     required double strike,
     required double premium,
   }) {
-    final lotSize = _lotSizes[_underlying] ?? 25;
-    final symbol = '$_underlying ${strike.toInt()} $optType';
+    final lotSize = _lotSizes[_underlying] ?? 65;
+
+    // Extract clean short expiry date, e.g. "23-NOV-2026 (Live Expiry)" -> "23NOV26"
+    final expMatch = RegExp(r'(\d{1,2})[-/ ]?([A-Z]{3})[-/ ]?(\d{2,4})').firstMatch(_expiry.toUpperCase());
+    String expPart = '';
+    if (expMatch != null) {
+      final day = expMatch.group(1)!.padLeft(2, '0');
+      final mon = expMatch.group(2)!;
+      final yr = expMatch.group(3)!;
+      final yrShort = yr.length == 4 ? yr.substring(2) : yr;
+      expPart = '$day$mon$yrShort'; // e.g. "23NOV26"
+    }
+
+    final symbol = expPart.isNotEmpty
+        ? '$_underlying $expPart ${strike.toInt()} $optType'
+        : '$_underlying ${strike.toInt()} $optType';
 
     OrderPlacementTicketDialog.show(
       context,

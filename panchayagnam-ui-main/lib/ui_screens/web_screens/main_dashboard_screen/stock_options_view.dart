@@ -112,8 +112,8 @@ class _StockOptionsViewState extends State<StockOptionsView> {
   String _selectedExpiry = '23 Nov 2026 M';
   final List<String> _expiryDates = [
     '23 Nov 2026 M',
-    '28 Dec 2026 M',
-    '29 Jan 2027 M',
+    '29 Dec 2026 M',
+    '25 Jan 2027 M',
   ];
 
   // Benchmark index values synced with live Angel One NSE/BSE feed
@@ -1375,7 +1375,18 @@ class _StockOptionsViewState extends State<StockOptionsView> {
                           flex: 2,
                           child: InkWell(
                             onTap: () {
-                              final sym = '${_selectedStock.symbol} ${s.strike.toInt()} CE';
+                              final expMatch = RegExp(r'(\d{1,2})\s*([A-Za-z]{3})\s*(\d{2,4})').firstMatch(_selectedExpiry);
+                              String expPart = '';
+                              if (expMatch != null) {
+                                final d = expMatch.group(1)!.padLeft(2, '0');
+                                final m = expMatch.group(2)!.toUpperCase();
+                                final y = expMatch.group(3)!;
+                                final yShort = y.length == 4 ? y.substring(2) : y;
+                                expPart = '$d$m$yShort';
+                              }
+                              final sym = expPart.isNotEmpty
+                                  ? '${_selectedStock.symbol} $expPart ${s.strike.toInt()} CE'
+                                  : '${_selectedStock.symbol} ${s.strike.toInt()} CE';
                               OrderPlacementTicketDialog.show(
                                 context,
                                 symbol: sym,
@@ -1423,7 +1434,18 @@ class _StockOptionsViewState extends State<StockOptionsView> {
                           flex: 2,
                           child: InkWell(
                             onTap: () {
-                              final sym = '${_selectedStock.symbol} ${s.strike.toInt()} PE';
+                              final expMatch = RegExp(r'(\d{1,2})\s*([A-Za-z]{3})\s*(\d{2,4})').firstMatch(_selectedExpiry);
+                              String expPart = '';
+                              if (expMatch != null) {
+                                final d = expMatch.group(1)!.padLeft(2, '0');
+                                final m = expMatch.group(2)!.toUpperCase();
+                                final y = expMatch.group(3)!;
+                                final yShort = y.length == 4 ? y.substring(2) : y;
+                                expPart = '$d$m$yShort';
+                              }
+                              final sym = expPart.isNotEmpty
+                                  ? '${_selectedStock.symbol} $expPart ${s.strike.toInt()} PE'
+                                  : '${_selectedStock.symbol} ${s.strike.toInt()} PE';
                               OrderPlacementTicketDialog.show(
                                 context,
                                 symbol: sym,
