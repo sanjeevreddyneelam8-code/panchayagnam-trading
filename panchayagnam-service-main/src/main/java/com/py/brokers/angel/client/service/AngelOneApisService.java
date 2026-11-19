@@ -476,15 +476,22 @@ public class AngelOneApisService {
                 throw new RuntimeException("Order failed — null response from broker");
             }
 
-            // ── Immediate RMS verification from order book ───────────────────
+            // ── Fast RMS verification from order book (max 1.5s timeout) ─────
             // Angel One assigns an orderId, but if margin is insufficient or contract is invalid,
-            // the order is rejected by RMS in <350ms. We verify this immediately so the user
-            // sees the exact broker error rather than wondering why Angel One rejected it!
+            // the order is rejected by RMS in <350ms. We verify this with a strict 1.5s timeout
+            // so we catch immediate rejections without risking frontend timeout!
             String realStatus = "PENDING";
             String rejectionReason = null;
             try {
-                Thread.sleep(350);
-                JSONObject orderHistory = smartConnect.getOrderHistory();
+                java.util.concurrent.CompletableFuture<JSONObject> checkTask = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                    try {
+                        Thread.sleep(250);
+                        return smartConnect.getOrderHistory();
+                    } catch (Exception e) {
+                        return null;
+                    }
+                });
+                JSONObject orderHistory = checkTask.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
                 JSONArray dataArr = orderHistory != null ? orderHistory.optJSONArray("data") : null;
                 if (dataArr != null && dataArr.length() > 0) {
                     for (int i = 0; i < dataArr.length(); i++) {
@@ -500,7 +507,7 @@ public class AngelOneApisService {
                     }
                 }
             } catch (Exception ex) {
-                log.debug("Order verification check skipped: {}", ex.getMessage());
+                log.debug("Fast order verification skipped or timed out: {}", ex.getMessage());
             }
 
             if (rejectionReason != null) {

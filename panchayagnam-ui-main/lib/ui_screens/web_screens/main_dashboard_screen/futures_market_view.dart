@@ -88,11 +88,18 @@ class _FuturesMarketViewState extends State<FuturesMarketView> {
   void initState() {
     super.initState();
     _initFuturesUniverse();
+    LiveMarketDataService().addListener(_onLiveMarketUpdate);
+    LiveMarketDataService().start();
     _startLiveTickSimulation();
+  }
+
+  void _onLiveMarketUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_onLiveMarketUpdate);
     _searchCtrl.dispose();
     _tickTimer?.cancel();
     super.dispose();
@@ -346,9 +353,24 @@ class _FuturesMarketViewState extends State<FuturesMarketView> {
     });
   }
 
+  double _getSpotLtp(FuturesContractItem contract) {
+    final cleanSym = contract.symbol.replaceAll(' FUT', '').trim();
+    final quote = LiveMarketDataService().getQuote(cleanSym);
+    if (quote != null && quote.ltp > 0) {
+      return quote.ltp;
+    }
+    return contract.spotLtp;
+  }
+
   double _getLiveLtp(FuturesContractItem contract) {
     if (_liveLtpOverrides.containsKey(contract.symbol)) {
       return _liveLtpOverrides[contract.symbol]!;
+    }
+    final cleanSym = contract.symbol.replaceAll(' FUT', '').trim();
+    final quote = LiveMarketDataService().getQuote(cleanSym);
+    if (quote != null && quote.ltp > 0) {
+      final premium = contract.baseLtp - contract.spotLtp;
+      return double.parse((quote.ltp + premium).toStringAsFixed(2));
     }
     return contract.baseLtp;
   }
@@ -735,6 +757,8 @@ class _FuturesMarketViewState extends State<FuturesMarketView> {
             itemBuilder: (ctx, i) {
               final contract = contracts[i];
               final ltp = _getLiveLtp(contract);
+              final spotLtp = _getSpotLtp(contract);
+              final basis = ltp - spotLtp;
               final change = ltp - contract.prevClose;
               final changePct = (change / contract.prevClose) * 100;
               final isPositive = change >= 0;
@@ -835,13 +859,13 @@ class _FuturesMarketViewState extends State<FuturesMarketView> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Spot: ₹${contract.spotLtp.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
+                          Text('Spot: ₹${spotLtp.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
                           Text(
-                            'Basis: ${contract.basis >= 0 ? '+' : ''}${contract.basis.toStringAsFixed(1)}',
+                            'Basis: ${basis >= 0 ? '+' : ''}${basis.toStringAsFixed(1)}',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: contract.basis >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                              color: basis >= 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                             ),
                           ),
                         ],

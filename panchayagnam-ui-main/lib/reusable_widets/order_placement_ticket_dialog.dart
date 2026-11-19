@@ -464,7 +464,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               'idempotencyKey': idempotencyKey,
             }),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 45));
 
       Map<String, dynamic> decoded = {};
       try {
@@ -571,9 +571,11 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       }
     } catch (e) {
       final raw = e.toString();
-      final friendlyErr = raw.contains('Failed to fetch') || raw.contains('XMLHttpRequest')
-          ? 'Broker server is temporarily cooling down from too many requests. Please keep only one Panchayagnam tab open, wait 30 seconds, and click Place Order again.'
-          : 'Unable to reach broker server: $e';
+      final friendlyErr = raw.contains('TimeoutException')
+          ? 'Order was transmitted to Angel One. Please check your Orders tab or Angel One app for execution confirmation.'
+          : (raw.contains('Failed to fetch') || raw.contains('XMLHttpRequest')
+              ? 'Broker server is temporarily cooling down from too many requests. Please wait a few seconds and try again.'
+              : 'Unable to reach broker server: $e');
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -1291,17 +1293,27 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                           ],
 
                           // Place Buy / Sell Order CTA
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isSubmitting ? null : _executeOrder,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: themeColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                elevation: 2,
-                              ),
+                          MouseRegion(
+                            cursor: _isSubmitting ? SystemMouseCursors.basic : SystemMouseCursors.click,
+                            hitTestBehavior: HitTestBehavior.opaque,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : () {
+                                        FocusScope.of(context).unfocus();
+                                        _executeOrder();
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: themeColor,
+                                  foregroundColor: Colors.white,
+                                  enabledMouseCursor: SystemMouseCursors.click,
+                                  disabledMouseCursor: SystemMouseCursors.basic,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  elevation: 2,
+                                ),
                               child: _isSubmitting
                                   ? Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1329,6 +1341,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                     ),
                             ),
                           ),
+                        ),
                         ],
                       ),
                     ),

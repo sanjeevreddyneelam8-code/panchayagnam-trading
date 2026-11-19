@@ -87,11 +87,18 @@ class _CashMarketViewState extends State<CashMarketView> {
   void initState() {
     super.initState();
     _initStockUniverse();
+    LiveMarketDataService().addListener(_onLiveMarketUpdate);
+    LiveMarketDataService().start();
     _startLiveTickSimulation();
+  }
+
+  void _onLiveMarketUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_onLiveMarketUpdate);
     _searchCtrl.dispose();
     _tickTimer?.cancel();
     super.dispose();
@@ -99,7 +106,7 @@ class _CashMarketViewState extends State<CashMarketView> {
 
   void _initStockUniverse() {
     _allStocks = const [
-      // Energy & PSU Heavyweights (Featuring IOC as requested by user)
+      // ── Energy & PSU (IOC, ONGC, etc.) ──────────────────────────────────
       CashStockItem(
         symbol: 'IOC',
         companyName: 'Indian Oil Corporation Ltd',
@@ -178,8 +185,60 @@ class _CashMarketViewState extends State<CashMarketView> {
         high52w: 388.00,
         low52w: 195.00,
       ),
+      CashStockItem(
+        symbol: 'POWERINDIA',
+        companyName: 'Hitachi Energy India Ltd',
+        sector: 'Energy & PSU (IOC, ONGC)',
+        baseLtp: 11850.00,
+        dayHigh: 12100.00,
+        dayLow: 11720.00,
+        open: 11750.00,
+        prevClose: 11710.00,
+        volume: 420000,
+        high52w: 15400.00,
+        low52w: 4900.00,
+      ),
+      CashStockItem(
+        symbol: 'PFC',
+        companyName: 'Power Finance Corporation Ltd',
+        sector: 'Energy & PSU (IOC, ONGC)',
+        baseLtp: 462.50,
+        dayHigh: 469.00,
+        dayLow: 458.00,
+        open: 460.00,
+        prevClose: 459.20,
+        volume: 11200000,
+        high52w: 580.50,
+        low52w: 360.00,
+      ),
+      CashStockItem(
+        symbol: 'REC',
+        companyName: 'REC Ltd',
+        sector: 'Energy & PSU (IOC, ONGC)',
+        baseLtp: 512.40,
+        dayHigh: 518.80,
+        dayLow: 507.00,
+        open: 509.00,
+        prevClose: 508.60,
+        volume: 10400000,
+        high52w: 653.90,
+        low52w: 390.00,
+      ),
+      CashStockItem(
+        symbol: 'BHEL',
+        companyName: 'Bharat Heavy Electricals Ltd',
+        sector: 'Energy & PSU (IOC, ONGC)',
+        baseLtp: 242.80,
+        dayHigh: 247.50,
+        dayLow: 239.00,
+        open: 241.00,
+        prevClose: 240.20,
+        volume: 16800000,
+        high52w: 335.40,
+        low52w: 185.00,
+      ),
 
-      // Banking & Financials
+      // ── Banking & Financials ───────────────────────────────────────────
       CashStockItem(
         symbol: 'HDFCBANK',
         companyName: 'HDFC Bank Ltd',
@@ -246,6 +305,32 @@ class _CashMarketViewState extends State<CashMarketView> {
         low52w: 1544.00,
       ),
       CashStockItem(
+        symbol: 'INDUSINDBK',
+        companyName: 'IndusInd Bank Ltd',
+        sector: 'Banking & Finance',
+        baseLtp: 1045.00,
+        dayHigh: 1060.00,
+        dayLow: 1032.00,
+        open: 1038.00,
+        prevClose: 1035.00,
+        volume: 5400000,
+        high52w: 1694.00,
+        low52w: 985.00,
+      ),
+      CashStockItem(
+        symbol: 'PNB',
+        companyName: 'Punjab National Bank',
+        sector: 'Banking & Finance',
+        baseLtp: 104.20,
+        dayHigh: 106.50,
+        dayLow: 102.80,
+        open: 103.50,
+        prevClose: 103.10,
+        volume: 24500000,
+        high52w: 142.90,
+        low52w: 88.00,
+      ),
+      CashStockItem(
         symbol: 'BAJFINANCE',
         companyName: 'Bajaj Finance Ltd',
         sector: 'Banking & Finance',
@@ -258,8 +343,60 @@ class _CashMarketViewState extends State<CashMarketView> {
         high52w: 7850.00,
         low52w: 6160.00,
       ),
+      CashStockItem(
+        symbol: 'CHOLAFIN',
+        companyName: 'Cholamandalam Investment & Finance',
+        sector: 'Banking & Finance',
+        baseLtp: 1310.00,
+        dayHigh: 1325.00,
+        dayLow: 1295.00,
+        open: 1300.00,
+        prevClose: 1298.00,
+        volume: 1800000,
+        high52w: 1515.00,
+        low52w: 1060.00,
+      ),
+      CashStockItem(
+        symbol: 'JIOFIN',
+        companyName: 'Jio Financial Services Ltd',
+        sector: 'Banking & Finance',
+        baseLtp: 312.40,
+        dayHigh: 318.00,
+        dayLow: 308.50,
+        open: 310.00,
+        prevClose: 309.20,
+        volume: 18500000,
+        high52w: 394.70,
+        low52w: 205.00,
+      ),
+      CashStockItem(
+        symbol: 'YESBANK',
+        companyName: 'Yes Bank Ltd',
+        sector: 'Banking & Finance',
+        baseLtp: 20.85,
+        dayHigh: 21.30,
+        dayLow: 20.50,
+        open: 20.70,
+        prevClose: 20.65,
+        volume: 48000000,
+        high52w: 32.80,
+        low52w: 18.20,
+      ),
+      CashStockItem(
+        symbol: 'MCX',
+        companyName: 'Multi Commodity Exchange of India Ltd',
+        sector: 'Banking & Finance',
+        baseLtp: 5850.00,
+        dayHigh: 5920.00,
+        dayLow: 5780.00,
+        open: 5800.00,
+        prevClose: 5790.00,
+        volume: 980000,
+        high52w: 6350.00,
+        low52w: 2850.00,
+      ),
 
-      // IT & Tech
+      // ── IT & Tech ──────────────────────────────────────────────────────
       CashStockItem(
         symbol: 'TCS',
         companyName: 'Tata Consultancy Services Ltd',
@@ -299,8 +436,112 @@ class _CashMarketViewState extends State<CashMarketView> {
         high52w: 598.00,
         low52w: 375.00,
       ),
+      CashStockItem(
+        symbol: 'HCLTECH',
+        companyName: 'HCL Technologies Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 1845.00,
+        dayHigh: 1862.00,
+        dayLow: 1830.00,
+        open: 1835.00,
+        prevClose: 1832.00,
+        volume: 4100000,
+        high52w: 1898.00,
+        low52w: 1235.00,
+      ),
+      CashStockItem(
+        symbol: 'COFORGE',
+        companyName: 'Coforge Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 7850.00,
+        dayHigh: 7940.00,
+        dayLow: 7780.00,
+        open: 7800.00,
+        prevClose: 7795.00,
+        volume: 680000,
+        high52w: 8400.00,
+        low52w: 4280.00,
+      ),
+      CashStockItem(
+        symbol: 'PERSISTENT',
+        companyName: 'Persistent Systems Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 5480.00,
+        dayHigh: 5550.00,
+        dayLow: 5420.00,
+        open: 5440.00,
+        prevClose: 5430.00,
+        volume: 820000,
+        high52w: 5900.00,
+        low52w: 3380.00,
+      ),
+      CashStockItem(
+        symbol: 'TATACOMM',
+        companyName: 'Tata Communications Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 1810.00,
+        dayHigh: 1835.00,
+        dayLow: 1790.00,
+        open: 1800.00,
+        prevClose: 1795.00,
+        volume: 950000,
+        high52w: 2175.00,
+        low52w: 1560.00,
+      ),
+      CashStockItem(
+        symbol: 'DIXON',
+        companyName: 'Dixon Technologies Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 14850.00,
+        dayHigh: 15100.00,
+        dayLow: 14700.00,
+        open: 14750.00,
+        prevClose: 14720.00,
+        volume: 520000,
+        high52w: 16000.00,
+        low52w: 5500.00,
+      ),
+      CashStockItem(
+        symbol: 'IDEA',
+        companyName: 'Vodafone Idea Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 7.65,
+        dayHigh: 7.85,
+        dayLow: 7.45,
+        open: 7.55,
+        prevClose: 7.50,
+        volume: 95000000,
+        high52w: 19.15,
+        low52w: 6.80,
+      ),
+      CashStockItem(
+        symbol: 'POLICYBZR',
+        companyName: 'PB Fintech Ltd (PolicyBazaar)',
+        sector: 'IT & Tech',
+        baseLtp: 1720.00,
+        dayHigh: 1750.00,
+        dayLow: 1695.00,
+        open: 1705.00,
+        prevClose: 1700.00,
+        volume: 1600000,
+        high52w: 1965.00,
+        low52w: 800.00,
+      ),
+      CashStockItem(
+        symbol: 'ZOMATO',
+        companyName: 'Zomato Ltd',
+        sector: 'IT & Tech',
+        baseLtp: 268.50,
+        dayHigh: 274.00,
+        dayLow: 264.00,
+        open: 266.00,
+        prevClose: 265.40,
+        volume: 28500000,
+        high52w: 304.70,
+        low52w: 112.50,
+      ),
 
-      // Auto, Metals & Defence
+      // ── Auto, Metals & Defence ─────────────────────────────────────────
       CashStockItem(
         symbol: 'TATASTEEL',
         companyName: 'Tata Steel Ltd',
@@ -341,6 +582,58 @@ class _CashMarketViewState extends State<CashMarketView> {
         low52w: 9737.00,
       ),
       CashStockItem(
+        symbol: 'BHARATFORG',
+        companyName: 'Bharat Forge Ltd',
+        sector: 'Auto & Metals',
+        baseLtp: 1380.00,
+        dayHigh: 1405.00,
+        dayLow: 1365.00,
+        open: 1375.00,
+        prevClose: 1370.00,
+        volume: 1750000,
+        high52w: 1680.00,
+        low52w: 1080.00,
+      ),
+      CashStockItem(
+        symbol: 'MOTHERSON',
+        companyName: 'Samvardhana Motherson International Ltd',
+        sector: 'Auto & Metals',
+        baseLtp: 165.40,
+        dayHigh: 168.80,
+        dayLow: 163.00,
+        open: 164.20,
+        prevClose: 163.80,
+        volume: 21500000,
+        high52w: 217.00,
+        low52w: 105.00,
+      ),
+      CashStockItem(
+        symbol: 'HINDALCO',
+        companyName: 'Hindalco Industries Ltd',
+        sector: 'Auto & Metals',
+        baseLtp: 652.00,
+        dayHigh: 660.00,
+        dayLow: 645.00,
+        open: 648.00,
+        prevClose: 647.50,
+        volume: 7800000,
+        high52w: 715.00,
+        low52w: 478.00,
+      ),
+      CashStockItem(
+        symbol: 'JSWSTEEL',
+        companyName: 'JSW Steel Ltd',
+        sector: 'Auto & Metals',
+        baseLtp: 948.00,
+        dayHigh: 960.00,
+        dayLow: 938.00,
+        open: 942.00,
+        prevClose: 940.50,
+        volume: 4600000,
+        high52w: 1060.00,
+        low52w: 755.00,
+      ),
+      CashStockItem(
         symbol: 'BEL',
         companyName: 'Bharat Electronics Ltd',
         sector: 'Auto & Metals',
@@ -366,6 +659,21 @@ class _CashMarketViewState extends State<CashMarketView> {
         high52w: 5675.00,
         low52w: 1980.00,
       ),
+      CashStockItem(
+        symbol: 'MAZDOCK',
+        companyName: 'Mazagon Dock Shipbuilders Ltd',
+        sector: 'Auto & Metals',
+        baseLtp: 4180.00,
+        dayHigh: 4260.00,
+        dayLow: 4110.00,
+        open: 4140.00,
+        prevClose: 4125.00,
+        volume: 1850000,
+        high52w: 5860.00,
+        low52w: 1820.00,
+      ),
+
+      // ── Nifty 50 Cash Heavyweights & FMCG ──────────────────────────────
       CashStockItem(
         symbol: 'ITC',
         companyName: 'ITC Ltd',
@@ -405,6 +713,201 @@ class _CashMarketViewState extends State<CashMarketView> {
         high52w: 3919.00,
         low52w: 2850.00,
       ),
+      CashStockItem(
+        symbol: 'SUNPHARMA',
+        companyName: 'Sun Pharmaceutical Industries Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 1780.00,
+        dayHigh: 1802.00,
+        dayLow: 1765.00,
+        open: 1772.00,
+        prevClose: 1768.00,
+        volume: 3200000,
+        high52w: 1960.00,
+        low52w: 1190.00,
+      ),
+      CashStockItem(
+        symbol: 'TITAN',
+        companyName: 'Titan Company Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 3280.00,
+        dayHigh: 3315.00,
+        dayLow: 3255.00,
+        open: 3265.00,
+        prevClose: 3260.00,
+        volume: 1950000,
+        high52w: 3886.00,
+        low52w: 3055.00,
+      ),
+      CashStockItem(
+        symbol: 'ADANIENT',
+        companyName: 'Adani Enterprises Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 2780.00,
+        dayHigh: 2820.00,
+        dayLow: 2750.00,
+        open: 2760.00,
+        prevClose: 2755.00,
+        volume: 2450000,
+        high52w: 3450.00,
+        low52w: 2150.00,
+      ),
+      CashStockItem(
+        symbol: 'ASIANPAINT',
+        companyName: 'Asian Paints Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 2460.00,
+        dayHigh: 2490.00,
+        dayLow: 2435.00,
+        open: 2445.00,
+        prevClose: 2440.00,
+        volume: 2650000,
+        high52w: 3340.00,
+        low52w: 2380.00,
+      ),
+      CashStockItem(
+        symbol: 'NESTLEIND',
+        companyName: 'Nestle India Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 2240.00,
+        dayHigh: 2265.00,
+        dayLow: 2220.00,
+        open: 2230.00,
+        prevClose: 2225.00,
+        volume: 980000,
+        high52w: 2775.00,
+        low52w: 2140.00,
+      ),
+      CashStockItem(
+        symbol: 'DIVISLAB',
+        companyName: 'Divi\'s Laboratories Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 5890.00,
+        dayHigh: 5960.00,
+        dayLow: 5830.00,
+        open: 5850.00,
+        prevClose: 5840.00,
+        volume: 720000,
+        high52w: 6200.00,
+        low52w: 3400.00,
+      ),
+      CashStockItem(
+        symbol: 'TRENT',
+        companyName: 'Trent Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 6480.00,
+        dayHigh: 6580.00,
+        dayLow: 6410.00,
+        open: 6440.00,
+        prevClose: 6420.00,
+        volume: 1850000,
+        high52w: 8345.00,
+        low52w: 2800.00,
+      ),
+      CashStockItem(
+        symbol: 'ABB',
+        companyName: 'ABB India Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 6920.00,
+        dayHigh: 7040.00,
+        dayLow: 6850.00,
+        open: 6880.00,
+        prevClose: 6865.00,
+        volume: 620000,
+        high52w: 9150.00,
+        low52w: 4350.00,
+      ),
+      CashStockItem(
+        symbol: 'SIEMENS',
+        companyName: 'Siemens Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 6850.00,
+        dayHigh: 6960.00,
+        dayLow: 6780.00,
+        open: 6800.00,
+        prevClose: 6790.00,
+        volume: 590000,
+        high52w: 8130.00,
+        low52w: 3500.00,
+      ),
+      CashStockItem(
+        symbol: 'POLYCAB',
+        companyName: 'Polycab India Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 6420.00,
+        dayHigh: 6510.00,
+        dayLow: 6350.00,
+        open: 6380.00,
+        prevClose: 6370.00,
+        volume: 840000,
+        high52w: 7350.00,
+        low52w: 4500.00,
+      ),
+      CashStockItem(
+        symbol: 'INDHOTEL',
+        companyName: 'Indian Hotels Co Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 760.00,
+        dayHigh: 774.00,
+        dayLow: 752.00,
+        open: 756.00,
+        prevClose: 754.00,
+        volume: 4800000,
+        high52w: 825.00,
+        low52w: 420.00,
+      ),
+      CashStockItem(
+        symbol: 'CGPOWER',
+        companyName: 'CG Power and Industrial Solutions Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 720.00,
+        dayHigh: 732.00,
+        dayLow: 712.00,
+        open: 716.00,
+        prevClose: 714.00,
+        volume: 5200000,
+        high52w: 810.00,
+        low52w: 390.00,
+      ),
+      CashStockItem(
+        symbol: 'SUPREMEIND',
+        companyName: 'Supreme Industries Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 4280.00,
+        dayHigh: 4340.00,
+        dayLow: 4230.00,
+        open: 4250.00,
+        prevClose: 4240.00,
+        volume: 410000,
+        high52w: 6050.00,
+        low52w: 3800.00,
+      ),
+      CashStockItem(
+        symbol: 'SOLARINDS',
+        companyName: 'Solar Industries India Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 10150.00,
+        dayHigh: 10320.00,
+        dayLow: 10020.00,
+        open: 10080.00,
+        prevClose: 10050.00,
+        volume: 280000,
+        high52w: 13300.00,
+        low52w: 6400.00,
+      ),
+      CashStockItem(
+        symbol: 'BERGEPAINT',
+        companyName: 'Berger Paints India Ltd',
+        sector: 'Nifty 50 Cash',
+        baseLtp: 495.00,
+        dayHigh: 502.00,
+        dayLow: 490.00,
+        open: 492.00,
+        prevClose: 491.50,
+        volume: 3400000,
+        high52w: 620.00,
+        low52w: 470.00,
+      ),
     ];
   }
 
@@ -440,14 +943,53 @@ class _CashMarketViewState extends State<CashMarketView> {
   }
 
   double _getLiveLtp(CashStockItem stock) {
-    if (_liveLtpOverrides.containsKey(stock.symbol)) {
-      return _liveLtpOverrides[stock.symbol]!;
-    }
     final quote = LiveMarketDataService().getQuote(stock.symbol);
     if (quote != null && quote.ltp > 0) {
       return quote.ltp;
     }
+    if (_liveLtpOverrides.containsKey(stock.symbol)) {
+      return _liveLtpOverrides[stock.symbol]!;
+    }
     return stock.baseLtp;
+  }
+
+  double _getLiveChange(CashStockItem stock) {
+    final quote = LiveMarketDataService().getQuote(stock.symbol);
+    if (quote != null && quote.ltp > 0) {
+      return quote.change != 0
+          ? quote.change
+          : (quote.ltp - (quote.prevClose > 0 ? quote.prevClose : stock.prevClose));
+    }
+    final ltp = _getLiveLtp(stock);
+    return ltp - stock.prevClose;
+  }
+
+  double _getLiveChangePct(CashStockItem stock) {
+    final quote = LiveMarketDataService().getQuote(stock.symbol);
+    if (quote != null && quote.ltp > 0 && quote.changePct != 0) {
+      return quote.changePct;
+    }
+    final change = _getLiveChange(stock);
+    final prevClose = (quote != null && quote.prevClose > 0) ? quote.prevClose : stock.prevClose;
+    return prevClose > 0 ? (change / prevClose) * 100 : 0.0;
+  }
+
+  double _getLiveHigh(CashStockItem stock) {
+    final quote = LiveMarketDataService().getQuote(stock.symbol);
+    if (quote != null && quote.high > 0) {
+      return quote.high;
+    }
+    final ltp = _getLiveLtp(stock);
+    return ltp > stock.dayHigh ? ltp : stock.dayHigh;
+  }
+
+  double _getLiveLow(CashStockItem stock) {
+    final quote = LiveMarketDataService().getQuote(stock.symbol);
+    if (quote != null && quote.low > 0) {
+      return quote.low;
+    }
+    final ltp = _getLiveLtp(stock);
+    return (ltp < stock.dayLow && ltp > 0) ? ltp : stock.dayLow;
   }
 
   List<CashStockItem> get _filteredStocks {
@@ -835,8 +1377,10 @@ class _CashMarketViewState extends State<CashMarketView> {
             itemBuilder: (ctx, i) {
               final stock = stocks[i];
               final ltp = _getLiveLtp(stock);
-              final change = ltp - stock.prevClose;
-              final changePct = (change / stock.prevClose) * 100;
+              final change = _getLiveChange(stock);
+              final changePct = _getLiveChangePct(stock);
+              final dayHigh = _getLiveHigh(stock);
+              final dayLow = _getLiveLow(stock);
               final isPositive = change >= 0;
               final isFlashingGreen = _tickFlashGreen[stock.symbol] == true;
               final isFlashingRed = _tickFlashRed[stock.symbol] == true;
@@ -948,8 +1492,8 @@ class _CashMarketViewState extends State<CashMarketView> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('H: ₹${stock.dayHigh.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
-                          Text('L: ₹${stock.dayLow.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
+                          Text('H: ₹${dayHigh.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
+                          Text('L: ₹${dayLow.toStringAsFixed(1)}', style: TextStyle(fontSize: 10.5, color: textSub)),
                         ],
                       ),
                     ),
