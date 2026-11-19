@@ -119,6 +119,8 @@ class OptionsChainView extends StatefulWidget {
   final VoidCallback? onNavigateToOrders;
   final VoidCallback? onNavigateToPositions;
   final VoidCallback? onNavigateToCharts;
+  final VoidCallback? onNavigateToCashMarket;
+  final VoidCallback? onNavigateToFuturesMarket;
 
   const OptionsChainView({
     super.key,
@@ -126,6 +128,8 @@ class OptionsChainView extends StatefulWidget {
     this.onNavigateToOrders,
     this.onNavigateToPositions,
     this.onNavigateToCharts,
+    this.onNavigateToCashMarket,
+    this.onNavigateToFuturesMarket,
   });
 
   @override
@@ -134,7 +138,7 @@ class OptionsChainView extends StatefulWidget {
 
 class _OptionsChainViewState extends State<OptionsChainView> {
   String _underlying = 'NIFTY';
-  String _expiry = '07-NOV-2026 (Weekly)';
+  String _expiry = '23-NOV-2026 (Live Expiry)';
   late int _activeSubTab; // 0: Chain, 1: Multi-Strike OI, 2: Strategy Builder
 
   bool _basketMode = false;
@@ -145,31 +149,33 @@ class _OptionsChainViewState extends State<OptionsChainView> {
 
   final Map<String, List<String>> _expiriesPerIndex = {
     'NIFTY': [
-      '07-NOV-2026 (Weekly)',
-      '14-NOV-2026 (Next Weekly)',
+      '23-NOV-2026 (Live Expiry)',
       '28-NOV-2026 (Monthly Expiry)',
+      '05-DEC-2026 (Weekly)',
+      '26-DEC-2026 (Monthly Expiry)',
       '31-DEC-2026 (Quarterly)',
     ],
     'BANKNIFTY': [
-      '07-NOV-2026 (Weekly)',
-      '14-NOV-2026 (Next Weekly)',
+      '23-NOV-2026 (Live Expiry)',
       '28-NOV-2026 (Monthly Expiry)',
+      '05-DEC-2026 (Weekly)',
+      '26-DEC-2026 (Monthly Expiry)',
       '31-DEC-2026 (Quarterly)',
     ],
     'FINNIFTY': [
-      '05-NOV-2026 (Weekly)',
-      '12-NOV-2026 (Next Weekly)',
+      '23-NOV-2026 (Live Expiry)',
       '26-NOV-2026 (Monthly Expiry)',
+      '02-DEC-2026 (Weekly)',
     ],
     'MIDCPNIFTY': [
-      '04-NOV-2026 (Weekly)',
-      '11-NOV-2026 (Next Weekly)',
+      '23-NOV-2026 (Live Expiry)',
       '25-NOV-2026 (Monthly Expiry)',
+      '01-DEC-2026 (Weekly)',
     ],
     'SENSEX': [
-      '08-NOV-2026 (Weekly)',
-      '15-NOV-2026 (Next Weekly)',
+      '23-NOV-2026 (Live Expiry)',
       '29-NOV-2026 (Monthly Expiry)',
+      '06-DEC-2026 (Weekly)',
     ],
   };
 
@@ -476,6 +482,109 @@ class _OptionsChainViewState extends State<OptionsChainView> {
             child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Top Market Segment Switcher Bar ───────────────────────────
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF131D2E) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+              ),
+              child: Row(
+                children: [
+                  // Cash Market
+                  Expanded(
+                    child: InkWell(
+                      onTap: widget.onNavigateToCashMarket,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF10B981), size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              '🟢 CASH MARKET (EQUITY / STOCKS)',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Futures Market
+                  Expanded(
+                    child: InkWell(
+                      onTap: widget.onNavigateToFuturesMarket,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.trending_up_rounded, color: Color(0xFF38BDF8), size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              '🔵 FUTURES MARKET (INDEX & STOCK FUT)',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Options Market (Active)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFF7E22CE), Color(0xFFA855F7)]),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2)),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            '🟣 OPTIONS MARKET (OPTION CHAIN & GREEKS)',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // ── Top Header Row ───────────────────────────────────────────
             Wrap(
               alignment: WrapAlignment.spaceBetween,

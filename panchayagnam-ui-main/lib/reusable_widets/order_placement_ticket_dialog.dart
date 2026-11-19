@@ -171,6 +171,9 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
         upperSym.startsWith('ZINC');
     final isBfo = upperSym.startsWith('SENSEX') || upperSym.startsWith('BANKEX');
     final isFnO = upperCat == 'F&O' ||
+        upperCat == 'OPTIONS' ||
+        upperCat == 'OPTION' ||
+        upperCat == 'FUTURES' ||
         upperSym.endsWith(' CE') ||
         upperSym.endsWith(' PE') ||
         upperSym.contains(' FUT') ||
@@ -182,6 +185,17 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       _selectedExchange = isBfo ? 'BFO' : 'NFO';
     } else {
       _selectedExchange = 'NSE';
+      _productType = 'DELIVERY'; // Default to normal Delivery for Cash Equity
+    }
+
+    // Auto-detect if Indian market is currently closed -> enable AMO (After Market Order)
+    final nowUtc = DateTime.now().toUtc();
+    final nowIst = nowUtc.add(const Duration(hours: 5, minutes: 30));
+    final isWeekend = nowIst.weekday == DateTime.saturday || nowIst.weekday == DateTime.sunday;
+    final istMinutes = nowIst.hour * 60 + nowIst.minute;
+    final isMarketHours = !isWeekend && (istMinutes >= (9 * 60 + 15) && istMinutes <= (15 * 60 + 30));
+    if (!isMarketHours) {
+      _isAmo = true;
     }
 
     int autoLot = widget.lotSize;
