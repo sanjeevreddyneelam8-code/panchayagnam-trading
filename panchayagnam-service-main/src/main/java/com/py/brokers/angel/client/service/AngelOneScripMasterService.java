@@ -253,7 +253,6 @@ public class AngelOneScripMasterService {
 
             log.info("✅ AngelOneScripMaster streamed in {}ms | equities={} futures={} optionUnderlyings={} totalSymbols={}",
                     (lastLoadedMs - start), equityMap.size(), futuresMap.size(), optionsByUnderlying.size(), symbolMap.size());
-                    (lastLoadedMs - start), equityMap.size(), futuresMap.size(), optionsByUnderlying.size());
         } catch (Exception e) {
             log.error("Failed to stream AngelOne OpenAPIScripMaster: {}", e.getMessage());
         }
