@@ -142,8 +142,24 @@ public class PyTokenValidationService {
             return false;
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // ── BROKER SESSION EXPIRY RULES ───────────────────────────────────────
+        // Angel One SmartAPI and Motilal sessions expire daily at 06:00 AM IST.
+        if (account.getBrokerType() == BrokerType.ANGELONE || account.getBrokerType() == BrokerType.MOTILAL) {
+            LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
+            LocalDateTime lastUpdated = token.getUpdatedAt() != null ? token.getUpdatedAt() : token.getCreatedAt();
+
+            // If current time is past 06:00 AM today and token was issued/updated before 06:00 AM, it is expired!
+            if (now.isAfter(todaySixAm) && lastUpdated != null && lastUpdated.isBefore(todaySixAm)) {
+                log.warn("{} session expired (issued before today's 06:00 AM IST at {}) for clientId={}",
+                        account.getBrokerType(), lastUpdated, account.getClientId());
+                return false;
+            }
+        }
+
         if (token.getExpiresAt() == null
-                || token.getExpiresAt().isBefore(LocalDateTime.now())) {
+                || token.getExpiresAt().isBefore(now)) {
             log.warn("Token expired at {} for clientId={}",
                     token.getExpiresAt(), account.getClientId());
             return false;
@@ -177,6 +193,14 @@ public class PyTokenValidationService {
                     account.getClientId());
 
             PyBrokerSecret secret = account.getSecret();
+            if (secret == null || secret.getTotpSecret() == null || secret.getTotpSecret().isBlank()
+                    || secret.getPassword() == null || secret.getPassword().isBlank()
+                    || secret.getApiKey() == null || secret.getApiKey().isBlank()) {
+                log.warn("Cannot auto-refresh AngelOne token for clientId={} — missing API key, MPIN, or TOTP secret",
+                        account.getClientId());
+                return null;
+            }
+
             String totp = totpUtil.generate(secret.getTotpSecret());
             String baseUrl = getBaseUrl(account);
 
@@ -192,20 +216,29 @@ public class PyTokenValidationService {
             }
 
             PyBrokerToken token = account.getToken();
+            if (token == null) {
+                token = new PyBrokerToken();
+                token.setBrokerAccount(account);
+            }
             token.setAccessToken(loginData.getString("jwtToken"));
             token.setRefreshToken(loginData.optString("refreshToken", ""));
             token.setFeedToken(loginData.optString("feedToken", ""));
             token.setExpiresAt(getTokenExpiry(BrokerType.ANGELONE));
             PyBrokerToken saved = pyBrokerTokenRepository.save(token);
 
+            account.setLastLoginStatus("SUCCESS");
+            account.setLastLoginError(null);
+            account.setLastLoginAttempt(LocalDateTime.now());
+            pyBrokerAccountRepository.save(account);
+
             log.info("AngelOne token refreshed successfully for clientId={}",
                     account.getClientId());
             return saved.getAccessToken();
 
         } catch (Exception e) {
-            log.error("AngelOne token refresh failed for clientId={} — marking inactive. Reason: {}",
+            log.error("AngelOne token refresh failed for clientId={}. Reason: {}",
                     account.getClientId(), e.getMessage());
-            markAccountInactive(account, "AngelOne token refresh failed: " + e.getMessage());
+            recordAccountLoginFailure(account, "AngelOne token refresh failed: " + e.getMessage());
             return null;
         }
     }
@@ -335,6 +368,31 @@ public class PyTokenValidationService {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordAccountLoginFailure(PyBrokerAccountEntity account, String reason) {
+        try {
+            PyBrokerAccountEntity dbAccount = pyBrokerAccountRepository
+                    .findById(account.getId())
+                    .orElse(null);
+
+            if (dbAccount == null) {
+                return;
+            }
+
+            dbAccount.setLastLoginStatus("FAILED");
+            dbAccount.setLastLoginError(reason);
+            dbAccount.setLastLoginAttempt(LocalDateTime.now());
+            pyBrokerAccountRepository.save(dbAccount);
+
+            log.warn("Account login status recorded FAILED for clientId={} broker={} reason={}",
+                    account.getClientId(), account.getBrokerType(), reason);
+
+        } catch (Exception ex) {
+            log.error("Failed to record login failure for clientId={}: {}",
+                    account.getClientId(), ex.getMessage());
+        }
+    }
+
     // ── TOKEN EXPIRY HELPERS ──────────────────────────────────────────────────
     private LocalDateTime getMotilalTokenExpiry() {
         LocalDateTime now = LocalDateTime.now();
@@ -344,17 +402,18 @@ public class PyTokenValidationService {
 
     private LocalDateTime getTokenExpiry(BrokerType brokerType) {
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
+        LocalDateTime nextSixAm = now.isBefore(todaySixAm) ? todaySixAm : todaySixAm.plusDays(1);
+
         return switch (brokerType) {
             case ANGELONE ->
-                LocalDate.now().plusDays(1).atStartOfDay();
-            case MOTILAL -> {
-                LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
-                yield now.isBefore(todaySixAm) ? todaySixAm : todaySixAm.plusDays(1);
-            }
+                nextSixAm;
+            case MOTILAL ->
+                nextSixAm;
             case DHAN ->
                 now.plusHours(24);
             default ->
-                now.plusHours(24);
+                nextSixAm;
         };
     }
 }

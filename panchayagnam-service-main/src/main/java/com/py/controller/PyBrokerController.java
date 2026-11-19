@@ -28,6 +28,7 @@ import com.py.trading.entity.PaperPositionEntity;
 import com.py.trading.exception.IdempotencyConflictException;
 import com.py.entity.PyUser;
 import com.py.repo.PyUserRepository;
+import com.py.tokensValidation.PyTokenValidationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Optional;
@@ -80,6 +81,9 @@ public class PyBrokerController {
 
     @Autowired
     private PyBrokerAccountRepository pyBrokerAccountRepository;
+
+    @Autowired
+    private PyTokenValidationService pyTokenValidationService;
 
     // =========================================================================
     // ✅ ACCOUNT OPERATIONS — unified for both brokers
@@ -159,6 +163,39 @@ public class PyBrokerController {
         }
     }
     
+
+    @Operation(summary = "Refresh Demat Account Broker Token",
+            description = "Manually refresh session token via broker TOTP and microservice")
+    @PostMapping("/account/refreshToken")
+    public ResponseEntity<?> refreshAccountToken(@RequestParam Long pyBrokerId) {
+        log.info("POST /account/refreshToken | pyBrokerId={}", pyBrokerId);
+        try {
+            validateAccountOwnership(pyBrokerId);
+            PyBrokerAccountEntity account = pyBrokerAccountRepository.findById(pyBrokerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Broker account not found: " + pyBrokerId));
+
+            String newToken = pyTokenValidationService.refreshTokenInNewTransaction(account);
+            if (newToken != null && !newToken.isBlank()) {
+                return ResponseEntity.ok(ApiResponse.success("Session token refreshed successfully", Map.of(
+                        "clientId", account.getClientId(),
+                        "brokerType", account.getBrokerType(),
+                        "status", "CONNECTED"
+                )));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(401,
+                        "Failed to refresh session token for " + account.getClientId() + ". Please re-authenticate."));
+            }
+        } catch (SecurityException se) {
+            log.warn("Security rejection in /account/refreshToken | pyBrokerId={}: {}", pyBrokerId, se.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(403, se.getMessage()));
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, iae.getMessage()));
+        } catch (Exception e) {
+            log.error("Token refresh error | pyBrokerId={}: {}", pyBrokerId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Token refresh error: " + e.getMessage()));
+        }
+    }
 
     // =========================================================================
     // ✅ TOKEN AUDIT — brokerType param routes to AngelOne or Motilal

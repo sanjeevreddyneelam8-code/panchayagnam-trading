@@ -64,6 +64,9 @@ public class PyGroupOrderService {
     @Autowired
     private com.py.trading.service.PaperTradingService paperTradingService;
 
+    @Autowired
+    private PyTokenValidationService pyTokenValidationService;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // PLACE GROUP BUY ORDER
     // ═══════════════════════════════════════════════════════════════════════════
@@ -159,7 +162,7 @@ public class PyGroupOrderService {
                                         case ANGELONE ->
                                             placeAngelOneOrder(
                                             account,
-                                            account.getToken().getAccessToken(),
+                                            pyTokenValidationService.getValidAccessToken(account.getId()),
                                             request, stock,
                                             brokerQty.getQuantity());
                                         case MOTILAL ->
@@ -424,7 +427,7 @@ public class PyGroupOrderService {
                                     case ANGELONE ->
                                         placeAngelOneOrder(
                                         account,
-                                        account.getToken().getAccessToken(),
+                                        pyTokenValidationService.getValidAccessToken(account.getId()),
                                         sellRequest, stock,
                                         position.getBuyQuantity());
                                     case MOTILAL ->
@@ -602,7 +605,7 @@ public class PyGroupOrderService {
                                     case ANGELONE ->
                                         placeAngelOneOrder(
                                         account,
-                                        account.getToken().getAccessToken(),
+                                        pyTokenValidationService.getValidAccessToken(account.getId()),
                                         buyRequest, stock,
                                         position.getBuyQuantity());
                                     case MOTILAL ->
@@ -810,7 +813,27 @@ public class PyGroupOrderService {
                 baseUrl, stock.getTradingSymbol(), quantity,
                 request.getTransactionType());
 
-        JSONObject response = angelOneClient.placeOrder(baseUrl, orderRequest).get();
+        JSONObject response;
+        try {
+            response = angelOneClient.placeOrder(baseUrl, orderRequest).get();
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("Unauthorized access") || msg.contains("jwtToken")
+                    || msg.contains("token expired") || msg.contains("AG8001") || msg.contains("AG8002")) {
+                log.warn("AngelOne group order unauthorized for clientId={}. Refreshing token and retrying...",
+                        account.getClientId());
+                String freshToken = pyTokenValidationService.refreshTokenInNewTransaction(account);
+                if (freshToken != null && !freshToken.isBlank()) {
+                    orderRequest.setAccessToken(freshToken);
+                    response = angelOneClient.placeOrder(baseUrl, orderRequest).get();
+                    log.info("AngelOne group order retry SUCCEEDED after token refresh for clientId={}", account.getClientId());
+                } else {
+                    throw e;
+                }
+            } else {
+                throw e;
+            }
+        }
 
         String orderId = response.optString("orderId");
         if (orderId == null || orderId.isEmpty()) {

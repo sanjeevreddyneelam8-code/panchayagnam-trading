@@ -694,16 +694,16 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
     // ── TOKEN EXPIRY ─────────────────────────────────────────────────────────
     private LocalDateTime getTokenExpiry(BrokerType brokerType) {
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
+        LocalDateTime nextSixAm = now.isBefore(todaySixAm) ? todaySixAm : todaySixAm.plusDays(1);
+
         return switch (brokerType) {
-            case ANGELONE   -> LocalDate.now().plusDays(1).atStartOfDay();
-            case MOTILAL    -> {
-                LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
-                yield now.isBefore(todaySixAm) ? todaySixAm : todaySixAm.plusDays(1);
-            }
+            case ANGELONE   -> nextSixAm;
+            case MOTILAL    -> nextSixAm;
             case DHAN       -> now.plusHours(24);
-            case UPSTOX     -> LocalDate.now().plusDays(1).atStartOfDay();
-            case PROFITMART -> LocalDate.now().plusDays(1).atStartOfDay();
-            default         -> now.plusHours(24);
+            case UPSTOX     -> nextSixAm;
+            case PROFITMART -> nextSixAm;
+            default         -> nextSixAm;
         };
     }
 
@@ -802,7 +802,27 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 orderRequest.setStoploss("0");
                 orderRequest.setTriggerprice(0.0);
 
-                JSONObject response = angelOneClient.placeOrder(getBaseUrl(dematAccount), orderRequest).get();
+                JSONObject response;
+                try {
+                    response = angelOneClient.placeOrder(getBaseUrl(dematAccount), orderRequest).get();
+                } catch (Exception e) {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    if (msg.contains("Unauthorized access") || msg.contains("jwtToken")
+                            || msg.contains("token expired") || msg.contains("AG8001") || msg.contains("AG8002")) {
+                        log.warn("AngelOne token expired during placeOrder for clientId={}. Refreshing via TOTP and retrying...",
+                                dematAccount.getClientId());
+                        String freshToken = pyTokenValidationService.refreshTokenInNewTransaction(dematAccount);
+                        if (freshToken != null && !freshToken.isBlank()) {
+                            orderRequest.setAccessToken(freshToken);
+                            response = angelOneClient.placeOrder(getBaseUrl(dematAccount), orderRequest).get();
+                            log.info("AngelOne placeOrder retry SUCCEEDED after token refresh for clientId={}", dematAccount.getClientId());
+                        } else {
+                            throw e;
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
                 order.orderId      = response.optString("orderId");
                 order.uniqueOrderId = response.optString("orderId");
 

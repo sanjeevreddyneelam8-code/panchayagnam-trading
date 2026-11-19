@@ -7,6 +7,7 @@ import com.py.demataccount.entity.PyBrokerToken;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -152,21 +153,21 @@ public class BrokerTokenSecretManager {
      * @return expiry LocalDateTime
      */
     public LocalDateTime getTokenExpiry(BrokerType brokerType) {
-        // Token validity differs by broker.
-        // NOTE: In Phase 1, existing expiry behavior is preserved unchanged pending formal
-        // broker-specific session rule verification with live accounts.
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todaySixAm = LocalDate.now().atTime(6, 0);
+        LocalDateTime nextSixAm = now.isBefore(todaySixAm) ? todaySixAm : todaySixAm.plusDays(1);
+
         return switch (brokerType) {
             case ANGELONE ->
-                now.plusDays(365);  // AngelOne tokens valid for ~1 year
+                nextSixAm;          // AngelOne session tokens expire daily at 06:00 AM IST
             case MOTILAL ->
-                now.plusDays(365);  // Motilal tokens valid for ~1 year
+                nextSixAm;          // Motilal session tokens expire daily at 06:00 AM IST
             case DHAN ->
-                now.plusDays(365);  // Dhan tokens valid for ~1 year
+                now.plusHours(24);  // Dhan tokens valid for 24 hours
             case UPSTOX ->
-                now.plusDays(1);    // Upstox tokens valid for ~1 day
+                nextSixAm;          // Upstox tokens expire daily
             default ->
-                now.plusDays(1);    // Default: 1 day
+                nextSixAm;          // Default daily expiry
         };
     }
 }
