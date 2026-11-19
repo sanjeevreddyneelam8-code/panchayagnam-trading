@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:html' as html;
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -9,16 +8,14 @@ import '../constants/auth_header_helper.dart';
 import '../service/copy_trading_engine.dart';
 import '../service/live_market_data_service.dart';
 import '../service/static_ip_service.dart';
-import '../service/theme_mode_service.dart';
 import '../ui_screens/web_screens/main_dashboard_screen/main_dashboard_screen.dart';
-import 'copy_trade_receipt_dialog.dart';
 
 class OrderPlacementTicketDialog extends StatefulWidget {
   final String symbol;
   final String side; // 'BUY' or 'SELL'
   final double ltp;
   final int lotSize;
-  final String category; // 'EQUITY' or 'F&O'
+  final String category; // 'EQUITY' or 'F&O' or 'COMMODITY'
 
   const OrderPlacementTicketDialog({
     super.key,
@@ -132,17 +129,17 @@ class OrderPlacementTicketDialog extends StatefulWidget {
 class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog> {
   late String _side;
   String _selectedExchange = 'NSE';
-  String _productType = 'INTRADAY'; // 'DELIVERY', 'INTRADAY', 'PAY_LATER'
-  String _orderType = 'MARKET'; // 'MARKET', 'LIMIT'
+  String _productType = 'DELIVERY'; // 'DELIVERY', 'INTRADAY', 'PAY_LATER' for Cash; 'CARRYFORWARD', 'INTRADAY' for F&O
+  String _orderType = 'LIMIT'; // 'LIMIT' (left) or 'MARKET' (right)
   int _selectedAccountIndex = 0;
   bool _isSubmitting = false;
   bool _isAmo = false;
   String? _orderErrorMessage;
   double? _liveAvailableMargin;
 
+  late double _currentLtp;
   late int _quantity;
   late double _limitPrice;
-  bool _usePayLater = false;
   bool _showSmartOrders = false;
   double _slTriggerPrice = 0.0;
   double _targetPrice = 0.0;
@@ -152,6 +149,34 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   late TextEditingController _slCtrl;
   late TextEditingController _targetCtrl;
 
+  bool get _isFnO {
+    final upperSym = widget.symbol.toUpperCase();
+    final upperCat = widget.category.toUpperCase();
+    return upperCat == 'F&O' ||
+        upperCat == 'OPTIONS' ||
+        upperCat == 'OPTION' ||
+        upperCat == 'FUTURES' ||
+        upperSym.endsWith(' CE') ||
+        upperSym.endsWith(' PE') ||
+        upperSym.endsWith('CE') ||
+        upperSym.endsWith('PE') ||
+        upperSym.contains(' FUT') ||
+        upperSym.endsWith('FUT') ||
+        RegExp(r'\d{2}[A-Z]{3}').hasMatch(upperSym);
+  }
+
+  bool get _isCommodity {
+    final upperCat = widget.category.toUpperCase();
+    final upperSym = widget.symbol.toUpperCase();
+    return upperCat == 'COMMODITY' ||
+        upperSym.startsWith('CRUDEOIL') ||
+        upperSym.startsWith('GOLD') ||
+        upperSym.startsWith('SILVER') ||
+        upperSym.startsWith('NATURALGAS') ||
+        upperSym.startsWith('COPPER') ||
+        upperSym.startsWith('ZINC');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -160,29 +185,16 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       _selectedAccountIndex = 0;
     }
     _side = widget.side.toUpperCase();
-    final upperSym = widget.symbol.toUpperCase();
-    final upperCat = widget.category.toUpperCase();
-    final isCommodity = upperCat == 'COMMODITY' ||
-        upperSym.startsWith('CRUDEOIL') ||
-        upperSym.startsWith('GOLD') ||
-        upperSym.startsWith('SILVER') ||
-        upperSym.startsWith('NATURALGAS') ||
-        upperSym.startsWith('COPPER') ||
-        upperSym.startsWith('ZINC');
-    final isBfo = upperSym.startsWith('SENSEX') || upperSym.startsWith('BANKEX');
-    final isFnO = upperCat == 'F&O' ||
-        upperCat == 'OPTIONS' ||
-        upperCat == 'OPTION' ||
-        upperCat == 'FUTURES' ||
-        upperSym.endsWith(' CE') ||
-        upperSym.endsWith(' PE') ||
-        upperSym.contains(' FUT') ||
-        upperSym.endsWith('FUT');
 
-    if (isCommodity) {
+    final upperSym = widget.symbol.toUpperCase();
+    final isBfo = upperSym.startsWith('SENSEX') || upperSym.startsWith('BANKEX');
+
+    if (_isCommodity) {
       _selectedExchange = 'MCX';
-    } else if (isFnO) {
+      _productType = 'CARRYFORWARD';
+    } else if (_isFnO) {
       _selectedExchange = isBfo ? 'BFO' : 'NFO';
+      _productType = 'CARRYFORWARD';
     } else {
       _selectedExchange = 'NSE';
       _productType = 'DELIVERY'; // Default to normal Delivery for Cash Equity
@@ -198,25 +210,11 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       _isAmo = true;
     }
 
-    int autoLot = widget.lotSize;
-    if (isFnO) {
-      if (upperSym.contains('BANKNIFTY')) {
-        autoLot = 30;
-      } else if (upperSym.contains('FINNIFTY')) {
-        autoLot = 60;
-      } else if (upperSym.contains('MIDCPNIFTY') || upperSym.contains('MIDCAPNIFTY')) {
-        autoLot = 120;
-      } else if (upperSym.contains('SENSEX')) {
-        autoLot = 20;
-      } else if (upperSym.contains('NIFTY')) {
-        autoLot = 65;
-      }
-    }
-    _quantity = autoLot > 1 ? autoLot : (widget.lotSize > 1 ? widget.lotSize : 1);
     final liveQuote = LiveMarketDataService().getQuote(widget.symbol);
-    _limitPrice = (!isFnO && !isCommodity && liveQuote != null && liveQuote.ltp > 0)
-        ? liveQuote.ltp
-        : widget.ltp;
+    _currentLtp = (liveQuote != null && liveQuote.ltp > 0) ? liveQuote.ltp : widget.ltp;
+    _limitPrice = _currentLtp > 0 ? _currentLtp : widget.ltp;
+
+    _quantity = _effectiveLotSize;
     _slTriggerPrice = _side == 'BUY' ? (_limitPrice * 0.90) : (_limitPrice * 1.10);
     _targetPrice = _side == 'BUY' ? (_limitPrice * 1.20) : (_limitPrice * 0.80);
 
@@ -226,6 +224,21 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     _targetCtrl = TextEditingController(text: _targetPrice.toStringAsFixed(2));
 
     _loadLiveBrokerMargin(engine);
+    LiveMarketDataService().addListener(_onLiveMarketUpdate);
+  }
+
+  void _onLiveMarketUpdate() {
+    if (!mounted) return;
+    final liveQuote = LiveMarketDataService().getQuote(widget.symbol);
+    if (liveQuote != null && liveQuote.ltp > 0 && (liveQuote.ltp - _currentLtp).abs() > 0.001) {
+      setState(() {
+        _currentLtp = liveQuote.ltp;
+        if (_orderType == 'MARKET') {
+          _limitPrice = _currentLtp;
+          _priceCtrl.text = _limitPrice.toStringAsFixed(2);
+        }
+      });
+    }
   }
 
   Future<void> _loadLiveBrokerMargin(CopyTradingEngine engine) async {
@@ -241,22 +254,12 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_onLiveMarketUpdate);
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _slCtrl.dispose();
     _targetCtrl.dispose();
     super.dispose();
-  }
-
-  double get _marginRequired {
-    final effectivePrice = _orderType == 'MARKET' ? widget.ltp : _limitPrice;
-    final totalValue = effectivePrice * _quantity;
-    if (_productType == 'INTRADAY') {
-      return totalValue / 5.0; // 5x leverage
-    } else if (_productType == 'PAY_LATER') {
-      return totalValue / 4.2; // 4.2x MTF
-    }
-    return totalValue; // 1x delivery
   }
 
   int get _effectiveLotSize {
@@ -265,8 +268,66 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     if (upperSym.contains('FINNIFTY')) return 60;
     if (upperSym.contains('MIDCPNIFTY') || upperSym.contains('MIDCAPNIFTY')) return 120;
     if (upperSym.contains('SENSEX')) return 20;
-    if (upperSym.contains('NIFTY') && !upperSym.contains('BANK') && !upperSym.contains('FIN') && !upperSym.contains('MID')) return 65;
+    if (upperSym.contains('NIFTY') &&
+        !upperSym.contains('BANK') &&
+        !upperSym.contains('FIN') &&
+        !upperSym.contains('MID')) {
+      return 65;
+    }
     return widget.lotSize > 1 ? widget.lotSize : 1;
+  }
+
+  double get _marginRequired {
+    final effectivePrice = _orderType == 'MARKET' ? _currentLtp : _limitPrice;
+    final totalValue = effectivePrice * _quantity;
+
+    if (_isFnO) {
+      final isOption = widget.symbol.toUpperCase().endsWith('CE') ||
+          widget.symbol.toUpperCase().endsWith('PE') ||
+          widget.symbol.toUpperCase().endsWith(' CE') ||
+          widget.symbol.toUpperCase().endsWith(' PE');
+      if (isOption) {
+        if (_side == 'BUY') {
+          return totalValue; // Option buy = 100% premium paid upfront
+        } else {
+          final lots = (_quantity / _effectiveLotSize).ceil().clamp(1, 1000);
+          final baseMarginPerLot = 115000.0;
+          return _productType == 'INTRADAY' ? (baseMarginPerLot * lots * 0.5) : (baseMarginPerLot * lots);
+        }
+      } else {
+        final lots = (_quantity / _effectiveLotSize).ceil().clamp(1, 1000);
+        final baseMarginPerLot = 125000.0;
+        final approxVal = totalValue > 0 ? totalValue : (baseMarginPerLot * lots);
+        return _productType == 'INTRADAY' ? (approxVal * 0.075) : (approxVal * 0.14);
+      }
+    }
+
+    if (_productType == 'INTRADAY') {
+      return totalValue * 0.20; // 5x dynamic leverage (20% margin)
+    } else if (_productType == 'PAY_LATER') {
+      return totalValue * 0.25; // 4x dynamic MTF (25% margin)
+    }
+    return totalValue; // 100% Delivery
+  }
+
+  String get _marginLeverageTag {
+    if (_isFnO) {
+      final isOption = widget.symbol.toUpperCase().endsWith('CE') ||
+          widget.symbol.toUpperCase().endsWith('PE') ||
+          widget.symbol.toUpperCase().endsWith(' CE') ||
+          widget.symbol.toUpperCase().endsWith(' PE');
+      if (isOption) {
+        return _side == 'BUY' ? '100% Premium' : (_productType == 'INTRADAY' ? 'MIS SPAN' : 'SPAN + Exposure');
+      }
+      return _productType == 'INTRADAY' ? 'MIS (~7.5% Margin)' : 'NRML (~14% Margin)';
+    }
+
+    if (_productType == 'INTRADAY') {
+      return '5x Leverage (20% Margin)';
+    } else if (_productType == 'PAY_LATER') {
+      return '4x MTF (25% Margin)';
+    }
+    return '1x Cash (100% Margin)';
   }
 
   void _onQtyChanged(int newQty) {
@@ -300,7 +361,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
         (role != 'USER' && (uid == '1' || uid == '2'));
 
     if (!StaticIpService.isUnlocked && !isOwner) {
-      Navigator.pop(context); // Close ticket
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Row(
@@ -334,13 +395,27 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
     final selectedAcc = accounts[safeIdx];
 
-    final effectivePrice = _orderType == 'MARKET' ? _limitPrice : _limitPrice;
+    // Ensure quantity adheres to lot sizes
+    if (_effectiveLotSize > 1 && (_quantity % _effectiveLotSize != 0)) {
+      _quantity = ((_quantity / _effectiveLotSize).round()) * _effectiveLotSize;
+      if (_quantity < _effectiveLotSize) _quantity = _effectiveLotSize;
+      _qtyCtrl.text = '$_quantity';
+    }
+
+    final effectivePrice = _orderType == 'MARKET' ? _currentLtp : _limitPrice;
     final isDerivativeEx = _selectedExchange == 'NFO' || _selectedExchange == 'BFO' || _selectedExchange == 'MCX';
-    final apiProductType = _productType == 'INTRADAY'
-        ? 'INTRADAY'
-        : (_productType == 'PAY_LATER'
-            ? (isDerivativeEx ? 'CARRYFORWARD' : 'MARGIN')
-            : (isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY'));
+
+    String apiProductType;
+    if (_productType == 'INTRADAY') {
+      apiProductType = 'INTRADAY';
+    } else if (_productType == 'PAY_LATER') {
+      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'MARGIN';
+    } else if (_productType == 'CARRYFORWARD') {
+      apiProductType = 'CARRYFORWARD';
+    } else {
+      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
+    }
+
     final idempotencyKey =
         'UI-${DateTime.now().millisecondsSinceEpoch}-${widget.symbol.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-$_quantity';
 
@@ -556,50 +631,59 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          widget.symbol,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.3,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.symbol,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.3,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _isFnO
+                                  ? 'Derivatives (F&O)'
+                                  : (_isCommodity ? 'Commodity (MCX)' : 'NSE/BSE Cash Market'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      // Buy / Sell Switcher Pills
+                      // Live Price Pill
                       Container(
-                        padding: const EdgeInsets.all(3),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            InkWell(
-                              onTap: () => setState(() => _side = 'BUY'),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isBuy ? const Color(0xFF059669) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text('BUY', style: TextStyle(color: isBuy ? Colors.white : const Color(0xFF64748B), fontWeight: FontWeight.bold, fontSize: 11)),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
                               ),
                             ),
-                            InkWell(
-                              onTap: () => setState(() => _side = 'SELL'),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: !isBuy ? const Color(0xFFDC2626) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text('SELL', style: TextStyle(color: !isBuy ? Colors.white : const Color(0xFF64748B), fontWeight: FontWeight.bold, fontSize: 11)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '₹${_currentLtp.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
                               ),
                             ),
                           ],
@@ -613,13 +697,13 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   Row(
                     children: [
                       if (_selectedExchange == 'MCX') ...[
-                        _buildExchangeRadio('MCX', '₹${_limitPrice.toStringAsFixed(2)}', 'LIVE'),
+                        _buildExchangeRadio('MCX', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
                       ] else if (_selectedExchange == 'NFO' || _selectedExchange == 'BFO') ...[
-                        _buildExchangeRadio(_selectedExchange, '₹${_limitPrice.toStringAsFixed(2)}', 'F&O'),
+                        _buildExchangeRadio(_selectedExchange, '₹${_currentLtp.toStringAsFixed(2)}', 'F&O'),
                       ] else ...[
-                        _buildExchangeRadio('NSE', '₹${_limitPrice.toStringAsFixed(2)}', 'LIVE'),
+                        _buildExchangeRadio('NSE', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
                         const SizedBox(width: 14),
-                        _buildExchangeRadio('BSE', '₹${_limitPrice.toStringAsFixed(2)}', 'BSE'),
+                        _buildExchangeRadio('BSE', '₹${_currentLtp.toStringAsFixed(2)}', 'BSE'),
                       ],
                     ],
                   ),
@@ -670,7 +754,10 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                         }),
                                         onChanged: (val) {
                                           if (val != null) {
-                                            setState(() => _selectedAccountIndex = val);
+                                            setState(() {
+                                              _selectedAccountIndex = val;
+                                              _loadLiveBrokerMargin(engine);
+                                            });
                                           }
                                         },
                                       ),
@@ -690,20 +777,129 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               ),
             ),
 
-            // ── Product Tabs (DELIVERY | INTRADAY Buy 5x | PAY LATER 4.2x) ────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+            // ── Big Prominent BUY / SELL Switcher Bar (Down from top) ─────────
+            Container(
+              height: 44,
+              margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Row(
                 children: [
-                  _buildProductTab('DELIVERY', 'DELIVERY', null),
-                  const SizedBox(width: 8),
-                  _buildProductTab('INTRADAY', 'INTRADAY', 'Buy 5x'),
-                  const SizedBox(width: 8),
-                  _buildProductTab('PAY_LATER', 'PAY LATER', '4.2x'),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _side = 'BUY'),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isBuy ? const Color(0xFF059669) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: isBuy
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF059669).withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 16,
+                              color: isBuy ? Colors.white : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'BUY',
+                              style: TextStyle(
+                                color: isBuy ? Colors.white : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13.5,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _side = 'SELL'),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: !isBuy ? const Color(0xFFDC2626) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: !isBuy
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFDC2626).withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.arrow_downward_rounded,
+                              size: 16,
+                              color: !isBuy ? Colors.white : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'SELL',
+                              style: TextStyle(
+                                color: !isBuy ? Colors.white : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13.5,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+
+            // ── Segment-Specific Product Tabs ─────────────────────────────────
+            // Live Cash: DELIVERY, INTRADAY, PAY LATER
+            // F&O / Commodity: CARRY FORWARD, INTRADAY
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+              child: (_isFnO || _isCommodity)
+                  ? Row(
+                      children: [
+                        _buildProductTab('CARRYFORWARD', 'CARRY FORWARD (NRML)'),
+                        const SizedBox(width: 8),
+                        _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        _buildProductTab('DELIVERY', 'DELIVERY (CNC)'),
+                        const SizedBox(width: 8),
+                        _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
+                        const SizedBox(width: 8),
+                        _buildProductTab('PAY_LATER', 'PAY LATER (MTF)'),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 14),
 
             // ── Stepper Form Fields ───────────────────────────────────────────
             Padding(
@@ -716,14 +912,14 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.lotSize > 1
-                            ? 'Quantity (Multiples of ${widget.lotSize})'
+                        _isFnO
+                            ? 'Quantity (Multiples of $_effectiveLotSize)'
                             : 'Quantity (Shares)',
                         style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
                       ),
                       Text(
-                        widget.lotSize > 1
-                            ? '1 Lot = ${widget.lotSize} Qty'
+                        _isFnO
+                            ? '1 Lot = $_effectiveLotSize Qty'
                             : 'Min: 1 Share',
                         style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                       ),
@@ -765,16 +961,19 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   ),
                   const SizedBox(height: 14),
 
-                  // Limit / Market Price + AMO toggle
+                  // Order Type: LIMIT (left), MARKET (right), AMO
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Order Type', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                      const Text(
+                        'Order Type',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
                       Row(
                         children: [
-                          _buildTypeChip('MARKET'),
-                          const SizedBox(width: 6),
                           _buildTypeChip('LIMIT'),
+                          const SizedBox(width: 6),
+                          _buildTypeChip('MARKET'),
                           const SizedBox(width: 6),
                           InkWell(
                             onTap: () => setState(() => _isAmo = !_isAmo),
@@ -803,79 +1002,87 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _orderType == 'MARKET' ? const Color(0xFFF1F5F9) : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                          onPressed: _orderType == 'MARKET' ? null : () => _onPriceChanged(_limitPrice - 0.50),
-                        ),
-                        Expanded(
-                          child: _orderType == 'MARKET'
-                              ? Center(
-                                  child: Text(
-                                    'Market Price (₹${widget.ltp.toStringAsFixed(2)})',
-                                    style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                )
-                              : TextField(
-                                  controller: _priceCtrl,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                  onChanged: (v) {
-                                    final val = double.tryParse(v);
-                                    if (val != null) setState(() => _limitPrice = val);
-                                  },
-                                ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                          onPressed: _orderType == 'MARKET' ? null : () => _onPriceChanged(_limitPrice + 0.50),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
 
-                  // Pay Later MTF Checkbox Box (From AngelOne / Groww Image)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBEB),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: Checkbox(
-                            value: _usePayLater,
-                            activeColor: const Color(0xFFD97706),
-                            onChanged: (v) => setState(() => _usePayLater = v ?? false),
+                  // Price Input: Stepper when LIMIT, clean locked card when MARKET
+                  if (_orderType == 'LIMIT')
+                    Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
+                            onPressed: () => _onPriceChanged(_limitPrice - 0.50),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'With Pay Later (MTF): ₹${(widget.ltp * 0.25).toStringAsFixed(2)} margin',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                          Expanded(
+                            child: TextField(
+                              controller: _priceCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                isDense: true,
+                                prefixText: '₹ ',
+                                prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                              ),
+                              onChanged: (v) {
+                                final val = double.tryParse(v);
+                                if (val != null) setState(() => _limitPrice = val);
+                              },
+                            ),
                           ),
-                        ),
-                        const Text('KNOW MORE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
+                            onPressed: () => _onPriceChanged(_limitPrice + 0.50),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2E8F0),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'MARKET',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Executes at live market price',
+                                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '₹${_currentLtp.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
                   // Smart Orders Accordion (STOP LOSS & GTT)
                   InkWell(
@@ -885,8 +1092,8 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Smart Orders (STOP LOSS & GTT)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                          Icon(_showSmartOrders ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 20, color: const Color(0xFF64748B)),
+                          const Text('Smart Orders (STOP LOSS & GTT)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                          Icon(_showSmartOrders ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 18, color: const Color(0xFF64748B)),
                         ],
                       ),
                     ),
@@ -946,7 +1153,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                   children: [
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 18),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(8),
@@ -992,16 +1199,38 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Margin Required (Approx)', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                                  const SizedBox(height: 2),
-                                  Text('₹${_marginRequired.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                                  Row(
+                                    children: [
+                                      const Text('Margin Required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE0E7FF),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          _marginLeverageTag,
+                                          style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(_marginRequired.clamp(0.0, 999999999.0))}',
+                                    style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                  ),
                                 ],
                               ),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                                  const SizedBox(height: 2),
+                                  Text(
+                                    isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 3),
                                   Text(
                                     isSingleAccount
                                         ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(availableMargin)} ($primaryBroker)'
@@ -1113,41 +1342,42 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             ),
           ),
           const SizedBox(width: 6),
-          Text('$ex: $price ($chg)', style: TextStyle(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
+          Text(
+            '$ex: $price ($chg)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+              color: isSel ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProductTab(String key, String label, String? badge) {
+  Widget _buildProductTab(String key, String label) {
     final isSel = _productType == key;
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _productType = key),
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSel ? const Color(0xFF059669).withOpacity(0.12) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: isSel ? const Color(0xFF059669) : Colors.transparent, width: 1.5),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: isSel ? FontWeight.w900 : FontWeight.w600,
-                  color: isSel ? const Color(0xFF059669) : const Color(0xFF475569),
-                ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSel ? FontWeight.w900 : FontWeight.w600,
+                color: isSel ? const Color(0xFF059669) : const Color(0xFF475569),
               ),
-              if (badge != null) ...[
-                const SizedBox(width: 4),
-                Text(badge, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isSel ? const Color(0xFF047857) : const Color(0xFF64748B))),
-              ],
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ),
@@ -1160,14 +1390,18 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       onTap: () => setState(() => _orderType = type),
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSel ? const Color(0xFF059669) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           type,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isSel ? Colors.white : const Color(0xFF64748B)),
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            color: isSel ? Colors.white : const Color(0xFF64748B),
+          ),
         ),
       ),
     );
