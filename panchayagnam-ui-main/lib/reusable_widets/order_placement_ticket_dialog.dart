@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -605,751 +606,757 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final themeBg = isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2);
     final themeBorder = isBuy ? const Color(0xFFA7F3D0) : const Color(0xFFFECACA);
 
+    final engine = CopyTradingEngine();
+    final accounts = engine.accounts;
+    final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
+    final selectedAcc = accounts.isNotEmpty ? accounts[safeIdx] : engine.masterAccount;
+    final brokerCount = engine.totalAccountsCount;
+    final activeCount = engine.childAccounts.where((a) => a.isActive).length;
+    final readyCount = activeCount > 0 ? activeCount : (brokerCount > 0 ? brokerCount : 1);
+    final totalPooled = engine.childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
+    final pooledCrores = totalPooled > 0 ? (totalPooled / 10000000).toStringAsFixed(2) : '3.50';
+    final isSingleAccount = brokerCount <= 1;
+    final primaryBroker = selectedAcc.broker;
+    final primaryName = selectedAcc.name;
+    final availableMargin = _liveAvailableMargin ?? (selectedAcc.balance > 0 ? selectedAcc.balance : 0.0);
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxDialogHeight = math.min(screenHeight - 24.0, 720.0);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
-        width: 440,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 440,
+          maxHeight: maxDialogHeight,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Top Header matching AngelOne / Groww Order Sheet ──────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-              decoration: BoxDecoration(
-                color: themeBg,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                border: Border(bottom: BorderSide(color: themeBorder)),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── 1. Top Header (Fixed at top) ──────────────────────
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                  decoration: BoxDecoration(
+                    color: themeBg,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    border: Border(bottom: BorderSide(color: themeBorder)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(20),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(Icons.arrow_back_rounded, size: 20, color: Color(0xFF1E293B)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.symbol,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F172A),
-                                letterSpacing: -0.3,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _isFnO
-                                  ? 'Derivatives (F&O)'
-                                  : (_isCommodity ? 'Commodity (MCX)' : 'NSE/BSE Cash Market'),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Live Price Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '₹${_currentLtp.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Exchange Selector Radios (MCX for Commodity, NFO/BFO for F&O, NSE/BSE for Equities)
-                  Row(
-                    children: [
-                      if (_selectedExchange == 'MCX') ...[
-                        _buildExchangeRadio('MCX', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
-                      ] else if (_selectedExchange == 'NFO' || _selectedExchange == 'BFO') ...[
-                        _buildExchangeRadio(_selectedExchange, '₹${_currentLtp.toStringAsFixed(2)}', 'F&O'),
-                      ] else ...[
-                        _buildExchangeRadio('NSE', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
-                        const SizedBox(width: 14),
-                        _buildExchangeRadio('BSE', '₹${_currentLtp.toStringAsFixed(2)}', 'BSE'),
-                      ],
-                    ],
-                  ),
-
-                  // ── Connected Broker Demat Selector ───────────────────────
-                  Builder(
-                    builder: (context) {
-                      final engine = CopyTradingEngine();
-                      final accounts = engine.accounts;
-                      if (accounts.isEmpty) return const SizedBox.shrink();
-                      final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
-                      final selectedAcc = accounts[safeIdx];
-
-                      return Container(
-                        margin: const EdgeInsets.only(top: 10),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF0F172A)),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'Broker Demat:',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: accounts.length > 1
-                                  ? DropdownButtonHideUnderline(
-                                      child: DropdownButton<int>(
-                                        value: safeIdx,
-                                        isDense: true,
-                                        icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF0F172A), size: 18),
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                                        items: List.generate(accounts.length, (idx) {
-                                          final acc = accounts[idx];
-                                          return DropdownMenuItem<int>(
-                                            value: idx,
-                                            child: Text(
-                                              '${acc.broker} (${acc.clientId.isNotEmpty ? acc.clientId : acc.name})',
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          );
-                                        }),
-                                        onChanged: (val) {
-                                          if (val != null) {
-                                            setState(() {
-                                              _selectedAccountIndex = val;
-                                              _loadLiveBrokerMargin(engine);
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    )
-                                  : Text(
-                                      '${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name})',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Big Prominent BUY / SELL Switcher Bar (Down from top) ─────────
-            Container(
-              height: 44,
-              margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => setState(() => _side = 'BUY'),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isBuy ? const Color(0xFF059669) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: isBuy
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFF059669).withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 16,
-                              color: isBuy ? Colors.white : const Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'BUY',
-                              style: TextStyle(
-                                color: isBuy ? Colors.white : const Color(0xFF64748B),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13.5,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => setState(() => _side = 'SELL'),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: !isBuy ? const Color(0xFFDC2626) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: !isBuy
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFDC2626).withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.arrow_downward_rounded,
-                              size: 16,
-                              color: !isBuy ? Colors.white : const Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'SELL',
-                              style: TextStyle(
-                                color: !isBuy ? Colors.white : const Color(0xFF64748B),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13.5,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Segment-Specific Product Tabs ─────────────────────────────────
-            // Live Cash: DELIVERY, INTRADAY, PAY LATER
-            // F&O / Commodity: CARRY FORWARD, INTRADAY
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-              child: (_isFnO || _isCommodity)
-                  ? Row(
-                      children: [
-                        _buildProductTab('CARRYFORWARD', 'CARRY FORWARD (NRML)'),
-                        const SizedBox(width: 8),
-                        _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        _buildProductTab('DELIVERY', 'DELIVERY (CNC)'),
-                        const SizedBox(width: 8),
-                        _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
-                        const SizedBox(width: 8),
-                        _buildProductTab('PAY_LATER', 'PAY LATER (MTF)'),
-                      ],
-                    ),
-            ),
-            const SizedBox(height: 14),
-
-            // ── Stepper Form Fields ───────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // No. of shares / Lots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _isFnO
-                            ? 'Quantity (Multiples of $_effectiveLotSize)'
-                            : 'Quantity (Shares)',
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                      ),
-                      Text(
-                        _isFnO
-                            ? '1 Lot = $_effectiveLotSize Qty'
-                            : 'Min: 1 Share',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity - _effectiveLotSize),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: _qtyCtrl,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                            decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                            onChanged: (v) {
-                              final val = int.tryParse(v);
-                              if (val != null) setState(() => _quantity = val);
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                          onPressed: () => _onQtyChanged(_quantity + _effectiveLotSize),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Order Type: LIMIT (left), MARKET (right), AMO
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Order Type',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                      ),
                       Row(
                         children: [
-                          _buildTypeChip('LIMIT'),
-                          const SizedBox(width: 6),
-                          _buildTypeChip('MARKET'),
-                          const SizedBox(width: 6),
                           InkWell(
-                            onTap: () => setState(() => _isAmo = !_isAmo),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _isAmo ? const Color(0xFFD97706) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _isAmo ? const Color(0xFFB45309) : const Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              child: Text(
-                                'AMO',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: _isAmo ? Colors.white : const Color(0xFF64748B),
-                                ),
-                              ),
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(20),
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(Icons.arrow_back_rounded, size: 20, color: Color(0xFF1E293B)),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Price Input: Stepper when LIMIT, clean locked card when MARKET
-                  if (_orderType == 'LIMIT')
-                    Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                            onPressed: () => _onPriceChanged(_limitPrice - 0.50),
-                          ),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: TextField(
-                              controller: _priceCtrl,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                                prefixText: '₹ ',
-                                prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                              ),
-                              onChanged: (v) {
-                                final val = double.tryParse(v);
-                                if (val != null) setState(() => _limitPrice = val);
-                              },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.symbol,
+                                  style: const TextStyle(
+                                    fontSize: 16.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF0F172A),
+                                    letterSpacing: -0.3,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _isFnO
+                                      ? 'Derivatives (F&O)'
+                                      : (_isCommodity ? 'Commodity (MCX)' : 'NSE/BSE Cash Market'),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                            onPressed: () => _onPriceChanged(_limitPrice + 0.50),
+                          // Live Price Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '₹${_currentLtp.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    )
-                  else
-                    Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(height: 8),
+
+                      // Exchange Selector Radios (MCX for Commodity, NFO/BFO for F&O, NSE/BSE for Equities)
+                      Row(
                         children: [
-                          Row(
+                          if (_selectedExchange == 'MCX') ...[
+                            _buildExchangeRadio('MCX', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
+                          ] else if (_selectedExchange == 'NFO' || _selectedExchange == 'BFO') ...[
+                            _buildExchangeRadio(_selectedExchange, '₹${_currentLtp.toStringAsFixed(2)}', 'F&O'),
+                          ] else ...[
+                            _buildExchangeRadio('NSE', '₹${_currentLtp.toStringAsFixed(2)}', 'LIVE'),
+                            const SizedBox(width: 14),
+                            _buildExchangeRadio('BSE', '₹${_currentLtp.toStringAsFixed(2)}', 'BSE'),
+                          ],
+                        ],
+                      ),
+
+                      // Connected Broker Demat Selector
+                      if (accounts.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE2E8F0),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'MARKET',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569)),
-                                ),
+                              const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF0F172A)),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Broker Demat:',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
-                                'Executes at live market price',
-                                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                              Expanded(
+                                child: accounts.length > 1
+                                    ? DropdownButtonHideUnderline(
+                                        child: DropdownButton<int>(
+                                          value: safeIdx,
+                                          isDense: true,
+                                          icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF0F172A), size: 18),
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                          items: List.generate(accounts.length, (idx) {
+                                            final acc = accounts[idx];
+                                            return DropdownMenuItem<int>(
+                                              value: idx,
+                                              child: Text(
+                                                '${acc.broker} (${acc.clientId.isNotEmpty ? acc.clientId : acc.name})',
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            );
+                                          }),
+                                          onChanged: (val) {
+                                            if (val != null) {
+                                              setState(() {
+                                                _selectedAccountIndex = val;
+                                                _loadLiveBrokerMargin(engine);
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      )
+                                    : Text(
+                                        '${selectedAcc.broker} (${selectedAcc.clientId.isNotEmpty ? selectedAcc.clientId : selectedAcc.name})',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                               ),
                             ],
                           ),
-                          Text(
-                            '₹${_currentLtp.toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-
-                  // Smart Orders Accordion (STOP LOSS & GTT)
-                  InkWell(
-                    onTap: () => setState(() => _showSmartOrders = !_showSmartOrders),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Smart Orders (STOP LOSS & GTT)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                          Icon(_showSmartOrders ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 18, color: const Color(0xFF64748B)),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   ),
-                  if (_showSmartOrders) ...[
-                    const SizedBox(height: 8),
-                    Row(
+                ),
+
+                // ── 2. Scrollable Middle Body (Never pushes button off!) ─
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _slCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Stop Loss Trigger (SL)',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
+                        // Big Prominent BUY / SELL Switcher Bar
+                        Container(
+                          height: 42,
+                          margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _targetCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Target (GTT)',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Synchronized Execution Multi-Broker Banner ───────────────────
-            Builder(
-              builder: (context) {
-                final engine = CopyTradingEngine();
-                final accounts = engine.accounts;
-                final safeIdx = _selectedAccountIndex < accounts.length ? _selectedAccountIndex : 0;
-                final selectedAcc = accounts.isNotEmpty ? accounts[safeIdx] : engine.masterAccount;
-                final brokerCount = engine.totalAccountsCount;
-                final activeCount = engine.childAccounts.where((a) => a.isActive).length;
-                final readyCount = activeCount > 0 ? activeCount : (brokerCount > 0 ? brokerCount : 1);
-                final totalPooled = engine.childAccounts.fold<double>(0.0, (s, a) => s + a.balance);
-                final pooledCrores = totalPooled > 0 ? (totalPooled / 10000000).toStringAsFixed(2) : '3.50';
-                final isSingleAccount = brokerCount <= 1;
-                final primaryBroker = selectedAcc.broker;
-                final primaryName = selectedAcc.name;
-                final availableMargin = _liveAvailableMargin ?? (selectedAcc.balance > 0 ? selectedAcc.balance : 0.0);
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 18),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isSingleAccount ? Icons.verified_rounded : Icons.hub_rounded,
-                            size: 14,
-                            color: isSingleAccount ? const Color(0xFF34D399) : const Color(0xFF38BDF8),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              isSingleAccount
-                                  ? 'Direct Live Order: $primaryName ($primaryBroker) Connected'
-                                  : 'Panchayagnam Synchronized: Replicating to $brokerCount Brokers (Sub-15ms)',
-                              style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          Text(
-                            isSingleAccount ? '1/1 Ready (Live)' : '$readyCount/$brokerCount Ready',
-                            style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ── Bottom Summary & CTA Button ──────────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-                        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Row(
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => setState(() => _side = 'BUY'),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: isBuy ? const Color(0xFF059669) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: isBuy
+                                          ? [
+                                              BoxShadow(
+                                                color: const Color(0xFF059669).withOpacity(0.3),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              )
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_upward_rounded,
+                                          size: 16,
+                                          color: isBuy ? Colors.white : const Color(0xFF64748B),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'BUY',
+                                          style: TextStyle(
+                                            color: isBuy ? Colors.white : const Color(0xFF64748B),
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 13.5,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => setState(() => _side = 'SELL'),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: !isBuy ? const Color(0xFFDC2626) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: !isBuy
+                                          ? [
+                                              BoxShadow(
+                                                color: const Color(0xFFDC2626).withOpacity(0.3),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              )
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_downward_rounded,
+                                          size: 16,
+                                          color: !isBuy ? Colors.white : const Color(0xFF64748B),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'SELL',
+                                          style: TextStyle(
+                                            color: !isBuy ? Colors.white : const Color(0xFF64748B),
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 13.5,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Segment-Specific Product Tabs
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                          child: (_isFnO || _isCommodity)
+                              ? Row(
+                                  children: [
+                                    _buildProductTab('CARRYFORWARD', 'CARRY FORWARD (NRML)'),
+                                    const SizedBox(width: 8),
+                                    _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    _buildProductTab('DELIVERY', 'DELIVERY (CNC)'),
+                                    const SizedBox(width: 8),
+                                    _buildProductTab('INTRADAY', 'INTRADAY (MIS)'),
+                                    const SizedBox(width: 8),
+                                    _buildProductTab('PAY_LATER', 'PAY LATER (MTF)'),
+                                  ],
+                                ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Stepper Form Fields
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // No. of shares / Lots
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
+                                  Text(
+                                    _isFnO
+                                        ? 'Quantity (Multiples of $_effectiveLotSize)'
+                                        : 'Quantity (Shares)',
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                                  ),
+                                  Text(
+                                    _isFnO
+                                        ? '1 Lot = $_effectiveLotSize Qty'
+                                        : 'Min: 1 Share',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
+                                      onPressed: () => _onQtyChanged(_quantity - _effectiveLotSize),
+                                    ),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _qtyCtrl,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                        onChanged: (v) {
+                                          final val = int.tryParse(v);
+                                          if (val != null) setState(() => _quantity = val);
+                                        },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
+                                      onPressed: () => _onQtyChanged(_quantity + _effectiveLotSize),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Order Type: LIMIT (left), MARKET (right), AMO
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Order Type',
+                                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                                  ),
                                   Row(
                                     children: [
-                                      const Text('Margin Required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                      _buildTypeChip('LIMIT'),
                                       const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFE0E7FF),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          _marginLeverageTag,
-                                          style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
+                                      _buildTypeChip('MARKET'),
+                                      const SizedBox(width: 6),
+                                      InkWell(
+                                        onTap: () => setState(() => _isAmo = !_isAmo),
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: _isAmo ? const Color(0xFFD97706) : const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: _isAmo ? const Color(0xFFB45309) : const Color(0xFFCBD5E1),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'AMO',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: _isAmo ? Colors.white : const Color(0xFF64748B),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(_marginRequired.clamp(0.0, 999999999.0))}',
-                                    style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                                  ),
                                 ],
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin',
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                              const SizedBox(height: 5),
+
+                              // Price Input
+                              if (_orderType == 'LIMIT')
+                                Container(
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    isSingleAccount
-                                        ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(availableMargin)} ($primaryBroker)'
-                                        : '₹$pooledCrores Cr ($brokerCount Brokers)',
-                                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
+                                        onPressed: () => _onPriceChanged(_limitPrice - 0.50),
+                                      ),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _priceCtrl,
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            isDense: true,
+                                            prefixText: '₹ ',
+                                            prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                                          ),
+                                          onChanged: (v) {
+                                            final val = double.tryParse(v);
+                                            if (val != null) setState(() => _limitPrice = val);
+                                          },
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
+                                        onPressed: () => _onPriceChanged(_limitPrice + 0.50),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                )
+                              else
+                                Container(
+                                  height: 42,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE2E8F0),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'MARKET',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Executes at live market price',
+                                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '₹${_currentLtp.toStringAsFixed(2)}',
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: 10),
+
+                              // Smart Orders Accordion (STOP LOSS & GTT)
+                              InkWell(
+                                onTap: () => setState(() => _showSmartOrders = !_showSmartOrders),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Smart Orders (STOP LOSS & GTT)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                                      Icon(_showSmartOrders ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 18, color: const Color(0xFF64748B)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_showSmartOrders) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _slCtrl,
+                                        decoration: InputDecoration(
+                                          labelText: 'Stop Loss Trigger (SL)',
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _targetCtrl,
+                                        decoration: InputDecoration(
+                                          labelText: 'Target (GTT)',
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Synchronized Execution Multi-Broker Banner
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSingleAccount ? Icons.verified_rounded : Icons.hub_rounded,
+                                size: 14,
+                                color: isSingleAccount ? const Color(0xFF34D399) : const Color(0xFF38BDF8),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  isSingleAccount
+                                      ? 'Direct Live Order: $primaryName ($primaryBroker) Connected'
+                                      : 'Panchayagnam Synchronized: Replicating to $brokerCount Brokers (Sub-15ms)',
+                                  style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              Text(
+                                isSingleAccount ? '1/1 Ready (Live)' : '$readyCount/$brokerCount Ready',
+                                style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
 
-                          if (_orderErrorMessage != null) ...[
-                            Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF2F2),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFFCA5A5)),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                // ── 3. Pinned Bottom Summary & Place Order CTA (ALWAYS 100% VISIBLE!) ──
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                    border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 17),
-                                  const SizedBox(width: 8),
-                                  Expanded(
+                                  const Text('Margin Required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE0E7FF),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
                                     child: Text(
-                                      _orderErrorMessage!,
-                                      style: const TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF991B1B),
-                                        height: 1.35,
-                                      ),
+                                      _marginLeverageTag,
+                                      style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-
-                          // Place Buy / Sell Order CTA
-                          MouseRegion(
-                            cursor: _isSubmitting ? SystemMouseCursors.basic : SystemMouseCursors.click,
-                            hitTestBehavior: HitTestBehavior.opaque,
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : () {
-                                        FocusScope.of(context).unfocus();
-                                        _executeOrder();
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: themeColor,
-                                  foregroundColor: Colors.white,
-                                  enabledMouseCursor: SystemMouseCursors.click,
-                                  disabledMouseCursor: SystemMouseCursors.basic,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  elevation: 2,
-                                ),
-                              child: _isSubmitting
-                                  ? Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.2,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        const Text(
-                                          'PLACING LIVE ORDER...',
-                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
-                                        ),
-                                      ],
-                                    )
-                                  : Text(
-                                      isSingleAccount
-                                          ? 'PLACE $_side ORDER ($primaryBroker)'
-                                          : 'PLACE $_side ORDER ($readyCount BROKERS)',
-                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
-                                    ),
-                            ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(_marginRequired.clamp(0.0, 999999999.0))}',
+                                style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              ),
+                            ],
                           ),
-                        ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin',
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                isSingleAccount
+                                    ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(availableMargin)} ($primaryBroker)'
+                                    : '₹$pooledCrores Cr ($brokerCount Brokers)',
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ),
-                  ],
-                );
-              },
+                      const SizedBox(height: 10),
+
+                      if (_orderErrorMessage != null) ...[
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 17),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _orderErrorMessage!,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF991B1B),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Place Buy / Sell Order CTA Button (Prominent 52px height, Instant Click)
+                      MouseRegion(
+                        cursor: _isSubmitting ? SystemMouseCursors.basic : SystemMouseCursors.click,
+                        hitTestBehavior: HitTestBehavior.opaque,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting
+                                ? null
+                                : () {
+                                    FocusManager.instance.primaryFocus?.unfocus();
+                                    _executeOrder();
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: themeColor,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: themeColor.withOpacity(0.6),
+                              disabledForegroundColor: Colors.white.withOpacity(0.8),
+                              enabledMouseCursor: SystemMouseCursors.click,
+                              disabledMouseCursor: SystemMouseCursors.basic,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 3,
+                              shadowColor: themeColor.withOpacity(0.4),
+                            ),
+                            child: _isSubmitting
+                                ? const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.4,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'PLACING LIVE ORDER...',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, letterSpacing: 0.5),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    isSingleAccount
+                                        ? 'PLACE $_side ORDER ($primaryBroker)'
+                                        : 'PLACE $_side ORDER ($readyCount BROKERS)',
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, letterSpacing: 0.5),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
