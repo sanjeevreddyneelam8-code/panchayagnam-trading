@@ -79,6 +79,8 @@ public class AngelOneScripMasterService {
     private final Map<String, List<ScripEntry>> futuresMap = new ConcurrentHashMap<>();
     // Options lookup: "NIFTY" (or "CRUDEOIL") -> list sorted by expiryDate asc
     private final Map<String, List<ScripEntry>> optionsByUnderlying = new ConcurrentHashMap<>();
+    // Direct symbol lookup: "IOC23NOV26147CE" -> ScripEntry
+    private final Map<String, ScripEntry> symbolMap = new ConcurrentHashMap<>();
 
     private volatile long lastLoadedMs = 0L;
     private volatile long lastAttemptMs = 0L;
@@ -126,11 +128,12 @@ public class AngelOneScripMasterService {
 
     private void loadStreaming() {
         long start = System.currentTimeMillis();
-        Map<String, ScripEntry> newEquities = new HashMap<>(2500);
-        Map<String, List<ScripEntry>> newFutures = new HashMap<>(64);
-        Map<String, List<ScripEntry>> newOptions = new HashMap<>(16);
+        Map<String, ScripEntry> newEquities = new HashMap<>(3000);
+        Map<String, List<ScripEntry>> newFutures = new HashMap<>(300);
+        Map<String, List<ScripEntry>> newOptions = new HashMap<>(500);
+        Map<String, ScripEntry> newSymbolMap = new HashMap<>(45000);
         LocalDate today = LocalDate.now();
-        LocalDate maxOptionDate = today.plusDays(35); // Keep nearest ~1 month of index options to minimize RAM
+        LocalDate maxOptionDate = today.plusDays(75); // Keep nearest ~2.5 months to cover both near and next monthly expiries
 
         try {
             HttpRequest req = HttpRequest.newBuilder()
@@ -195,32 +198,36 @@ public class AngelOneScripMasterService {
                     // 1. NSE Equities
                     if ("NSE".equals(ex) && symUpper.endsWith("-EQ")) {
                         String base = symUpper.substring(0, symUpper.length() - 3);
-                        newEquities.put("NSE:" + base, new ScripEntry(token, symbol, nameUpper, ex, "EQ", "", null, 0, 1));
+                        ScripEntry entry = new ScripEntry(token, symbol, nameUpper, ex, "EQ", "", null, 0, 1);
+                        newEquities.put("NSE:" + base, entry);
+                        newSymbolMap.put(symUpper, entry);
+                        newSymbolMap.put(base, entry);
                         continue;
                     }
 
-                    // 2. Active Futures (MCX FUTCOM + NFO/BFO FUTIDX)
+                    // 2. Active Futures (MCX FUTCOM + NFO/BFO FUTIDX & FUTSTK)
                     if (("MCX".equals(ex) && "FUTCOM".equals(instUpper))
-                            || (("NFO".equals(ex) || "BFO".equals(ex)) && "FUTIDX".equals(instUpper) && TRACKED_INDICES.contains(nameUpper))) {
+                            || (("NFO".equals(ex) || "BFO".equals(ex)) && ("FUTIDX".equals(instUpper) || "FUTSTK".equals(instUpper)))) {
                         LocalDate expDate = parseExpiry(expiry);
                         if (expDate != null && !expDate.isBefore(today)) {
                             int lot = parseIntSafe(lotRaw, 1);
                             ScripEntry entry = new ScripEntry(token, symbol, nameUpper, ex, instUpper, expiry.toUpperCase(), expDate, 0, lot);
                             newFutures.computeIfAbsent(ex + ":" + nameUpper, k -> new ArrayList<>()).add(entry);
+                            newSymbolMap.put(symUpper, entry);
                         }
                         continue;
                     }
 
-                    // 3. Active Index Options (NFO/BFO OPTIDX)
-                    if (("NFO".equals(ex) || "BFO".equals(ex))
-                            && "OPTIDX".equals(instUpper)
-                            && TRACKED_INDICES.contains(nameUpper)) {
+                    // 3. Active Options (NFO/BFO OPTIDX & OPTSTK + MCX OPTFUT)
+                    if ((("NFO".equals(ex) || "BFO".equals(ex)) && ("OPTIDX".equals(instUpper) || "OPTSTK".equals(instUpper)))
+                            || ("MCX".equals(ex) && "OPTFUT".equals(instUpper))) {
                         LocalDate expDate = parseExpiry(expiry);
                         if (expDate != null && !expDate.isBefore(today) && !expDate.isAfter(maxOptionDate)) {
                             int strikeInt = parseStrike(strikeRaw);
                             int lot = parseIntSafe(lotRaw, 1);
                             ScripEntry entry = new ScripEntry(token, symbol, nameUpper, ex, instUpper, expiry.toUpperCase(), expDate, strikeInt, lot);
                             newOptions.computeIfAbsent(nameUpper, k -> new ArrayList<>()).add(entry);
+                            newSymbolMap.put(symUpper, entry);
                         }
                     }
                 }
@@ -240,9 +247,12 @@ public class AngelOneScripMasterService {
             futuresMap.putAll(newFutures);
             optionsByUnderlying.clear();
             optionsByUnderlying.putAll(newOptions);
+            symbolMap.clear();
+            symbolMap.putAll(newSymbolMap);
             lastLoadedMs = System.currentTimeMillis();
 
-            log.info("✅ AngelOneScripMaster streamed in {}ms | equities={} futures={} optionUnderlyings={}",
+            log.info("✅ AngelOneScripMaster streamed in {}ms | equities={} futures={} optionUnderlyings={} totalSymbols={}",
+                    (lastLoadedMs - start), equityMap.size(), futuresMap.size(), optionsByUnderlying.size(), symbolMap.size());
                     (lastLoadedMs - start), equityMap.size(), futuresMap.size(), optionsByUnderlying.size());
         } catch (Exception e) {
             log.error("Failed to stream AngelOne OpenAPIScripMaster: {}", e.getMessage());
@@ -273,7 +283,17 @@ public class AngelOneScripMasterService {
         return (list != null && !list.isEmpty()) ? list.get(0) : null;
     }
 
+    public ScripEntry findBySymbol(String symbol) {
+        ensureLoaded();
+        if (symbol == null || symbol.isBlank()) return null;
+        return symbolMap.get(symbol.trim().toUpperCase());
+    }
+
     public ScripEntry findNearestOption(String underlying, int strike, String optType) {
+        return findNearestOption(underlying, null, strike, optType);
+    }
+
+    public ScripEntry findNearestOption(String underlying, String preferredExpiry, int strike, String optType) {
         ensureLoaded();
         if (underlying == null || underlying.isBlank() || optType == null) return null;
         String u = underlying.trim().toUpperCase();
@@ -282,6 +302,21 @@ public class AngelOneScripMasterService {
         if (list == null || list.isEmpty()) return null;
 
         LocalDate today = LocalDate.now();
+
+        // 1. If preferredExpiry is specified (e.g. "29DEC2026" or "29DEC26"), match exact expiry first
+        if (preferredExpiry != null && !preferredExpiry.isBlank()) {
+            String cleanExp = preferredExpiry.replaceAll("[^A-Z0-9]", "").toUpperCase();
+            for (ScripEntry e : list) {
+                if (e.expiryDate != null && !e.expiryDate.isBefore(today)
+                        && e.strike == strike
+                        && e.symbol.toUpperCase().endsWith(ot)
+                        && (e.expiryStr.contains(cleanExp) || cleanExp.contains(e.expiryStr) || e.symbol.toUpperCase().contains(cleanExp))) {
+                    return e;
+                }
+            }
+        }
+
+        // 2. Nearest active expiry
         for (ScripEntry e : list) {
             if (e.expiryDate != null && !e.expiryDate.isBefore(today)
                     && e.strike == strike

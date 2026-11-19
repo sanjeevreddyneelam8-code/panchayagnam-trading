@@ -208,15 +208,29 @@ public class AngelOneApisService {
             int resolvedLotSize = 1;
             if (symbolToken.isEmpty() && !upperSym.isEmpty() && scripMasterService != null) {
                 AngelOneScripMasterService.ScripEntry match = null;
-                if (optMatcher.matches()) {
+
+                // Direct symbol lookup (e.g. "IOC23NOV26147CE", "NIFTY23NOV2624950CE")
+                match = scripMasterService.findBySymbol(upperSym.replace(" ", ""));
+
+                if (match == null && optMatcher.matches()) {
                     String underlying = optMatcher.group(1);
                     int strikeInt = Integer.parseInt(optMatcher.group(2));
                     String optType = optMatcher.group(3);
                     match = scripMasterService.findNearestOption(underlying, strikeInt, optType);
-                } else if (isFuture) {
+                } else if (match == null) {
+                    Matcher optWithExpMatcher = Pattern.compile("^([A-Z]+)\\s+(\\d{1,2}[A-Z]{3}\\d{2,4})\\s+(\\d+)\\s+(CE|PE)$").matcher(upperSym);
+                    if (optWithExpMatcher.matches()) {
+                        String underlying = optWithExpMatcher.group(1);
+                        String expiry = optWithExpMatcher.group(2);
+                        int strikeInt = Integer.parseInt(optWithExpMatcher.group(3));
+                        String optType = optWithExpMatcher.group(4);
+                        match = scripMasterService.findNearestOption(underlying, expiry, strikeInt, optType);
+                    }
+                }
+                if (match == null && isFuture) {
                     String underlying = upperSym.split("[\\s-]")[0];
                     match = scripMasterService.findNearestFuture(exchange, underlying);
-                } else {
+                } else if (match == null && !isOption) {
                     match = scripMasterService.findEquity(exchange, upperSym);
                 }
                 if (match != null) {
@@ -229,11 +243,16 @@ public class AngelOneApisService {
                 }
             }
 
-            if (resolvedLotSize > 1 && request.getQuantity() != null && request.getQuantity() % resolvedLotSize != 0) {
-                int origQty = request.getQuantity();
-                int adjustedQty = Math.max(resolvedLotSize, Math.round((float) origQty / resolvedLotSize) * resolvedLotSize);
-                log.info("Auto-adjusted quantity from {} to lot multiple {} for {}", origQty, adjustedQty, tradingSymbol);
-                request.setQuantity(adjustedQty);
+            if (resolvedLotSize > 1) {
+                if (request.getQuantity() == null || request.getQuantity() <= 0) {
+                    request.setQuantity(resolvedLotSize);
+                    log.info("Defaulted quantity to 1 lot ({}) for {}", resolvedLotSize, tradingSymbol);
+                } else if (request.getQuantity() % resolvedLotSize != 0) {
+                    int origQty = request.getQuantity();
+                    int adjustedQty = Math.max(resolvedLotSize, Math.round((float) origQty / resolvedLotSize) * resolvedLotSize);
+                    log.info("Auto-adjusted quantity from {} to lot multiple {} for {}", origQty, adjustedQty, tradingSymbol);
+                    request.setQuantity(adjustedQty);
+                }
             }
 
             // 2. Fallback to Angel One searchScrip API if not in ScripMaster
