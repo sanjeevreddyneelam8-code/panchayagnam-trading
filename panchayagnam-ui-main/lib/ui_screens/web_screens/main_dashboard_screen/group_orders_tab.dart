@@ -10263,8 +10263,10 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           // Bottom Action Buttons (Save, Validate, Cancel)
           Row(
             children: [
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _submit,
+                icon: const Icon(Icons.check_circle_rounded, size: 16),
+                label: const Text('Save & Link Demat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
@@ -10272,11 +10274,14 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
-                child: const Text('Save', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 12),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _isValidating ? null : _validateAccount,
+                icon: _isValidating
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.verified_rounded, size: 16),
+                label: const Text('Validate & Link', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
@@ -10284,9 +10289,6 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
-                child: _isValidating
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Validate', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 12),
               OutlinedButton(
