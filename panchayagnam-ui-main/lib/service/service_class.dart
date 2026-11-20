@@ -344,43 +344,7 @@ class ServiceClass {
             .map((e) => Map<String, dynamic>.from(e as Map))
             .where((a) {
               final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
-              return cid.isNotEmpty &&
-                  !cid.startsWith('DHAN_PRO_') &&
-                  !cid.startsWith('ANGEL_ACC_') &&
-                  !cid.startsWith('KITE_ACC_') &&
-                  !cid.startsWith('UPSTX_ACC_') &&
-                  !cid.startsWith('FYERS_ACC_') &&
-                  !cid.startsWith('MOTILAL_ACC_') &&
-                  !cid.startsWith('KOTAK_ACC_') &&
-                  !cid.startsWith('PROFIT_ACC_') &&
-                  !cid.startsWith('GOODWL_ACC_') &&
-                  !cid.startsWith('GROWW_ACC_') &&
-                  !cid.startsWith('PAISA5_ACC_') &&
-                  !cid.startsWith('ICICI_ACC_') &&
-                  !cid.startsWith('HDFCSKY_') &&
-                  !cid.startsWith('AXIS_ACC_') &&
-                  !cid.startsWith('SBI_ACC_') &&
-                  !cid.startsWith('SHARE_ACC_') &&
-                  !cid.startsWith('IIFL_ACC_') &&
-                  !cid.startsWith('PAYTM_ACC_') &&
-                  !cid.startsWith('SHOONYA_') &&
-                  !cid.startsWith('FLAT_ACC_') &&
-                  !cid.startsWith('NUVAMA_ACC_') &&
-                  !cid.startsWith('ARATHI_') &&
-                  !cid.startsWith('CHOICE_') &&
-                  !cid.startsWith('SAMCO_ACC_') &&
-                  !cid.startsWith('ESPR_ACC_') &&
-                  !cid.startsWith('FIRST_ACC_') &&
-                  !cid.startsWith('TJINI_ACC_') &&
-                  !cid.startsWith('JAINAM_') &&
-                  !cid.startsWith('MTRUST_') &&
-                  !cid.startsWith('SMC_ACC_') &&
-                  !cid.startsWith('BAJAJ_ACC_') &&
-                  !cid.startsWith('RMONEY_') &&
-                  !cid.startsWith('ABM_ACC_') &&
-                  !cid.startsWith('STOX_ACC_') &&
-                  cid != '1100345678' &&
-                  cid != 'AG_LIVE';
+              return CopyTradingEngine.isRealBrokerAccount(cid);
             })
             .toList();
         return decoded.map((e) => DematAccount.fromJson(e)).toList();
@@ -470,11 +434,7 @@ class ServiceClass {
           (jsonDecode(raw) as List).map((e) => Map<String, dynamic>.from(e as Map)),
         ).where((a) {
           final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
-          return cid.isNotEmpty &&
-              !cid.startsWith('DHAN_PRO_') &&
-              !cid.startsWith('ANGEL_ACC_') &&
-              cid != '1100345678' &&
-              cid != 'AG_LIVE';
+          return CopyTradingEngine.isRealBrokerAccount(cid);
         }).toList();
       }
 

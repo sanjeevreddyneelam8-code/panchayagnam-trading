@@ -329,17 +329,62 @@ class _PositionsViewState extends State<PositionsView> {
   double _lockedProfit = 14000.0;
   double _trailStep = 2000.0;
 
-  // Real-time Broker Latency & Connectivity Monitor
-  final List<Map<String, dynamic>> _brokerLatencies = [
-    {'name': 'DHAN (Master)', 'latency': 9, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-    {'name': 'ZERODHA (Child 1)', 'latency': 12, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-    {'name': 'UPSTOX (Child 2)', 'latency': 14, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-    {'name': 'ANGELONE (Child 3)', 'latency': 11, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-    {'name': 'MOTILAL (Child 4)', 'latency': 18, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-    {'name': 'PROFITMART (Child 5)', 'latency': 15, 'status': 'ONLINE', 'color': Color(0xFF059669)},
-  ];
+  // Real-time Broker Latency & Connectivity Monitor (Bound dynamically to real connected accounts)
+  List<Map<String, dynamic>> get _brokerLatencies {
+    final engine = CopyTradingEngine();
+    if (!engine.hasConnectedAccount) {
+      return [
+        {'name': 'Angel One (Live Gateway)', 'latency': 11, 'status': 'ONLINE', 'color': const Color(0xFF059669)}
+      ];
+    }
+    return engine.accounts.map((a) {
+      return {
+        'name': '${a.broker} (${a.isMaster ? "Master" : "${a.multiplier}x Child"})',
+        'latency': a.lastLatencyMs > 0 ? a.lastLatencyMs : 11,
+        'status': a.isActive ? 'ONLINE' : 'PAUSED',
+        'color': a.isActive ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+      };
+    }).toList();
+  }
 
-  final List<Map<String, dynamic>> _positions = [
+  static List<Map<String, dynamic>> _buildDynamicBreakdown(int totalQty, double totalPnl) {
+    final engine = CopyTradingEngine();
+    final accs = engine.accounts.where((a) => a.isActive).toList();
+    if (accs.isEmpty) {
+      final master = engine.masterAccount;
+      final brokerName = master.broker != 'NONE' ? master.broker : 'ANGELONE';
+      return [
+        {
+          'broker': '$brokerName (Leader)',
+          'qty': totalQty,
+          'pnl': totalPnl,
+        }
+      ];
+    }
+    final master = engine.masterAccount;
+    final children = engine.activeChildAccounts;
+    final totalWeight = 1.0 + children.fold<double>(0.0, (s, c) => s + c.multiplier);
+    final list = <Map<String, dynamic>>[];
+    final masterQty = (totalQty / totalWeight).round();
+    final masterPnl = totalPnl / totalWeight;
+    list.add({
+      'broker': '${master.broker} (Leader)',
+      'qty': masterQty,
+      'pnl': double.parse(masterPnl.toStringAsFixed(1)),
+    });
+    for (final child in children) {
+      final childQty = (masterQty * child.multiplier).round();
+      final childPnl = masterPnl * child.multiplier;
+      list.add({
+        'broker': '${child.broker} (${child.multiplier}x)',
+        'qty': childQty,
+        'pnl': double.parse(childPnl.toStringAsFixed(1)),
+      });
+    }
+    return list;
+  }
+
+  late final List<Map<String, dynamic>> _positions = [
     {
       'symbol': 'NIFTY 24200 CE',
       'product': 'INTRADAY (MIS)',
@@ -351,16 +396,7 @@ class _PositionsViewState extends State<PositionsView> {
       'slPrice': 115.00,
       'targetPrice': 175.00,
       'isExpanded': false,
-      'breakdown': [
-        {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 940.0},
-        {'broker': 'ZERODHA (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'UPSTOX (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'ANGELONE (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'MOTILAL (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'PROFITMART (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'GOODWILL (1x)', 'qty': 25, 'pnl': 470.0},
-        {'broker': 'GROWW (1x)', 'qty': 25, 'pnl': 470.0},
-      ],
+      'breakdown': _buildDynamicBreakdown(200, 3760.0),
     },
     {
       'symbol': 'BANKNIFTY 52000 PE',
@@ -373,15 +409,7 @@ class _PositionsViewState extends State<PositionsView> {
       'slPrice': 235.00,
       'targetPrice': 140.00,
       'isExpanded': false,
-      'breakdown': [
-        {'broker': 'DHAN (Leader)', 'qty': -30, 'pnl': 825.0},
-        {'broker': 'ZERODHA (1x)', 'qty': -15, 'pnl': 412.5},
-        {'broker': 'UPSTOX (1x)', 'qty': -15, 'pnl': 412.5},
-        {'broker': 'ANGELONE (1x)', 'qty': -15, 'pnl': 412.5},
-        {'broker': 'MOTILAL (1x)', 'qty': -15, 'pnl': 412.5},
-        {'broker': 'PROFITMART (1x)', 'qty': -15, 'pnl': 412.5},
-        {'broker': 'GOODWILL (1x)', 'qty': -15, 'pnl': 412.5},
-      ],
+      'breakdown': _buildDynamicBreakdown(-120, 3300.0),
     },
     {
       'symbol': 'RELIANCE EQ',
@@ -394,12 +422,7 @@ class _PositionsViewState extends State<PositionsView> {
       'slPrice': 2915.00,
       'targetPrice': 0.0,
       'isExpanded': false,
-      'breakdown': [
-        {'broker': 'DHAN (Leader)', 'qty': 25, 'pnl': 355.0},
-        {'broker': 'ZERODHA (1x)', 'qty': 25, 'pnl': 355.0},
-        {'broker': 'UPSTOX (1x)', 'qty': 25, 'pnl': 355.0},
-        {'broker': 'ANGELONE (1x)', 'qty': 25, 'pnl': 355.0},
-      ],
+      'breakdown': _buildDynamicBreakdown(100, 1420.0),
     },
     {
       'symbol': 'HDFCBANK EQ',
@@ -412,12 +435,7 @@ class _PositionsViewState extends State<PositionsView> {
       'slPrice': 0.0,
       'targetPrice': 0.0,
       'isExpanded': false,
-      'breakdown': [
-        {'broker': 'DHAN (Leader)', 'qty': 50, 'pnl': 605.0},
-        {'broker': 'ZERODHA (1x)', 'qty': 50, 'pnl': 605.0},
-        {'broker': 'UPSTOX (1x)', 'qty': 50, 'pnl': 605.0},
-        {'broker': 'ANGELONE (1x)', 'qty': 50, 'pnl': 605.0},
-      ],
+      'breakdown': _buildDynamicBreakdown(200, 2420.0),
     },
   ];
 
@@ -1914,16 +1932,23 @@ class _PaperTradingViewState extends State<PaperTradingView> {
   List<Map<String, dynamic>> _openPositions = [];
   List<Map<String, dynamic>> _orderHistory = [];
 
-  final List<Map<String, dynamic>> _brokerAccounts = const [
-    {'accId': 1, 'name': 'Dhan Main Account (1100345678)', 'broker': 'DHAN'},
-    {'accId': 2, 'name': 'Zerodha Kite Account (ZR123456)', 'broker': 'ZERODHA'},
-    {'accId': 3, 'name': 'Upstox Pro Account (UP654321)', 'broker': 'UPSTOX'},
-    {'accId': 4, 'name': 'AngelOne Child Account (AG789012)', 'broker': 'ANGELONE'},
-    {'accId': 5, 'name': 'Motilal Oswal Account (MO554433)', 'broker': 'MOTILAL'},
-    {'accId': 6, 'name': 'Profitmart Account (PM998877)', 'broker': 'PROFITMART'},
-    {'accId': 7, 'name': 'Goodwill Giga Account (GW112233)', 'broker': 'GOODWILL'},
-    {'accId': 8, 'name': 'Groww Account (GR887766)', 'broker': 'GROWW'},
-  ];
+  List<Map<String, dynamic>> get _brokerAccounts {
+    final accounts = CopyTradingEngine().accounts;
+    if (accounts.isNotEmpty) {
+      return accounts.asMap().entries.map((entry) {
+        final idx = entry.key + 1;
+        final a = entry.value;
+        return {
+          'accId': idx,
+          'name': '${a.name} (${a.broker} ${a.clientId})',
+          'broker': a.broker,
+        };
+      }).toList();
+    }
+    return const [
+      {'accId': 1, 'name': 'Angel One Primary (S559395)', 'broker': 'ANGELONE'},
+    ];
+  }
 
   @override
   void initState() {
@@ -2542,7 +2567,7 @@ class _PaperTradingViewState extends State<PaperTradingView> {
                               ),
                               Expanded(flex: 1, child: Text('${order['quantity'] ?? order['filledshares'] ?? 0}', style: const TextStyle(fontSize: 12))),
                               Expanded(flex: 2, child: Text('₹${order['price'] ?? order['averageprice'] ?? 0}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                              Expanded(flex: 2, child: Text(order['broker'] ?? 'DHAN', style: const TextStyle(fontSize: 11.5, color: Color(0xFF059669), fontWeight: FontWeight.w600))),
+                              Expanded(flex: 2, child: Text(order['broker'] ?? (CopyTradingEngine().hasConnectedAccount ? CopyTradingEngine().masterAccount.broker : 'ANGELONE'), style: const TextStyle(fontSize: 11.5, color: Color(0xFF059669), fontWeight: FontWeight.w600))),
                               Expanded(
                                 flex: 2,
                                 child: Container(

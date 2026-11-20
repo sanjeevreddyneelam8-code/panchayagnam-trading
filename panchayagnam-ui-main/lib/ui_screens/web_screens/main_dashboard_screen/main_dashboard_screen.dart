@@ -593,13 +593,17 @@ class _MainDashboardState extends State<MainDashboard> {
 
   Widget _buildAutoTraderTopBar() {
     final String userName = UserSession().fullName.isNotEmpty ? UserSession().fullName : 'Sanjeev@.123';
+    final isDark = ThemeModeService.isDark;
     return Container(
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: const BoxDecoration(
-        color: Color(0xFF031416),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF031416) : Colors.white,
         border: Border(
-          bottom: BorderSide(color: Color(0xFF063B32), width: 1),
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF063B32) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -636,10 +640,10 @@ class _MainDashboardState extends State<MainDashboard> {
                     child: const Icon(Icons.trending_up, color: Colors.white, size: 18),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Panchayagnam',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.2,
@@ -680,28 +684,31 @@ class _MainDashboardState extends State<MainDashboard> {
                 height: 32,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.45)),
+                  border: Border.all(color: isDark ? const Color(0xFF38BDF8).withOpacity(0.45) : const Color(0xFFCBD5E1)),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1)),
+                    BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.04), blurRadius: 4, offset: const Offset(0, 1)),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded, size: 14, color: Color(0xFF38BDF8)),
+                    Icon(Icons.search_rounded, size: 14, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                     const SizedBox(width: 6),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Search scrip, strike...',
-                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: const BoxDecoration(color: Color(0xFF334155), borderRadius: BorderRadius.all(Radius.circular(3))),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        borderRadius: const BorderRadius.all(Radius.circular(3)),
+                      ),
                       child: const Text('LIVE', style: TextStyle(color: Color(0xFF10B981), fontSize: 8.5, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
                     ),
                   ],
@@ -823,34 +830,52 @@ class _MainDashboardState extends State<MainDashboard> {
 
                   const SizedBox(width: 6),
 
-                  // Neatly Visible Refer & Earn Button
+                  // Neatly Visible Refer & Earn Button (Guaranteed Responsive MouseRegion)
                   Tooltip(
                     message: 'Refer & Earn — Partner Rewards Program',
-                    child: InkWell(
-                      onTap: () => _showReferAndEarnDialog(context),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFFF59E0B).withOpacity(0.22),
-                              const Color(0xFFD97706).withOpacity(0.14),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _showReferAndEarnDialog(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isDark
+                                  ? [
+                                      const Color(0xFFF59E0B).withOpacity(0.22),
+                                      const Color(0xFFD97706).withOpacity(0.14),
+                                    ]
+                                  : [
+                                      const Color(0xFFFEF3C7),
+                                      const Color(0xFFFDE68A),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFFFBBF24).withOpacity(0.75) : const Color(0xFFF59E0B),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.card_giftcard_rounded,
+                                size: 13,
+                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Refer & Earn',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                                ),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.75)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.card_giftcard_rounded, size: 13, color: Color(0xFFFBBF24)),
-                            SizedBox(width: 5),
-                            Text(
-                              'Refer & Earn',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFFDE68A)),
-                            ),
-                          ],
                         ),
                       ),
                     ),
@@ -1510,14 +1535,20 @@ class _MainDashboardState extends State<MainDashboard> {
     showDialog(
       context: context,
       builder: (ctx) {
+        final isDark = ThemeModeService.isDark;
         final userId = UserSession().userId > 0 ? 'PY-${UserSession().userId}' : 'PY-10821';
-        final refLink = 'https://sanjeevreddyneelam8-code.github.io/panchayagnam-trading/?ref=$userId';
+        final refLink = 'https://panchayagnam.com/?ref=$userId';
+
+        final cardBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+        final cardBorder = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+        final textTitle = isDark ? Colors.white : const Color(0xFF0F172A);
+        final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
+            constraints: const BoxConstraints(maxWidth: 640),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -1535,24 +1566,24 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: const Icon(Icons.card_giftcard_rounded, color: Color(0xFFF59E0B), size: 24),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Panchayagnam Partner & Affiliate Program',
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                              style: TextStyle(color: textTitle, fontSize: 16, fontWeight: FontWeight.w900),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Earn 30% Lifetime Recurring Commission on Every Referred Trader',
-                              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                              style: TextStyle(color: textSub, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+                        icon: Icon(Icons.close_rounded, color: textSub),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -1562,21 +1593,21 @@ class _MainDashboardState extends State<MainDashboard> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF334155)),
+                      border: Border.all(color: cardBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('YOUR UNIQUE REFERRAL LINK', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        Text('YOUR UNIQUE REFERRAL LINK', style: TextStyle(color: textSub, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             Expanded(
                               child: Text(
                                 refLink,
-                                style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12.5, fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Color(0xFF0284C7), fontSize: 13, fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -1585,12 +1616,22 @@ class _MainDashboardState extends State<MainDashboard> {
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(text: refLink));
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Referral link copied to clipboard!'), backgroundColor: Color(0xFF059669)),
+                                  const SnackBar(content: Text('Referral link copied to clipboard: https://panchayagnam.com/?ref=...'), backgroundColor: Color(0xFF059669)),
                                 );
                               },
                               icon: const Icon(Icons.copy_rounded, size: 14, color: Colors.white),
                               label: const Text('Copy Link', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final text = Uri.encodeComponent('Join Panchayagnam - India\'s #1 Multi-Broker Auto & Copy Trading Platform! Get ₹10,00,000 demo paper funds + 7 days free trial: $refLink');
+                                html.window.open('https://api.whatsapp.com/send?text=$text', '_blank');
+                              },
+                              icon: const Icon(Icons.share_rounded, size: 14, color: Colors.white),
+                              label: const Text('WhatsApp', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
                             ),
                           ],
                         ),
@@ -1605,17 +1646,17 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFF334155)),
+                            border: Border.all(color: cardBorder),
                           ),
-                          child: const Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('COMMISSION RATE', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 3),
-                              Text('30% RECURRING', style: TextStyle(color: Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.w900)),
-                              Text('₹450/mo per trader', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                              Text('COMMISSION RATE', style: TextStyle(color: textSub, fontSize: 10, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 3),
+                              const Text('30% RECURRING', style: TextStyle(color: Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('₹450/mo per trader', style: TextStyle(color: textSub, fontSize: 10.5)),
                             ],
                           ),
                         ),
@@ -1625,17 +1666,17 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFF334155)),
+                            border: Border.all(color: cardBorder),
                           ),
-                          child: const Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('ACTIVE REFERRALS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 3),
-                              Text('12 TRADERS', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 14, fontWeight: FontWeight.w900)),
-                              Text('420+ demats synced', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                              Text('ACTIVE REFERRALS', style: TextStyle(color: textSub, fontSize: 10, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 3),
+                              const Text('12 TRADERS', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('420+ demats synced', style: TextStyle(color: textSub, fontSize: 10.5)),
                             ],
                           ),
                         ),
@@ -1645,17 +1686,17 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFF334155)),
+                            border: Border.all(color: cardBorder),
                           ),
-                          child: const Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('TOTAL EARNINGS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 3),
-                              Text('₹5,400.00', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 14, fontWeight: FontWeight.w900)),
-                              Text('Direct Bank / UPI', style: TextStyle(color: Color(0xFF64748B), fontSize: 10.5)),
+                              Text('TOTAL EARNINGS', style: TextStyle(color: textSub, fontSize: 10, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 3),
+                              const Text('₹5,400.00', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 14, fontWeight: FontWeight.w900)),
+                              Text('Direct Bank / UPI', style: TextStyle(color: textSub, fontSize: 10.5)),
                             ],
                           ),
                         ),
@@ -1664,11 +1705,11 @@ class _MainDashboardState extends State<MainDashboard> {
                   ),
                   const SizedBox(height: 16),
 
-                  const Text('HOW TO ATTRACT CLIENTS & EARN:', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text('HOW TO ATTRACT CLIENTS & EARN:', style: TextStyle(color: textTitle, fontSize: 11, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     '1. Share your link with trading groups, WhatsApp friends, or your YouTube/Instagram followers.\n2. When they register, they receive 7 days free trial + ₹10,00,000 paper trading funds.\n3. Every time they renew their subscription, 30% commission is credited directly to your UPI/Bank.',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, height: 1.4),
+                    style: TextStyle(color: textSub, fontSize: 11.5, height: 1.4),
                   ),
                   const SizedBox(height: 16),
 
@@ -3223,6 +3264,11 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   void _showMasterAccountsDialog(BuildContext context) {
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final master = engine.masterAccount;
+    final hasMaster = engine.hasConnectedAccount && master.clientId.isNotEmpty && master.broker != 'NONE';
+    final masterDisplay = hasMaster ? '${master.name} (${master.broker} ${master.clientId})' : 'No Demat Account Connected';
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -3263,26 +3309,26 @@ class _MainDashboardState extends State<MainDashboard> {
                   children: [
                     const Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 22),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Current Master Leader: Dhan Pro Master (Client: 1100345678)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF065F46))),
-                          SizedBox(height: 2),
-                          Text('Latency: 11ms • Pooled Followers: 34 Active Child Brokers • Status: ACTIVE LEADER', style: TextStyle(fontSize: 11.5, color: Color(0xFF2563EB))),
+                          Text('Current Master Leader: $masterDisplay', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF065F46))),
+                          const SizedBox(height: 2),
+                          Text(hasMaster ? 'Latency: 11ms • Followers: ${engine.childAccounts.length} Child Demats • Status: ACTIVE LEADER 🟢' : 'Please connect a broker account from Parent Children Trading to enable copy trading.', style: const TextStyle(fontSize: 11.5, color: Color(0xFF2563EB))),
                         ],
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(4)),
-                      child: const Text('ACTIVE LEADER 🟢', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                      child: Text(hasMaster ? 'ACTIVE LEADER 🟢' : 'SETUP REQUIRED', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
-              Text('All manual orders placed in Trade Options, MarketWatch, Charts, Commodity or incoming webhooks replicate across all ${CopyTradingEngine().totalAccountsCount - 1} connected child brokers automatically according to their individual multipliers.', style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
+              Text('All manual orders placed in Trade Options, MarketWatch, Charts, Commodity or incoming webhooks replicate across all ${engine.childAccounts.length} connected child brokers automatically according to their individual multipliers.', style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4)),
               const SizedBox(height: 20),
               Align(
                 alignment: Alignment.centerRight,
@@ -3300,6 +3346,15 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   void _showOwnersDialog(BuildContext context) {
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final userName = UserSession().fullName.isNotEmpty ? UserSession().fullName : 'Primary Demat Owner';
+    final userRole = UserSession().role.isNotEmpty ? UserSession().role : 'SUPER_ADMIN';
+    final userPhone = UserSession().phoneNumber.isNotEmpty ? UserSession().phoneNumber : '9553382135';
+    final count = engine.totalAccountsCount;
+    final brokers = engine.accounts.map((a) => a.broker).toSet().join(', ');
+    final dematsSummary = count > 0 ? '$count Demat${count > 1 ? 's' : ''} ($brokers)' : '1 Demat (Angel One)';
+    final pooledStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹10,00,000';
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -3337,13 +3392,7 @@ class _MainDashboardState extends State<MainDashboard> {
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
                 child: Column(
                   children: [
-                    _buildOwnerRow('Sanjeev Reddy', 'ABCDE****F', 'Super Admin', '4 Demats (Dhan, Angel, Zerodha, Motilal)', '₹55,00,000', true),
-                    const Divider(height: 1),
-                    _buildOwnerRow('Ramesh Kumar', 'FGHIJ****K', 'Investor Client', '2 Demats (Groww, Upstox)', '₹15,00,000', false),
-                    const Divider(height: 1),
-                    _buildOwnerRow('Vikram Patel', 'KLMNO****P', 'Investor Client', '1 Demat (AliceBlue)', '₹5,00,000', false),
-                    const Divider(height: 1),
-                    _buildOwnerRow('Priya Sharma', 'PQRST****U', 'Investor Client', '1 Demat (Fyers)', '₹5,00,000', false),
+                    _buildOwnerRow(userName, userPhone, userRole == 'SUPER_ADMIN' ? 'Super Admin' : 'Account Owner', dematsSummary, pooledStr, true),
                   ],
                 ),
               ),
@@ -3351,7 +3400,7 @@ class _MainDashboardState extends State<MainDashboard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Pooled Liquid Capital: ₹80,00,000 across 4 verified Demat owners.', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                  Text('Total Pooled Liquid Capital: $pooledStr across $count active Demat account(s).', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
@@ -3414,13 +3463,14 @@ class _MainDashboardState extends State<MainDashboard> {
 
   Widget _buildMarketTickerStrip() {
     final timeStr = DateFormat('HH:mm:ss').format(_tickerClock);
+    final isDark = ThemeModeService.isDark;
 
     return Container(
       height: 34,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
-        border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0))),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -3457,21 +3507,21 @@ class _MainDashboardState extends State<MainDashboard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0xFF334155)),
+                border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF38BDF8)),
+                  Icon(Icons.access_time_rounded, size: 12, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                   const SizedBox(width: 5),
-                  Text('IST $timeStr', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
+                  Text('IST $timeStr', style: TextStyle(color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155), fontSize: 10.5, fontWeight: FontWeight.w700)),
                   const SizedBox(width: 8),
-                  const Text('·', style: TextStyle(color: Color(0xFF64748B))),
+                  Text('·', style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))),
                   const SizedBox(width: 8),
                   const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFFBBF24)),
                   const SizedBox(width: 4),
-                  Text('${CopyTradingEngine().totalAccountsCount} Brokers Synchronized', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w600)),
+                  Text('${CopyTradingEngine().totalAccountsCount} Brokers Synchronized', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -3482,24 +3532,25 @@ class _MainDashboardState extends State<MainDashboard> {
   }
 
   Widget _buildTickerItem(String symbol, String price, String change, bool? isPositive) {
+    final isDark = ThemeModeService.isDark;
     final color = isPositive == true
-        ? const Color(0xFF34D399)
+        ? const Color(0xFF10B981)
         : isPositive == false
-            ? const Color(0xFFF87171)
+            ? const Color(0xFFEF4444)
             : const Color(0xFF94A3B8);
 
     return InkWell(
       onTap: () => _showTickerDetailsModal(context, symbol, price, change, isPositive),
       borderRadius: BorderRadius.circular(4),
-      hoverColor: const Color(0xFF334155).withOpacity(0.5),
+      hoverColor: isDark ? const Color(0xFF334155).withOpacity(0.5) : const Color(0xFFE2E8F0),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(symbol, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 10.5, fontWeight: FontWeight.w700)),
+            Text(symbol, style: TextStyle(color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569), fontSize: 10.5, fontWeight: FontWeight.w700)),
             const SizedBox(width: 4),
-            Text('₹$price', style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+            Text('₹$price', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 10.5, fontWeight: FontWeight.w600)),
             const SizedBox(width: 4),
             Text(change, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
           ],
@@ -4269,10 +4320,10 @@ class _SubscriptionExpiryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Subscription',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ThemeModeService.isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
@@ -4673,18 +4724,27 @@ class _AnimatedSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeModeService.isDark;
     return AnimatedContainer(
       duration: _kAnimDuration,
       curve: _kAnimCurve,
       width: collapsed ? _kCollapsedWidth : _kExpandedWidth,
       height: double.infinity,
       clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_kGradientTop, _kGradientMid, _kGradientBottom],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF031416) : Colors.white,
+        gradient: isDark
+            ? const LinearGradient(
+                colors: [_kGradientTop, _kGradientMid, _kGradientBottom],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              )
+            : const LinearGradient(
+                colors: [Colors.white, Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+        border: isDark ? null : const Border(right: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4773,13 +4833,18 @@ class _NavGroupTileState extends State<_NavGroupTile> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeModeService.isDark;
     final active = widget.isGroupActive || widget.isFlyoutOpen;
-    final iconColor = active || _hovered ? Colors.white : const Color(0xFF94A3B8);
+    final iconColor = active || _hovered
+        ? (isDark ? Colors.white : const Color(0xFF0F172A))
+        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
     final bgColor = widget.isFlyoutOpen
         ? const Color(0xFF059669).withOpacity(0.4)
         : (widget.isGroupActive
-            ? Colors.white.withOpacity(0.18)
-            : (_hovered ? Colors.white.withOpacity(0.1) : Colors.transparent));
+            ? (isDark ? Colors.white.withOpacity(0.18) : const Color(0xFFE2E8F0))
+            : (_hovered
+                ? (isDark ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                : Colors.transparent));
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -5229,15 +5294,17 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
   bool _hovered = false;
 
   Color get _iconColor {
-    if (widget.isLogout) return const Color(0xFFFCA5A5);
-    if (widget.isActive || _hovered) return Colors.white;
-    return const Color(0xFF94A3B8);
+    final isDark = ThemeModeService.isDark;
+    if (widget.isLogout) return const Color(0xFFEF4444);
+    if (widget.isActive || _hovered) return isDark ? Colors.white : const Color(0xFF0F172A);
+    return isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
   }
 
   Color get _bgColor {
+    final isDark = ThemeModeService.isDark;
     if (widget.isLogout && _hovered) return Colors.red.withOpacity(0.12);
-    if (widget.isActive) return Colors.white.withOpacity(0.15);
-    if (_hovered) return Colors.white.withOpacity(0.09);
+    if (widget.isActive) return isDark ? Colors.white.withOpacity(0.15) : const Color(0xFFE2E8F0);
+    if (_hovered) return isDark ? Colors.white.withOpacity(0.09) : const Color(0xFFF1F5F9);
     return Colors.transparent;
   }
 

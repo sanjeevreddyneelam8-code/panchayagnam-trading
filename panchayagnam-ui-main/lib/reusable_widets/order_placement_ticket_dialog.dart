@@ -8,6 +8,7 @@ import '../constants/api_url_constants.dart';
 import '../constants/auth_header_helper.dart';
 import '../service/copy_trading_engine.dart';
 import '../service/live_market_data_service.dart';
+import '../service/service_class.dart';
 import '../service/static_ip_service.dart';
 import '../ui_screens/web_screens/main_dashboard_screen/main_dashboard_screen.dart';
 
@@ -225,6 +226,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     _targetCtrl = TextEditingController(text: _targetPrice.toStringAsFixed(2));
 
     _loadLiveBrokerMargin(engine);
+    ServiceClass.warmUpBackend();
     LiveMarketDataService().addListener(_onLiveMarketUpdate);
   }
 
@@ -481,6 +483,20 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
             .toString();
         final orderStatus = (decoded['orderStatus'] ?? 'CONFIRMED').toString().toUpperCase();
 
+        // ── Auto Copy-Replication across Child Accounts ─────────────────
+        final copyEngine = CopyTradingEngine();
+        if (copyEngine.isCopyTradingActive && selectedAcc.isMaster && copyEngine.activeChildAccounts.isNotEmpty) {
+          copyEngine.replicateTrade(
+            symbol: widget.symbol,
+            side: _side,
+            baseQty: _quantity,
+            price: effectivePrice,
+            orderType: _orderType,
+            productType: _productType,
+            lotSize: _effectiveLotSize,
+          );
+        }
+
         if (mounted) {
           Navigator.pop(context);
         }
@@ -621,7 +637,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final availableMargin = _liveAvailableMargin ?? (selectedAcc.balance > 0 ? selectedAcc.balance : 0.0);
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final maxDialogHeight = math.min(screenHeight - 24.0, 720.0);
+    final maxDialogHeight = math.min(screenHeight - 32.0, 500.0);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -633,6 +649,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
           maxHeight: maxDialogHeight,
         ),
         child: Container(
+          height: maxDialogHeight,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -647,7 +664,6 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── 1. Top Header (Fixed at top) ──────────────────────
@@ -811,7 +827,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                 ),
 
                 // ── 2. Scrollable Middle Body (Never pushes button off!) ─
-                Flexible(
+                Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Column(
@@ -1208,7 +1224,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
 
                 // ── 3. Pinned Bottom Summary & Place Order CTA (ALWAYS 100% VISIBLE!) ──
                 Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
@@ -1225,25 +1241,25 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                             children: [
                               Row(
                                 children: [
-                                  const Text('Margin Required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-                                  const SizedBox(width: 6),
+                                  const Text('Margin Required', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 5),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFE0E7FF),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       _marginLeverageTag,
-                                      style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
+                                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 2),
                               Text(
                                 '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(_marginRequired.clamp(0.0, 999999999.0))}',
-                                style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                               ),
                             ],
                           ),
@@ -1252,26 +1268,26 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                             children: [
                               Text(
                                 isSingleAccount ? 'Available Demat Margin' : 'Available Pooled Margin',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 2),
                               Text(
                                 isSingleAccount
                                     ? '₹${NumberFormat.currency(locale: 'en_IN', symbol: '').format(availableMargin)} ($primaryBroker)'
                                     : '₹$pooledCrores Cr ($brokerCount Brokers)',
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
                               ),
                             ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
 
                       if (_orderErrorMessage != null) ...[
                         Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEF2F2),
                             borderRadius: BorderRadius.circular(8),
@@ -1280,16 +1296,16 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 17),
-                              const SizedBox(width: 8),
+                              const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 16),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   _orderErrorMessage!,
                                   style: const TextStyle(
-                                    fontSize: 11.5,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF991B1B),
-                                    height: 1.35,
+                                    height: 1.3,
                                   ),
                                 ),
                               ),
@@ -1298,13 +1314,13 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                         ),
                       ],
 
-                      // Place Buy / Sell Order CTA Button (Prominent 52px height, Instant Click)
+                      // Place Buy / Sell Order CTA Button (Crisp 46px height, Instant Click everywhere)
                       MouseRegion(
                         cursor: _isSubmitting ? SystemMouseCursors.basic : SystemMouseCursors.click,
                         hitTestBehavior: HitTestBehavior.opaque,
                         child: SizedBox(
                           width: double.infinity,
-                          height: 52,
+                          height: 46,
                           child: ElevatedButton(
                             onPressed: _isSubmitting
                                 ? null
@@ -1319,35 +1335,38 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                               disabledForegroundColor: Colors.white.withOpacity(0.8),
                               enabledMouseCursor: SystemMouseCursors.click,
                               disabledMouseCursor: SystemMouseCursors.basic,
+                              padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 3,
+                              elevation: 2,
                               shadowColor: themeColor.withOpacity(0.4),
                             ),
-                            child: _isSubmitting
-                                ? const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.4,
-                                          color: Colors.white,
+                            child: IgnorePointer(
+                              child: _isSubmitting
+                                  ? const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'PLACING LIVE ORDER...',
-                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, letterSpacing: 0.5),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    isSingleAccount
-                                        ? 'PLACE $_side ORDER ($primaryBroker)'
-                                        : 'PLACE $_side ORDER ($readyCount BROKERS)',
-                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, letterSpacing: 0.5),
-                                  ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'PLACING LIVE ORDER...',
+                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, letterSpacing: 0.5),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      isSingleAccount
+                                          ? 'PLACE $_side ORDER ($primaryBroker)'
+                                          : 'PLACE $_side ORDER ($readyCount BROKERS)',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                                    ),
+                            ),
                           ),
                         ),
                       ),

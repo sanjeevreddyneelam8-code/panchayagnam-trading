@@ -160,9 +160,20 @@ class CopyTradingEngine extends ChangeNotifier {
     }
     const blockedExact = {
       '1100345678', 'FP9876543', 'AG789012', 'ZR123456', 'ZR442190',
-      'UP654321', 'UP662910', 'MO554433', 'PM998877', 'GW332211', 'AG_LIVE'
+      'UP654321', 'UP662910', 'MO554433', 'PM998877', 'GW332211',
+      'GR887766', 'GR88766', 'AG_LIVE'
     };
     if (blockedExact.contains(cid)) return false;
+    if (cid.startsWith('GR887') ||
+        cid.startsWith('GW332') ||
+        cid.startsWith('PM998') ||
+        cid.startsWith('MO554') ||
+        cid.startsWith('AG789') ||
+        cid.startsWith('UP654') ||
+        cid.startsWith('ZR123') ||
+        cid.startsWith('11003')) {
+      return false;
+    }
     const blockedPrefixes = [
       'DHAN_', 'ANGEL_ACC', 'KITE_ACC', 'UPSTX_', 'FYERS_', 'MOTILAL_',
       'KOTAK_', 'ALICE_', 'PROFIT_', 'GOODWL_', 'GROWW_', 'PAISA5_',

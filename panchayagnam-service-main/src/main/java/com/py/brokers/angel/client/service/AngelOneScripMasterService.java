@@ -323,6 +323,24 @@ public class AngelOneScripMasterService {
                 return e;
             }
         }
+
+        // 3. Resilient Nearest Strike Match (e.g. strike 147 -> nearest active 145 or 147.5/148)
+        ScripEntry closestEntry = null;
+        int minDiff = Integer.MAX_VALUE;
+        for (ScripEntry e : list) {
+            if (e.expiryDate != null && !e.expiryDate.isBefore(today)
+                    && e.symbol.toUpperCase().endsWith(ot)) {
+                int diff = Math.abs(e.strike - strike);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestEntry = e;
+                }
+            }
+        }
+        if (closestEntry != null && minDiff <= 50) {
+            return closestEntry;
+        }
+
         return null;
     }
 

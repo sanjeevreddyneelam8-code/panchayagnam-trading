@@ -20,6 +20,8 @@ import 'dart:html' as html;
 import '../../../reusable_widets/order_panel_widget.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
 import '../../../reusable_widets/client_knowledge_center_dialog.dart';
+import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 
 enum UserRole { SUPER_ADMIN, ADMIN, USER }
 
@@ -654,20 +656,36 @@ class _DashboardTabState extends State<DashboardTab> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  'Pooled Liquid Capital: ₹4,05,50,000.00 • Master / Leader: Dhan Pro Master (1100345678) • Sub-15ms Replication Active across $connectedCount Demat Accounts.',
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSetupStep('1. Master / Leader Account: Dhan Pro Master (Client ID: 1100345678) · 100% Margin Verified.'),
-                const SizedBox(height: 6),
-                _buildSetupStep(
-                  '2. Dedicated Static IP Gateway: 103.159.214.88 (Active on NSE/BSE API)',
-                  subtext: 'Orders across all $connectedCount Demats route through your fixed whitelisted IP for institutional low latency and zero broker rate-limit rejections.',
+                Builder(
+                  builder: (context) {
+                    final engine = CopyTradingEngine()..syncWithStorage();
+                    final master = engine.masterAccount;
+                    final hasRealMaster = engine.hasConnectedAccount && master.clientId.isNotEmpty && master.broker != 'NONE';
+                    final masterDisplay = hasRealMaster ? '${master.name} (${master.broker} ${master.clientId})' : 'Connect Master Demat';
+                    final pooledCapStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹0.00';
+                    final outboundIp = LiveMarketDataService().serverOutboundIp;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pooled Liquid Capital: $pooledCapStr • Master / Leader: $masterDisplay • Sub-15ms Replication Active across $connectedCount Demat Accounts.',
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSetupStep('1. Master / Leader Account: $masterDisplay · Margin Verified.'),
+                        const SizedBox(height: 6),
+                        _buildSetupStep(
+                          '2. Dedicated Static IP Gateway: $outboundIp (Active on NSE/BSE API)',
+                          subtext: 'Orders across all $connectedCount Demats route through your fixed whitelisted IP for institutional low latency and zero broker rate-limit rejections.',
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 6),
                 _buildSetupStep('3. Mirroring Multipliers: $followerCount Follower Demats Active with 1:1 Risk-Parity Allocation.'),

@@ -86,43 +86,8 @@ public class DevH2DataInitializer implements CommandLineRunner {
         pyUserRepository.save(user);
         log.info("[H2-DEV] Seeded demo user with ID: {}, phone: {}", user.getId(), user.getPhoneNumber());
 
-        // 3. Seed all 8 broker accounts in Connected status for user
-        seedBroker(user, "1100345678", "Dhan Main Account", BrokerType.DHAN, true,
-                "dhan-live-token-demo-999", null, null, null, null,
-                "dhan-live-token-demo-999", null, null);
-
-        seedBroker(user, "ZR123456", "Zerodha Kite Account", BrokerType.ZERODHA, false,
-                "kite-api-key-demo-123", "kite-secret-demo-456", null, null, null,
-                "kite-enctoken-demo-789", null, null);
-
-        seedBroker(user, "UP654321", "Upstox Pro Account", BrokerType.UPSTOX, false,
-                "upstox-client-id-demo", "upstox-secret-demo", null, null, null,
-                "upstox-access-token-demo-101", null, null);
-
-        seedBroker(user, "AG789012", "AngelOne Child Account", BrokerType.ANGELONE, false,
-                "angel-api-key-demo-567", null, "1234", "JBSWY3DPEHPK3PXP", null,
-                "angel-jwt-token-demo-890", "angel-feed-demo-999", "angel-refresh-demo-111");
-
-        seedBroker(user, "MO554433", "Motilal Oswal Account", BrokerType.MOTILAL, false,
-                "motilal-apikey-demo-222", "motilal-secret-demo-333", "1234", null, "1990-01-01",
-                "motilal-access-token-demo-444", null, null);
-
-        seedBroker(user, "PM998877", "Profitmart Account", BrokerType.PROFITMART, false,
-                "profitmart-vendor-demo", "profitmart-key-demo", "1234", null, null,
-                "pm-susertoken-demo-555", null, null);
-
-        seedBroker(user, "GW332211", "Goodwill Giga Account", BrokerType.GOODWILL, false,
-                "goodwill-api-key-demo", null, "1234", null, null,
-                "goodwill-session-demo-666", null, null);
-
-        seedBroker(user, "GR887766", "Groww Account", BrokerType.GROWW, false,
-                "groww-api-key-demo", null, null, null, null,
-                "groww-token-demo-777", null, null);
-
-        log.info("[H2-DEV] Seeded and verified all 8 broker accounts in Connected status for user {}", user.getId());
-
-        // 4. Seed pre-configured Copy Trading Groups
-        seedCopyTradingGroups(user);
+        // Note: Real broker Demat accounts and follower groups are managed dynamically via the UI / CopyTradingEngine.
+        // We do not seed mock broker accounts to ensure 100% authentic, user-connected accounts only.
     }
 
     private void seedBroker(

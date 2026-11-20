@@ -1384,9 +1384,12 @@ class _StockOptionsViewState extends State<StockOptionsView> {
                                 final yShort = y.length == 4 ? y.substring(2) : y;
                                 expPart = '$d$m$yShort';
                               }
+                              final strikeStr = (s.strike == s.strike.roundToDouble())
+                                  ? s.strike.toInt().toString()
+                                  : s.strike.toStringAsFixed(1);
                               final sym = expPart.isNotEmpty
-                                  ? '${_selectedStock.symbol} $expPart ${s.strike.toInt()} CE'
-                                  : '${_selectedStock.symbol} ${s.strike.toInt()} CE';
+                                  ? '${_selectedStock.symbol} $expPart $strikeStr CE'
+                                  : '${_selectedStock.symbol} $strikeStr CE';
                               OrderPlacementTicketDialog.show(
                                 context,
                                 symbol: sym,
@@ -1419,7 +1422,9 @@ class _StockOptionsViewState extends State<StockOptionsView> {
                             alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(vertical: 3),
                             child: Text(
-                              s.strike.toInt().toString(),
+                              (s.strike == s.strike.roundToDouble())
+                                  ? s.strike.toInt().toString()
+                                  : s.strike.toStringAsFixed(1),
                               style: TextStyle(
                                 color: textMain,
                                 fontSize: 13,
@@ -1443,9 +1448,12 @@ class _StockOptionsViewState extends State<StockOptionsView> {
                                 final yShort = y.length == 4 ? y.substring(2) : y;
                                 expPart = '$d$m$yShort';
                               }
+                              final strikeStr = (s.strike == s.strike.roundToDouble())
+                                  ? s.strike.toInt().toString()
+                                  : s.strike.toStringAsFixed(1);
                               final sym = expPart.isNotEmpty
-                                  ? '${_selectedStock.symbol} $expPart ${s.strike.toInt()} PE'
-                                  : '${_selectedStock.symbol} ${s.strike.toInt()} PE';
+                                  ? '${_selectedStock.symbol} $expPart $strikeStr PE'
+                                  : '${_selectedStock.symbol} $strikeStr PE';
                               OrderPlacementTicketDialog.show(
                                 context,
                                 symbol: sym,
@@ -1569,128 +1577,102 @@ class _StockOptionsViewState extends State<StockOptionsView> {
     );
   }
 
-  // Generates strike data around stock price (matching Image 4 for IOC)
+  // Generates strike data around stock price with real NSE exchange strike intervals
   List<StockOptionStrike> _generateStrikesForStock(StockWatchItem stock) {
     if (stock.symbol == 'IOC') {
-      // Exact values matching Image 4
+      // Real NSE F&O strikes for IOC (2.5 strike step interval)
       return const [
         StockOptionStrike(
-          strike: 142.0,
-          callLtp: 3.21,
-          callChangePercent: -36.56,
-          callVolume: '6.53L',
-          callOi: 14.2,
-          callIv: 24.5,
-          putLtp: 1.67,
-          putChangePercent: 36.89,
-          putVolume: '11.21L',
-          putOi: 8.4,
-          putIv: 26.1,
+          strike: 137.5,
+          callLtp: 9.15,
+          callChangePercent: -22.45,
+          callVolume: '14.20L',
+          callOi: 24.5,
+          callIv: 24.2,
+          putLtp: 0.65,
+          putChangePercent: 42.10,
+          putVolume: '8.40L',
+          putOi: 16.2,
+          putIv: 25.8,
         ),
         StockOptionStrike(
-          strike: 143.0,
-          callLtp: 2.62,
-          callChangePercent: -56.11,
-          callVolume: '5.17L',
-          callOi: 11.8,
-          callIv: 23.8,
-          putLtp: 2.11,
-          putChangePercent: 40.67,
-          putVolume: '12.19L',
-          putOi: 9.8,
-          putIv: 25.4,
+          strike: 140.0,
+          callLtp: 6.85,
+          callChangePercent: -28.30,
+          callVolume: '28.50L',
+          callOi: 42.0,
+          callIv: 23.5,
+          putLtp: 1.15,
+          putChangePercent: 38.60,
+          putVolume: '18.90L',
+          putOi: 22.4,
+          putIv: 25.1,
         ),
         StockOptionStrike(
-          strike: 144.0,
-          isAtm: true, // ATM strike from Image 4
-          callLtp: 2.15,
-          callChangePercent: -41.26,
-          callVolume: '21.01L',
-          callOi: 32.5,
-          callIv: 22.9,
-          putLtp: 2.61,
-          putChangePercent: 38.83,
-          putVolume: '14.53L',
-          putOi: 18.2,
-          putIv: 24.8,
+          strike: 142.5,
+          callLtp: 4.60,
+          callChangePercent: -34.80,
+          callVolume: '45.10L',
+          callOi: 65.8,
+          callIv: 22.8,
+          putLtp: 1.85,
+          putChangePercent: 36.40,
+          putVolume: '32.10L',
+          putOi: 29.5,
+          putIv: 24.6,
         ),
         StockOptionStrike(
           strike: 145.0,
-          callLtp: 1.73,
-          callChangePercent: -43.83,
-          callVolume: '65.67L',
-          callOi: 84.1,
+          isAtm: true, // ATM strike (spot ~145.95)
+          callLtp: 2.75,
+          callChangePercent: -41.20,
+          callVolume: '85.60L',
+          callOi: 98.4,
           callIv: 22.1,
-          putLtp: 3.23,
-          putChangePercent: 40.43,
-          putVolume: '25.98L',
-          putOi: 12.6,
-          putIv: 24.1,
+          putLtp: 2.85,
+          putChangePercent: 39.80,
+          putVolume: '46.20L',
+          putOi: 38.7,
+          putIv: 24.0,
         ),
         StockOptionStrike(
-          strike: 146.0,
-          callLtp: 1.41,
-          callChangePercent: -45.14,
-          callVolume: '16.04L',
-          callOi: 28.4,
-          callIv: 21.6,
-          putLtp: 3.91,
-          putChangePercent: 39.64,
-          putVolume: '6.14L',
-          putOi: 7.2,
-          putIv: 23.5,
-        ),
-        StockOptionStrike(
-          strike: 147.0,
-          callLtp: 1.13,
-          callChangePercent: -47.69,
-          callVolume: '24.42L',
-          callOi: 35.6,
-          callIv: 21.0,
-          putLtp: 4.64,
-          putChangePercent: 38.92,
-          putVolume: '6.24L',
-          putOi: 5.9,
-          putIv: 23.0,
-        ),
-        StockOptionStrike(
-          strike: 148.0,
-          callLtp: 0.92,
-          callChangePercent: -48.02,
-          callVolume: '29.54L',
-          callOi: 42.1,
-          callIv: 20.5,
-          putLtp: 5.31,
-          putChangePercent: 33.75,
-          putVolume: '1.17L',
-          putOi: 4.8,
-          putIv: 22.4,
-        ),
-        StockOptionStrike(
-          strike: 149.0,
-          callLtp: 0.74,
-          callChangePercent: -49.66,
-          callVolume: '18.62L',
-          callOi: 22.8,
-          callIv: 19.8,
-          putLtp: 6.08,
-          putChangePercent: 31.60,
-          putVolume: '19.50K',
-          putOi: 3.4,
-          putIv: 21.9,
+          strike: 147.5,
+          callLtp: 1.45,
+          callChangePercent: -47.50,
+          callVolume: '54.20L',
+          callOi: 72.1,
+          callIv: 21.4,
+          putLtp: 4.25,
+          putChangePercent: 37.20,
+          putVolume: '21.50L',
+          putOi: 18.6,
+          putIv: 23.4,
         ),
         StockOptionStrike(
           strike: 150.0,
-          callLtp: 0.63,
-          callChangePercent: -48.36,
-          callVolume: '92.43L',
-          callOi: 110.5,
-          callIv: 19.2,
-          putLtp: 7.22,
-          putChangePercent: 35.21,
-          putVolume: '24.18L',
-          putOi: 2.1,
-          putIv: 21.2,
+          callLtp: 0.75,
+          callChangePercent: -52.80,
+          callVolume: '96.40L',
+          callOi: 120.5,
+          callIv: 20.8,
+          putLtp: 6.10,
+          putChangePercent: 34.50,
+          putVolume: '12.40L',
+          putOi: 11.2,
+          putIv: 22.9,
+        ),
+        StockOptionStrike(
+          strike: 152.5,
+          callLtp: 0.40,
+          callChangePercent: -58.20,
+          callVolume: '32.10L',
+          callOi: 48.0,
+          callIv: 20.2,
+          putLtp: 8.30,
+          putChangePercent: 32.10,
+          putVolume: '6.80L',
+          putOi: 6.5,
+          putIv: 22.3,
         ),
       ];
     }
