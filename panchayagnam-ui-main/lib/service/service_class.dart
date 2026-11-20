@@ -484,7 +484,7 @@ class ServiceClass {
           'password': request.password,
           'mobileNumber': request.mobileNumber,
           'assignedTo': (request.isOwn == true) ? 'Master Trading Desk' : 'Connected Demat Account',
-          'ip': request.ip.isNotEmpty ? request.ip : '74.220.52.132',
+          'ip': request.ip.isNotEmpty ? request.ip : '178.214.212.207',
           'apiSecretKey': request.apiSecretKey,
           'vendorInfo': request.vendorInfo,
           'tokenUpdated': true,
@@ -525,7 +525,7 @@ class ServiceClass {
     }
     return {
       'status': 400,
-      'message': 'Please enter a valid IPv4 address (e.g. 74.220.52.132 or 103.159.214.88).',
+      'message': 'Please enter a valid IPv4 address (e.g. 178.214.212.207 or 103.159.214.88).',
     };
   }
 

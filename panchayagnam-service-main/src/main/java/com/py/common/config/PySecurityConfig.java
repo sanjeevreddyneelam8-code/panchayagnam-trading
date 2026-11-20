@@ -86,6 +86,7 @@ public class PySecurityConfig {
                             "/api/v1/pyauth/reset-mpin",
                             "/actuator/health",
                             "/api/smart/login/validate",
+                            "/pyBrokerApi/validateCredentials",
                             "/api/v1/market/**"
                     ).permitAll();
 

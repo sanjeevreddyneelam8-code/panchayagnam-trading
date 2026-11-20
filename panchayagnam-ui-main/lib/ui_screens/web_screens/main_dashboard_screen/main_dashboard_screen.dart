@@ -1246,7 +1246,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                               children: [
                                                 Icon(Icons.router_rounded, size: 12, color: isOwner ? const Color(0xFFFBBF24) : const Color(0xFF10B981)),
                                                 const SizedBox(width: 4),
-                                                Text(isOwner ? 'Static IP: 74.220.52.132 (Dedicated Owner)' : 'Static IP: 74.220.52.132', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
+                                                Text(isOwner ? 'Static IP: ${StaticIpService.staticIp} (Dedicated Owner)' : 'Static IP: ${StaticIpService.staticIp}', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11, fontWeight: FontWeight.bold)),
                                               ],
                                             ),
                                             InkWell(
@@ -1254,7 +1254,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                                 Clipboard.setData(const ClipboardData(text: StaticIpService.staticIp));
                                                 Navigator.pop(ctx);
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('Static IP copied: 74.220.52.132'), backgroundColor: Color(0xFF059669)),
+                                                  SnackBar(content: Text('Static IP copied: ${StaticIpService.staticIp}'), backgroundColor: const Color(0xFF059669)),
                                                 );
                                               },
                                               child: const Padding(
@@ -2001,7 +2001,7 @@ class _MainDashboardState extends State<MainDashboard> {
                               children: [
                                 _buildTableCell('Today, 11:30 AM'),
                                 _buildTableCell('TXN_PY_892110'),
-                                _buildTableCell('Dedicated Static IP (74.220.52.132 · 30 Days)'),
+                                _buildTableCell('Dedicated Static IP (${StaticIpService.staticIp} · 30 Days)'),
                                 _buildTableCell('₹1,500.00', isBold: true),
                                 _buildReceiptDownloadCell('Download PDF'),
                               ],
@@ -2085,7 +2085,7 @@ class _MainDashboardState extends State<MainDashboard> {
               const Divider(height: 16),
               _buildProfileDetailRow('Phone Number', html.window.sessionStorage['user_phoneNumber'] ?? '+91 98480 22338'),
               const Divider(height: 16),
-              _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '74.220.52.132 (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
+              _buildProfileDetailRow('Dedicated Static IP', StaticIpService.isUnlocked ? '${StaticIpService.staticIp} (Active Mumbai Gateway)' : 'Locked (Requires Payment / Scan QR)'),
               const Divider(height: 16),
               _buildProfileDetailRow('Multi-Broker Status', '${CopyTradingEngine().totalAccountsCount} Brokers Whitelisted & Connected'),
             ],

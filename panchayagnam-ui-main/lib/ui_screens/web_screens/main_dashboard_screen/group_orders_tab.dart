@@ -1901,15 +1901,15 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
             Text('Static IP Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Dedicated Low-Latency Mumbai Gateway IP:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            SizedBox(height: 4),
-            Text('74.220.52.132 (Active)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
-            SizedBox(height: 12),
-            Text('Status: Whitelisted for 5Paisa, Dhan, Zerodha & AngelOne developer portals.\nEstimated routing latency: 11ms.', style: TextStyle(fontSize: 12.5, color: Color(0xFF374151), height: 1.4)),
+            const Text('Dedicated Low-Latency Mumbai Gateway IP:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text('${StaticIpService.staticIp} (Active)', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+            const SizedBox(height: 12),
+            const Text('Status: Whitelisted for 5Paisa, Dhan, Zerodha, AngelOne & Motilal Oswal developer portals.\nEstimated routing latency: 11ms.', style: TextStyle(fontSize: 12.5, color: Color(0xFF374151), height: 1.4)),
           ],
         ),
         actions: [
@@ -2640,18 +2640,28 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
       initialAccount: _editingAccount,
       onSave: (accountData) {
         setState(() {
+          final newCid = (accountData['loginId'] ?? accountData['code'] ?? accountData['clientId']).toString().trim();
           if (_editingAccount != null) {
-            final idx = _tradingAccountsHierarchy.indexWhere((a) => (a['loginId'] ?? a['code']) == (_editingAccount!['loginId'] ?? _editingAccount!['code']));
+            final oldCid = (_editingAccount!['loginId'] ?? _editingAccount!['code'] ?? _editingAccount!['clientId']).toString().trim();
+            final idx = _tradingAccountsHierarchy.indexWhere((a) =>
+                (a['loginId'] ?? a['code'] ?? a['clientId']).toString().trim().toUpperCase() == oldCid.toUpperCase());
             if (idx != -1) {
               _tradingAccountsHierarchy[idx] = accountData;
             } else {
-              _tradingAccountsHierarchy.clear();
               _tradingAccountsHierarchy.add(accountData);
             }
           } else {
-            // User connected their live broker: replace all placeholders with user's verified demat!
-            _tradingAccountsHierarchy.clear();
-            _tradingAccountsHierarchy.add(accountData);
+            final existingIdx = _tradingAccountsHierarchy.indexWhere((a) =>
+                (a['loginId'] ?? a['code'] ?? a['clientId']).toString().trim().toUpperCase() == newCid.toUpperCase());
+            if (existingIdx != -1) {
+              _tradingAccountsHierarchy[existingIdx] = accountData;
+            } else {
+              if (_tradingAccountsHierarchy.isNotEmpty) {
+                accountData['isMaster'] = false;
+                accountData['role'] = 'CHILD (Follower)';
+              }
+              _tradingAccountsHierarchy.add(accountData);
+            }
           }
           _saveTradingAccountsToStorage();
           CopyTradingEngine().syncWithStorage();
@@ -2659,9 +2669,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           _editingAccount = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Trading account configured and synchronized successfully! Only your connected live Demat is active.'),
-            backgroundColor: Color(0xFF059669),
+          SnackBar(
+            content: Text('${accountData['broker'] ?? 'Broker'} Demat account synchronized successfully!'),
+            backgroundColor: const Color(0xFF059669),
           ),
         );
       },
@@ -9583,6 +9593,8 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
   late TextEditingController _mpinCtrl;
   late TextEditingController _totpCtrl;
   late TextEditingController _apiKeyCtrl;
+  late TextEditingController _twoFaCtrl;
+  late TextEditingController _apiSecretCtrl;
   late TextEditingController _appSourceCtrl;
   late TextEditingController _nicknameCtrl;
 
@@ -9621,6 +9633,8 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     _mpinCtrl = TextEditingController(text: (acc?['mpin'] ?? '').toString());
     _totpCtrl = TextEditingController(text: (acc?['totpKey'] ?? '').toString());
     _apiKeyCtrl = TextEditingController(text: (acc?['apiKey'] ?? '').toString());
+    _twoFaCtrl = TextEditingController(text: (acc?['twoFa'] ?? acc?['dob'] ?? '').toString());
+    _apiSecretCtrl = TextEditingController(text: (acc?['apiSecret'] ?? '').toString());
     _appSourceCtrl = TextEditingController(text: (acc?['appSource'] ?? _defaultPlatformFor(_selectedBroker)).toString());
     _nicknameCtrl = TextEditingController(text: (acc?['nickname'] ?? acc?['name'] ?? '$_selectedBroker Demat').toString());
   }
@@ -9637,6 +9651,8 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
         return 'KITE_CONNECT';
       case 'Upstox':
         return 'UPSTOX_V2';
+      case 'Motilal Oswal':
+        return 'MOTILAL_OPENAPI';
       default:
         return 'API';
     }
@@ -9649,6 +9665,9 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
       final plat = _defaultPlatformFor(newBroker);
       _platformCtrl.text = plat;
       _appSourceCtrl.text = plat;
+      if (_nicknameCtrl.text.isEmpty || _nicknameCtrl.text.endsWith('Demat') || _nicknameCtrl.text.endsWith('Primary')) {
+        _nicknameCtrl.text = '$newBroker Demat';
+      }
     });
   }
 
@@ -9659,6 +9678,8 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     _mpinCtrl.dispose();
     _totpCtrl.dispose();
     _apiKeyCtrl.dispose();
+    _twoFaCtrl.dispose();
+    _apiSecretCtrl.dispose();
     _appSourceCtrl.dispose();
     _nicknameCtrl.dispose();
     super.dispose();
@@ -9677,7 +9698,9 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
 
     final nickname = _nicknameCtrl.text.trim().isNotEmpty
         ? _nicknameCtrl.text.trim()
-        : '$_selectedBroker Primary';
+        : '$_selectedBroker Demat';
+
+    final brokerCode = _selectedBroker.toUpperCase().replaceAll(' ', '');
 
     final accData = <String, dynamic>{
       'id': widget.initialAccount?['id'] ?? 'ACC_${DateTime.now().millisecondsSinceEpoch}',
@@ -9693,16 +9716,19 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
       'ipType': widget.initialAccount?['ipType'] ?? 'Dedicated Static',
       'paid': widget.initialAccount?['paid'] ?? 'Yes',
       'broker': _selectedBroker,
-      'platform': _platformCtrl.text.trim().isNotEmpty ? _platformCtrl.text.trim() : 'API',
+      'brokerType': brokerCode,
+      'platform': _platformCtrl.text.trim().isNotEmpty ? _platformCtrl.text.trim() : _defaultPlatformFor(_selectedBroker),
       'mpin': _mpinCtrl.text.trim(),
       'totpKey': _totpCtrl.text.trim(),
       'apiKey': _apiKeyCtrl.text.trim(),
+      'apiSecret': _apiSecretCtrl.text.trim(),
+      'twoFa': _twoFaCtrl.text.trim(),
       'appSource': _appSourceCtrl.text.trim(),
-      'role': widget.initialAccount?['role'] ?? 'MASTER (Parent)',
+      'role': widget.initialAccount?['role'] ?? 'CHILD (Follower)',
       'margin': widget.initialAccount?['margin'] ?? '₹20,00,000',
       'multiplier': widget.initialAccount?['multiplier'] ?? '1.0x',
       'status': 'Connected',
-      'isMaster': widget.initialAccount?['isMaster'] ?? true,
+      'isMaster': widget.initialAccount?['isMaster'] ?? false,
     };
 
     widget.onSave(accData);
@@ -9713,11 +9739,26 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     final mpin = _mpinCtrl.text.trim();
     final totp = _totpCtrl.text.trim();
     final apiKey = _apiKeyCtrl.text.trim();
+    final twoFa = _twoFaCtrl.text.trim();
+    final apiSecret = _apiSecretCtrl.text.trim();
 
-    if (clientId.isEmpty || mpin.isEmpty || totp.isEmpty || apiKey.isEmpty) {
+    if (clientId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill Client ID, MPIN, TOTP Key, and API Key to validate.'),
+          content: Text('Please enter Trading Platform Login ID / Client ID.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final isAngel = _selectedBroker == 'Angel One';
+    final isMotilal = _selectedBroker == 'Motilal Oswal';
+
+    if (isAngel && (mpin.isEmpty || totp.isEmpty || apiKey.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Angel One requires Client ID, MPIN, TOTP Key, and API Key.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -9727,41 +9768,50 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
     setState(() => _isValidating = true);
 
     try {
-      final url = Uri.parse('${ApiUrls.baseUrl}/api/smart/login/validate');
+      final endpoint = isAngel
+          ? '${ApiUrls.baseUrl}/api/smart/login/validate'
+          : '${ApiUrls.baseUrl}/pyBrokerApi/validateCredentials';
+
+      final brokerCode = isMotilal ? 'MOTILAL' : (isAngel ? 'ANGELONE' : _selectedBroker.toUpperCase().replaceAll(' ', ''));
+
       final resp = await http.post(
-        url,
+        Uri.parse(endpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'broker': _selectedBroker,
+          'brokerType': brokerCode,
           'clientId': clientId,
           'mpin': mpin,
           'totpKey': totp,
           'apiKey': apiKey,
+          'apiSecret': apiSecret,
+          'twoFa': twoFa.isNotEmpty ? twoFa : '1990-01-01',
         }),
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(const Duration(seconds: 15));
 
       Map<String, dynamic> data = {};
       try {
         data = jsonDecode(resp.body) as Map<String, dynamic>;
       } catch (_) {}
 
-      if (resp.statusCode == 200 && data['success'] == true) {
+      if (resp.statusCode == 200 && (data['success'] == true || data['status'] == true || data['token'] != null)) {
         if (!mounted) return;
         setState(() => _isValidating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Angel One Verified & Connected Live! (Client: $clientId)'),
+            content: Text('✅ $_selectedBroker Verified & Connected Live! (Client: $clientId)'),
             backgroundColor: const Color(0xFF059669),
           ),
         );
       } else {
         if (!mounted) return;
         setState(() => _isValidating = false);
-        final msg = data['message'] ?? 'Invalid credentials or TOTP. Rejected by Angel One SmartAPI.';
+        final msg = data['message'] ?? 'Validation rejected by $_selectedBroker servers.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Validation Failed: $msg'),
+            content: Text('❌ Validation Failed: $msg\n(You can still click Save to link this Demat account directly)'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 8),
           ),
         );
       }
@@ -9770,8 +9820,9 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
       setState(() => _isValidating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Broker Connection Error: $e'),
-          backgroundColor: Colors.red,
+          content: Text('⚠️ Broker server notice: $e. You can click Save to add this account to your pool!'),
+          backgroundColor: const Color(0xFFD97706),
+          duration: const Duration(seconds: 6),
         ),
       );
     }
@@ -9921,10 +9972,10 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                     builder: (context, isUnlocked, _) {
                       return _buildGuideStep(
                         2,
-                        isUnlocked ? 'Get your static IP (Active: 74.220.52.132)' : 'Get your static IP (🔒 Locked · Separate purchase)',
+                        isUnlocked ? 'Get your static IP (Active: ${StaticIpService.staticIp})' : 'Get your static IP (🔒 Locked · Separate purchase)',
                         isDone: isUnlocked,
                         desc: isUnlocked
-                            ? 'Dedicated AWS Mumbai Static IP 74.220.52.132 is active and whitelisted for this demat.'
+                            ? 'Dedicated AWS Mumbai Static IP ${StaticIpService.staticIp} is active and whitelisted for this demat.'
                             : 'Buy one from us or bring your own. Either way it costs money and is separate from your free trial. Pay via UPI QR or Add money to wallet to activate.',
                         trailingAction: !isUnlocked
                             ? InkWell(
@@ -10062,7 +10113,7 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                     child: ElevatedButton.icon(
                       onPressed: widget.onStaticIpPressed,
                       icon: const Icon(Icons.router_rounded, size: 16),
-                      label: const Text('Static IP (Assigned: 74.220.52.132)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                      label: Text('Static IP (Assigned: ${StaticIpService.staticIp})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
@@ -10075,13 +10126,13 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
                   Row(
                     children: [
                       const Text('Assigned Static IP: ', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
-                      const Text('74.220.52.132', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
+                      Text(StaticIpService.staticIp, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF))),
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: StaticIpService.staticIp));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Static IP copied: 74.220.52.132'), backgroundColor: Color(0xFF059669)),
+                            SnackBar(content: Text('Static IP copied: ${StaticIpService.staticIp}'), backgroundColor: const Color(0xFF059669)),
                           );
                         },
                         child: Container(
@@ -10106,11 +10157,11 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
           const SizedBox(height: 16),
 
           // MPIN
-          const Text('MPIN', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const Text('MPIN / Password', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
           const SizedBox(height: 6),
           _buildStyledTextField(
             controller: _mpinCtrl,
-            hint: 'Enter your 6-digit MPIN',
+            hint: 'Enter your 6-digit MPIN or Account Password',
             obscureText: _obscureMpin,
             suffixIcon: IconButton(
               icon: Icon(_obscureMpin ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: const Color(0xFF6B7280)),
@@ -10153,6 +10204,31 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
               icon: Icon(_obscureApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: const Color(0xFF6B7280)),
               onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // 2FA (Date of Birth / PAN - Motilal Oswal)
+          const Text('2FA (Date of Birth / PAN)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _twoFaCtrl,
+            hint: 'Date of Birth (YYYY-MM-DD e.g. 1990-05-15) or PAN for 2FA',
+            suffixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFF6B7280), size: 18),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '💡 Required for Motilal Oswal API (enter DOB format YYYY-MM-DD or PAN number)',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 16),
+
+          // API Secret Key (Optional)
+          const Text('API Secret Key (Optional)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          _buildStyledTextField(
+            controller: _apiSecretCtrl,
+            hint: 'API Secret Key (if provided by broker developer portal)',
+            suffixIcon: const Icon(Icons.vpn_key_outlined, color: Color(0xFF6B7280), size: 18),
           ),
           const SizedBox(height: 16),
 

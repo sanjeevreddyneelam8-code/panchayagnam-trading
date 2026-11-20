@@ -223,7 +223,7 @@ public class LiveMarketDataController {
             }
         } catch (Exception ignored) {
         }
-        return cachedOutboundIp != null ? cachedOutboundIp : "74.220.52.132";
+        return cachedOutboundIp != null ? cachedOutboundIp : "178.214.212.207";
     }
 
     private PyBrokerAccountEntity findActiveAngelOneAccount(String preferredClientId) {

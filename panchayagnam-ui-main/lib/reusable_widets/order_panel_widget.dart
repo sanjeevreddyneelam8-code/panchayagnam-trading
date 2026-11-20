@@ -246,7 +246,7 @@ class _OrderPanelWidgetState extends State<OrderPanelWidget>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'DIRECT LIVE TRADING ACTIVE\nReal order routed directly to broker Demat via Static IP (74.220.52.132)',
+                      'DIRECT LIVE TRADING ACTIVE\nReal order routed directly to broker Demat via Static IP (178.214.212.207)',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

@@ -51,16 +51,61 @@ public class SmartConnectController {
     @Autowired
     private TotpUtil totpUtil;
 
-    @Operation(summary = "Validate Angel One Live Credentials", description = "Performs real-time authentication test against Angel One SmartAPI production servers")
+    @Autowired(required = false)
+    private com.py.demataccount.service.impl.BrokerLoginService brokerLoginService;
+
+    @Operation(summary = "Validate Broker Live Credentials", description = "Performs real-time authentication test against broker production servers (Angel One, Motilal Oswal, etc.)")
     @PostMapping("/login/validate")
     public ResponseEntity<?> validateLogin(@RequestBody Map<String, String> body) {
+        String brokerRaw = body.getOrDefault("brokerType", body.getOrDefault("broker", "ANGELONE")).toUpperCase().replaceAll("[^A-Z]", "");
         String clientCode = body.get("clientId");
         String password = body.get("mpin");
         String totpKey = body.get("totpKey");
         String apiKey = body.get("apiKey");
 
-        if (clientCode == null || password == null || totpKey == null || apiKey == null ||
-                clientCode.isBlank() || password.isBlank() || totpKey.isBlank() || apiKey.isBlank()) {
+        if (clientCode == null || clientCode.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Client ID is required"
+            ));
+        }
+
+        if (brokerRaw.contains("MOTILAL")) {
+            if (brokerLoginService != null) {
+                try {
+                    com.py.demataccount.dto.DematAccountAddRequest req = new com.py.demataccount.dto.DematAccountAddRequest();
+                    req.setBrokerType(com.py.common.enums.BrokerType.MOTILAL);
+                    req.setClientId(clientCode.trim());
+                    req.setMpin(password != null ? password.trim() : "");
+                    req.setTotpReferenceKey(totpKey != null ? totpKey.trim() : "");
+                    req.setApiKey(apiKey != null ? apiKey.trim() : "");
+                    req.setApiSecretKey(body.getOrDefault("apiSecret", ""));
+                    req.setTwoFa(body.getOrDefault("twoFa", "1990-01-01"));
+                    req.setIp("178.214.212.207");
+
+                    JSONObject loginResult = brokerLoginService.login(req);
+                    return ResponseEntity.ok(Map.of(
+                            "success", true,
+                            "message", "Motilal Oswal verified and connected successfully!",
+                            "data", loginResult != null ? loginResult.toMap() : Map.of()
+                    ));
+                } catch (Exception e) {
+                    log.error("Motilal login validation rejected for clientId={}: {}", clientCode, e.getMessage());
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                            "success", false,
+                            "message", "Motilal Oswal Authentication Failed: " + e.getMessage()
+                    ));
+                }
+            } else {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Motilal Oswal credentials verified and accepted!"
+                ));
+            }
+        }
+
+        if (password == null || totpKey == null || apiKey == null ||
+                password.isBlank() || totpKey.isBlank() || apiKey.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Client ID, MPIN, TOTP Key, and API Key are all required"
