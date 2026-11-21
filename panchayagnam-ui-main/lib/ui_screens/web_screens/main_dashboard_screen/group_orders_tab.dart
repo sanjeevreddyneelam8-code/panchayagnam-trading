@@ -25,8 +25,10 @@ import '../../../constants/colors.dart';
 import '../../../app_route/user_session.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../service/static_ip_service.dart';
+import '../../../service/wallet_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../reusable_widets/group_order_panel.dart';
+import '../../../reusable_widets/wallet_recharge_dialog.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF047857);
@@ -1350,6 +1352,22 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
   }
 
   void _openAddBrokerAccountDialog(BuildContext context) {
+    // AlgoDelta Multi-Broker Wallet Rule:
+    // Regular clients must add funds to their wallet before connecting Demat accounts.
+    // The Owner (Bhaskar S / Super Admin) has unlimited Demat accounts without adding wallet funds!
+    if (!WalletService.instance.canAddDematAccount()) {
+      WalletRechargeDialog.show(
+        context,
+        requiredAmount: WalletService.costPerDematSlot,
+        customMessage:
+            'AlgoDelta Multi-Broker Rule: First add amount on wallet then only it will allow to add demat account (₹500 / account / month). Current balance: ₹${WalletService.instance.balance.toStringAsFixed(2)}',
+        onRechargeSuccess: () {
+          _openAddBrokerAccountDialog(context);
+        },
+      );
+      return;
+    }
+
     String selectedBroker = 'Motilal Oswal';
     String role = 'CHILD (Follower)';
     double multiplier = 1.0;
@@ -1389,6 +1407,52 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Owner Privilege vs Client Wallet Info Banner
+                    if (WalletService.instance.isOwnerExempt)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFF59E0B)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.stars_rounded, color: Color(0xFFB45309), size: 16),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '👑 Owner Mode (Bhaskar S): Unlimited Demat Accounts Allowed · Zero Wallet Required',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '💳 Client Wallet: ₹${WalletService.instance.balance.toStringAsFixed(2)} • ₹500 will be deducted for this Demat slot',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     // Broker Dropdown
                     const Text('Broker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
                     const SizedBox(height: 5),
@@ -1603,6 +1667,27 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     return;
                   }
 
+                  // AlgoDelta Rule: Verify client has funds in wallet
+                  if (!WalletService.instance.canAddDematAccount()) {
+                    Navigator.pop(ctx);
+                    WalletRechargeDialog.show(
+                      context,
+                      requiredAmount: WalletService.costPerDematSlot,
+                      customMessage:
+                          'AlgoDelta Rule: Insufficient wallet balance to connect this Demat account. Please add ₹500 to your wallet first.',
+                      onRechargeSuccess: () => _openAddBrokerAccountDialog(context),
+                    );
+                    return;
+                  }
+
+                  // Deduct ₹500 for client (Owner is exempt - ₹0)
+                  final isOwner = WalletService.instance.isOwnerExempt;
+                  WalletService.instance.deductForDematAccount(
+                    broker: selectedBroker,
+                    clientId: cid,
+                    nickname: nicknameCtrl.text.trim(),
+                  );
+
                   final isMasterAcc = role.contains('MASTER');
                   final accountData = <String, dynamic>{
                     'id': 'ACC_${DateTime.now().millisecondsSinceEpoch}',
@@ -1641,9 +1726,12 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                   });
 
                   Navigator.pop(ctx);
+                  final feeNotice = isOwner
+                      ? '👑 Owner Privilege: Free slot'
+                      : '₹500 deducted from wallet (Remaining: ₹${WalletService.instance.balance.toStringAsFixed(0)})';
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('✅ $selectedBroker Demat ($cid) connected and active in Copy Trading!'),
+                      content: Text('✅ $selectedBroker Demat ($cid) connected! $feeNotice'),
                       backgroundColor: const Color(0xFF059669),
                     ),
                   );
@@ -1797,6 +1885,104 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 ],
               ),
               const SizedBox(height: 20),
+
+              // AlgoDelta Multi-Broker Wallet Rule Status Bar
+              ValueListenableBuilder<double>(
+                valueListenable: WalletService.instance.balanceNotifier,
+                builder: (context, balance, _) {
+                  final isOwner = WalletService.instance.isOwnerExempt;
+                  final availableSlots = WalletService.instance.availableDematSlots;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 18),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isOwner ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: isOwner ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isOwner ? Icons.workspace_premium_rounded : Icons.account_balance_wallet_rounded,
+                          color: isOwner ? const Color(0xFFD97706) : const Color(0xFF059669),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    isOwner ? '👑 OWNER PRIVILEGE (BHASKAR S)' : 'ALGODELTA CLIENT WALLET RULE',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      color: isOwner ? const Color(0xFF92400E) : const Color(0xFF166534),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: isOwner ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      isOwner ? 'UNLIMITED DEMATS (FREE)' : '₹500 / DEMAT / MONTH',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: isOwner ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                isOwner
+                                    ? 'Owner account active: You are allowed to add unlimited Demat accounts without adding money to your wallet.'
+                                    : 'Wallet Balance: ₹${balance.toStringAsFixed(2)} • Available Demat Slots: $availableSlots • First add amount on wallet then only Demat accounts can be connected.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isOwner ? const Color(0xFF78350F) : const Color(0xFF15803D),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            WalletRechargeDialog.show(
+                              context,
+                              requiredAmount: 500.0,
+                              onRechargeSuccess: () => setState(() {}),
+                            );
+                          },
+                          icon: const Icon(Icons.add_card_rounded, size: 15),
+                          label: Text(isOwner ? 'Manage Wallet' : 'Recharge Wallet (+₹500)'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isOwner ? const Color(0xFFD97706) : const Color(0xFF059669),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
 
               // 2. DESIGNATED PARENT / MASTER ACCOUNT BANNER
               Container(
@@ -3722,6 +3908,25 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               return;
                             }
 
+                            // AlgoDelta Rule: Wallet check & deduction
+                            if (!WalletService.instance.canAddDematAccount()) {
+                              Navigator.pop(ctx);
+                              WalletRechargeDialog.show(
+                                context,
+                                requiredAmount: WalletService.costPerDematSlot,
+                                customMessage:
+                                    'AlgoDelta Rule: First add amount on wallet then only Demat accounts can be connected (₹500 / account).',
+                              );
+                              return;
+                            }
+
+                            final isOwner = WalletService.instance.isOwnerExempt;
+                            WalletService.instance.deductForDematAccount(
+                              broker: broker,
+                              clientId: cid,
+                              nickname: nameCtrl.text.trim(),
+                            );
+
                             _saveChildAccountToStorage(
                               broker: broker,
                               name: nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : '$broker Child',
@@ -3733,9 +3938,12 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                             CopyTradingEngine().syncWithStorage();
                             setState(() {});
                             Navigator.pop(ctx);
+                            final feeTxt = isOwner
+                                ? '👑 Owner Privilege: Free slot'
+                                : '₹500 deducted from wallet (Remaining: ₹${WalletService.instance.balance.toStringAsFixed(0)})';
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Linked Child Account ($broker $cid) with ${multiplier.toStringAsFixed(1)}x multiplier! 🟢'),
+                                content: Text('Linked Child Account ($broker $cid) with ${multiplier.toStringAsFixed(1)}x multiplier! $feeTxt 🟢'),
                                 backgroundColor: const Color(0xFF059669),
                               ),
                             );
@@ -10107,9 +10315,33 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
       return;
     }
 
+    // AlgoDelta Multi-Broker Wallet Rule:
+    // Clients must add amount to wallet before connecting Demat accounts.
+    // Owner is completely exempt.
+    if (!WalletService.instance.canAddDematAccount()) {
+      WalletRechargeDialog.show(
+        context,
+        requiredAmount: WalletService.costPerDematSlot,
+        customMessage:
+            'AlgoDelta Multi-Broker Rule: First add amount on wallet then only it will allow to add demat account (₹500 / account / month). Current balance: ₹${WalletService.instance.balance.toStringAsFixed(2)}',
+        onRechargeSuccess: () {
+          _submit();
+        },
+      );
+      return;
+    }
+
     final nickname = _nicknameCtrl.text.trim().isNotEmpty
         ? _nicknameCtrl.text.trim()
         : '$_selectedBroker Demat';
+
+    // Deduct for client (free for owner)
+    final isOwner = WalletService.instance.isOwnerExempt;
+    WalletService.instance.deductForDematAccount(
+      broker: _selectedBroker,
+      clientId: _loginIdCtrl.text.trim(),
+      nickname: nickname,
+    );
 
     final brokerCode = _selectedBroker.toUpperCase().replaceAll(' ', '');
 
@@ -10146,6 +10378,20 @@ class _AutoTraderCreateAccountFormState extends State<_AutoTraderCreateAccountFo
   }
 
   Future<void> _validateAccount() async {
+    // AlgoDelta Multi-Broker Wallet Rule:
+    if (!WalletService.instance.canAddDematAccount()) {
+      WalletRechargeDialog.show(
+        context,
+        requiredAmount: WalletService.costPerDematSlot,
+        customMessage:
+            'AlgoDelta Multi-Broker Rule: First add amount on wallet then only it will allow to add demat account (₹500 / account / month). Current balance: ₹${WalletService.instance.balance.toStringAsFixed(2)}',
+        onRechargeSuccess: () {
+          _validateAccount();
+        },
+      );
+      return;
+    }
+
     final clientId = _loginIdCtrl.text.trim();
     final mpin = _mpinCtrl.text.trim();
     final totp = _totpCtrl.text.trim();

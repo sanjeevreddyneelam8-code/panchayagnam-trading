@@ -20,7 +20,9 @@ import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../constants/colors.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../service/live_market_data_service.dart';
+import '../../../service/wallet_service.dart';
 import '../../../reusable_widets/payment_gateway_dialog.dart';
+import '../../../reusable_widets/wallet_recharge_dialog.dart';
 import '../../../service/static_ip_service.dart';
 import '../../../reusable_widets/signal_bridge_dialog.dart';
 import 'approve_user_tab.dart';
@@ -1211,18 +1213,27 @@ class _MainDashboardState extends State<MainDashboard> {
                               ),
                               child: Column(
                                 children: [
-                                  const Row(
+                                  Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('WALLET BALANCE', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, fontWeight: FontWeight.w700)),
-                                          SizedBox(height: 1),
-                                          Text('₹15,000.00', style: TextStyle(color: Color(0xFF34D399), fontSize: 13, fontWeight: FontWeight.w900)),
+                                          const Text('WALLET BALANCE', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, fontWeight: FontWeight.w700)),
+                                          const SizedBox(height: 1),
+                                          ValueListenableBuilder<double>(
+                                            valueListenable: WalletService.instance.balanceNotifier,
+                                            builder: (context, bal, _) {
+                                              final isOwner = WalletService.instance.isOwnerExempt;
+                                              return Text(
+                                                isOwner ? '👑 Unlimited (Owner)' : '₹${NumberFormat('#,##,##0.00').format(bal)}',
+                                                style: const TextStyle(color: Color(0xFF34D399), fontSize: 13, fontWeight: FontWeight.w900),
+                                              );
+                                            },
+                                          ),
                                         ],
                                       ),
-                                      Column(
+                                      const Column(
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
                                           Text('CURRENT PLAN', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 9.5, fontWeight: FontWeight.w700)),
@@ -1800,20 +1811,29 @@ class _MainDashboardState extends State<MainDashboard> {
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
                               ),
-                              child: const Column(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
+                                  const Row(
                                     children: [
                                       Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFF16A34A)),
                                       SizedBox(width: 4),
                                       Text('WALLET BALANCE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
-                                  Text('₹15,000.00', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-                                  SizedBox(height: 4),
-                                  Text('Available for margin & API usage', style: TextStyle(fontSize: 10.5, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 8),
+                                  ValueListenableBuilder<double>(
+                                    valueListenable: WalletService.instance.balanceNotifier,
+                                    builder: (context, bal, _) {
+                                      final isOwner = WalletService.instance.isOwnerExempt;
+                                      return Text(
+                                        isOwner ? '👑 Unlimited (Owner)' : '₹${NumberFormat('#,##,##0.00').format(bal)}',
+                                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text('Available for Demat accounts & API usage', style: TextStyle(fontSize: 10.5, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),
@@ -1955,10 +1975,10 @@ class _MainDashboardState extends State<MainDashboard> {
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.pop(ctx);
-                              StaticIpService.showPaymentOrQrDialog(context);
+                              WalletRechargeDialog.show(context);
                             },
-                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
-                            label: const Text('Scan UPI QR / Add Funds', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.account_balance_wallet_rounded, size: 16),
+                            label: const Text('Add Money to Wallet', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF059669),
                               foregroundColor: Colors.white,
