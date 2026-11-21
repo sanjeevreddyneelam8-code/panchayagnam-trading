@@ -151,40 +151,16 @@ class CopyTradingEngine extends ChangeNotifier {
   static bool isRealBrokerAccount(dynamic rawCid) {
     if (rawCid == null) return false;
     final cid = rawCid.toString().trim().toUpperCase();
-    if (cid.isEmpty || cid == 'AG_LIVE' || cid == 'NONE') return false;
-    if (cid.contains('_ACC_') || cid.contains('_PRO_') || cid.contains('DEMO') || cid.contains('MOCK') || cid.contains('TEST')) {
+    if (cid.isEmpty || cid == 'NONE') return false;
+    if (cid.contains('DEMO') || cid.contains('MOCK') || cid.contains('SAMPLE') || cid.contains('_SEED')) {
       return false;
-    }
-    if (RegExp(r'_\d{3}$').hasMatch(cid)) {
-      return false; // blocks _101, _108, _135 etc.
     }
     const blockedExact = {
       '1100345678', 'FP9876543', 'AG789012', 'ZR123456', 'ZR442190',
       'UP654321', 'UP662910', 'MO554433', 'PM998877', 'GW332211',
-      'GR887766', 'GR88766', 'AG_LIVE'
+      'GR887766', 'GR88766'
     };
     if (blockedExact.contains(cid)) return false;
-    if (cid.startsWith('GR887') ||
-        cid.startsWith('GW332') ||
-        cid.startsWith('PM998') ||
-        cid.startsWith('MO554') ||
-        cid.startsWith('AG789') ||
-        cid.startsWith('UP654') ||
-        cid.startsWith('ZR123') ||
-        cid.startsWith('11003')) {
-      return false;
-    }
-    const blockedPrefixes = [
-      'DHAN_', 'ANGEL_ACC', 'KITE_ACC', 'UPSTX_', 'FYERS_', 'MOTILAL_',
-      'KOTAK_', 'ALICE_', 'PROFIT_', 'GOODWL_', 'GROWW_', 'PAISA5_',
-      'ICICI_', 'HDFCSKY_', 'AXIS_', 'SBI_', 'SHARE_', 'IIFL_',
-      'PAYTM_', 'SHOONYA_', 'FLAT_', 'NUVAMA_', 'ARATHI_', 'CHOICE_',
-      'SAMCO_', 'ESPR_', 'FIRST_', 'TJINI_', 'JAINAM_', 'MTRUST_',
-      'SMC_', 'BAJAJ_', 'RMONEY_', 'ABM_', 'STOX_'
-    ];
-    for (final pfx in blockedPrefixes) {
-      if (cid.startsWith(pfx)) return false;
-    }
     return true;
   }
 

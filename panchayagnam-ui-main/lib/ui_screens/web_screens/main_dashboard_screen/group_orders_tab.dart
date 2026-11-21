@@ -498,11 +498,23 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         Row(
                           children: [
                             ElevatedButton.icon(
+                              onPressed: () => _openAddBrokerAccountDialog(context),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: const Text('Add Demat Account'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1D4ED8),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
                               onPressed: _isTestingSignal ? null : () => _simulateMasterCopySignal(groups),
                               icon: _isTestingSignal
-                                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                   : const Icon(Icons.flash_on_rounded, size: 18),
-                              label: Text(_isTestingSignal ? 'Mirroring...' : '⚡ Simulate Copy Signal'),
+                              label: Text(_isTestingSignal ? 'Mirroring...' : '⚡ Test Copy Trade'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF059669),
                                 foregroundColor: Colors.white,
@@ -513,10 +525,10 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                             const SizedBox(width: 10),
                             ElevatedButton.icon(
                               onPressed: _openAddGroupDialog,
-                              icon: const Icon(Icons.add_rounded, size: 18),
+                              icon: const Icon(Icons.playlist_add_rounded, size: 18),
                               label: const Text('New Copy Pool'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF059669),
+                                backgroundColor: const Color(0xFF475569),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -609,19 +621,24 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.group_work_rounded, size: 17),
+                          const Icon(Icons.hub_rounded, size: 17),
                           const SizedBox(width: 8),
-                          Text('Copy Pools & Portfolios (${active.length})'),
+                          Builder(
+                            builder: (context) {
+                              final count = CopyTradingEngine().totalAccountsCount;
+                              return Text('Copy Trading Matrix ($count)');
+                            },
+                          ),
                         ],
                       ),
                     ),
-                    const Tab(
+                    Tab(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.link_rounded, size: 17),
-                          SizedBox(width: 8),
-                          Text('Connected Follower Demats (8)'),
+                          const Icon(Icons.group_work_rounded, size: 17),
+                          const SizedBox(width: 8),
+                          Text('Copy Pools & Strategy Lab (${active.length})'),
                         ],
                       ),
                     ),
@@ -644,13 +661,13 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                 child: TabBarView(
                   controller: _tabCtrl,
                   children: [
+                    _buildFollowerAccountsTab(groups),
                     SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(28, 20, 28, 32),
                       child: Column(
                         children: [_buildGroupsCard(ctx, groups, state, isLoading)],
                       ),
                     ),
-                    _buildFollowerAccountsTab(groups),
                     BlocProvider.value(
                       value: context.read<GroupPositionsBloc>(),
                       child: _HistoryTab(groups: groups, pyId: _pyId),
@@ -1332,6 +1349,321 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     );
   }
 
+  void _openAddBrokerAccountDialog(BuildContext context) {
+    String selectedBroker = 'Motilal Oswal';
+    String role = 'CHILD (Follower)';
+    double multiplier = 1.0;
+    final loginIdCtrl = TextEditingController();
+    final mpinCtrl = TextEditingController();
+    final totpCtrl = TextEditingController();
+    final apiKeyCtrl = TextEditingController();
+    final twoFaCtrl = TextEditingController();
+    final nicknameCtrl = TextEditingController(text: 'Motilal Oswal Demat');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) {
+          final isMotilal = selectedBroker == 'Motilal Oswal';
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF059669).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.link_rounded, color: Color(0xFF059669), size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text('Connect Demat Account', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              ],
+            ),
+            content: SizedBox(
+              width: 480,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Broker Dropdown
+                    const Text('Broker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedBroker,
+                          isExpanded: true,
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF1F2937), fontWeight: FontWeight.w600),
+                          items: [
+                            'Motilal Oswal',
+                            'Angel One',
+                            'Zerodha',
+                            'Dhan',
+                            'Upstox',
+                            'Groww',
+                            '5Paisa',
+                            'Fyers',
+                            'Kotak Neo',
+                          ].map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDlgState(() {
+                                selectedBroker = val;
+                                nicknameCtrl.text = '$val Demat';
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Role & Multiplier
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Account Role', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                              const SizedBox(height: 5),
+                              Container(
+                                height: 40,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: role,
+                                    isExpanded: true,
+                                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF1F2937), fontWeight: FontWeight.w600),
+                                    items: ['CHILD (Follower)', 'MASTER (Parent)']
+                                        .map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                                    onChanged: (val) {
+                                      if (val != null) setDlgState(() => role = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Quantity Multiplier', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                              const SizedBox(height: 5),
+                              Container(
+                                height: 40,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<double>(
+                                    value: multiplier,
+                                    isExpanded: true,
+                                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF059669), fontWeight: FontWeight.w700),
+                                    items: [0.5, 1.0, 1.5, 2.0, 3.0, 5.0]
+                                        .map((m) => DropdownMenuItem(value: m, child: Text('${m}x Sizing'))).toList(),
+                                    onChanged: (val) {
+                                      if (val != null) setDlgState(() => multiplier = val);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Client ID
+                    const Text('Broker Client ID / User Code', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: loginIdCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Motilal Client Code, AngelOne ID',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Password / MPIN
+                    const Text('Password / MPIN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: mpinCtrl,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Enter account password or 6-digit MPIN',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // TOTP Key
+                    const Text('TOTP Secret Key', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: totpCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Enter broker TOTP Secret Key',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // API Key
+                    const Text('Broker API Key', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: apiKeyCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'API Key from developer portal',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (isMotilal) ...[
+                      const Text('2FA (Date of Birth / PAN)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                      const SizedBox(height: 5),
+                      TextField(
+                        controller: twoFaCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'YYYY-MM-DD (e.g. 1990-05-15) or PAN',
+                          hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Nickname
+                    const Text('Nickname', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: nicknameCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Easy to identify name',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final cid = loginIdCtrl.text.trim();
+                  if (cid.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter Client ID / User Code'), backgroundColor: Colors.red),
+                    );
+                    return;
+                  }
+
+                  final isMasterAcc = role.contains('MASTER');
+                  final accountData = <String, dynamic>{
+                    'id': 'ACC_${DateTime.now().millisecondsSinceEpoch}',
+                    'loginId': cid,
+                    'code': cid,
+                    'clientId': cid,
+                    'nickname': nicknameCtrl.text.trim().isNotEmpty ? nicknameCtrl.text.trim() : '$selectedBroker Demat',
+                    'name': nicknameCtrl.text.trim().isNotEmpty ? nicknameCtrl.text.trim() : '$selectedBroker Demat',
+                    'broker': selectedBroker,
+                    'brokerType': selectedBroker.toUpperCase().replaceAll(' ', ''),
+                    'platform': selectedBroker == 'Motilal Oswal' ? 'MOTILAL_OPENAPI' : 'API',
+                    'mpin': mpinCtrl.text.trim(),
+                    'totpKey': totpCtrl.text.trim(),
+                    'apiKey': apiKeyCtrl.text.trim(),
+                    'twoFa': twoFaCtrl.text.trim(),
+                    'role': role,
+                    'isMaster': isMasterAcc,
+                    'multiplier': '${multiplier}x',
+                    'live': true,
+                    'status': 'Connected',
+                    'margin': '₹20,00,000',
+                  };
+
+                  setState(() {
+                    if (isMasterAcc) {
+                      for (final a in _tradingAccountsHierarchy) {
+                        a['isMaster'] = false;
+                        a['role'] = 'CHILD (Follower)';
+                      }
+                      _tradingAccountsHierarchy.insert(0, accountData);
+                    } else {
+                      _tradingAccountsHierarchy.add(accountData);
+                    }
+                    _saveTradingAccountsToStorage();
+                    CopyTradingEngine().syncWithStorage();
+                  });
+
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ $selectedBroker Demat ($cid) connected and active in Copy Trading!'),
+                      backgroundColor: const Color(0xFF059669),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_rounded, size: 16),
+                label: const Text('Save & Connect Demat', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildFollowerAccountsTab(List<Map<String, dynamic>> groups) {
     return AnimatedBuilder(
       animation: CopyTradingEngine(),
@@ -1409,9 +1741,22 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     ),
                   ),
 
-                  // Action Buttons: Test Order & Square-Off
+                  // Action Buttons: Add Broker, Test Order & Square-Off
                   Row(
                     children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _openAddBrokerAccountDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1D4ED8),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 1,
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add Broker Demat', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: () => _openQuickCopyTestDialog(context, side: 'BUY'),
                         style: ElevatedButton.styleFrom(
@@ -1579,164 +1924,230 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
                   ),
                   Text(
-                    'Pooled Margin: ₹${(children.length * 1000000).toStringAsFixed(0)} • Latency: < 25ms',
+                    children.isNotEmpty
+                        ? 'Pooled Margin: ₹${(children.length * 1000000).toStringAsFixed(0)} • Latency: < 25ms'
+                        : 'No follower accounts connected',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
 
-              // Child Accounts Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.85,
-                ),
-                itemCount: children.length,
-                itemBuilder: (ctx, idx) {
-                  final child = children[idx];
-                  final isChildActive = child.isActive && isGlobalActive;
-
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isChildActive ? const Color(0xFFE2E8F0) : Colors.red.shade100,
-                        width: 1.2,
+              if (children.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withOpacity(0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.hub_outlined, size: 36, color: Color(0xFF059669)),
                       ),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Top row: Broker badge, Status, and Active Switch
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                child.broker,
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isChildActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                isChildActive ? 'MIRRORING 🟢' : 'PAUSED ⏸️',
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: isChildActive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'No Follower Demats Linked Yet',
+                        style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1F2937)),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Link Motilal Oswal, Zerodha, Dhan, Upstox, or any broker Demat to mirror trades from your Master account automatically.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 18),
+                      ElevatedButton.icon(
+                        onPressed: () => _openAddBrokerAccountDialog(context),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add Follower Demat Account', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.85,
+                  ),
+                  itemCount: children.length,
+                  itemBuilder: (ctx, idx) {
+                    final child = children[idx];
+                    final isChildActive = child.isActive && isGlobalActive;
+
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isChildActive ? const Color(0xFFE2E8F0) : Colors.red.shade100,
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top row: Broker badge, Status, and Active Switch
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  child.broker,
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
                                 ),
                               ),
-                            ),
-                            const Spacer(),
-                            Switch(
-                              value: child.isActive,
-                              activeColor: const Color(0xFF059669),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              onChanged: (val) {
-                                engine.toggleChildActive(child.clientId, val);
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Name & Client ID
-                        Text(
-                          child.name,
-                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
-                        ),
-                        Text(
-                          'ID: ${child.clientId} • Orders: ${child.totalCopiedOrders} • Latency: ${child.lastLatencyMs}ms',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                        ),
-                        const Spacer(),
-
-                        // Multiplier and Mode Selectors
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Multiplier Selector
-                              Row(
-                                children: [
-                                  const Text('Multiplier: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
-                                  DropdownButton<double>(
-                                    value: child.multiplier,
-                                    isDense: true,
-                                    underline: const SizedBox(),
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
-                                    items: [0.5, 1.0, 1.5, 2.0, 3.0].map((m) {
-                                      return DropdownMenuItem<double>(
-                                        value: m,
-                                        child: Text('${m}x'),
-                                      );
-                                    }).toList(),
-                                    onChanged: (newM) {
-                                      if (newM != null) {
-                                        engine.updateChildMultiplier(child.clientId, newM);
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-
-                              // Sizing / Mode Tag
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
+                                  color: isChildActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  child.copyMode,
-                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                                  isChildActive ? 'MIRRORING 🟢' : 'PAUSED ⏸️',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isChildActive ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                  ),
                                 ),
                               ),
-
-                              // Make Master Quick Action
-                              InkWell(
-                                onTap: () {
-                                  engine.setMasterAccount(child.clientId);
+                              const Spacer(),
+                              Switch(
+                                value: child.isActive,
+                                activeColor: const Color(0xFF059669),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                onChanged: (val) {
+                                  engine.toggleChildActive(child.clientId, val);
                                 },
-                                child: const Text(
-                                  'Make Master',
-                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669), decoration: TextDecoration.underline),
-                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                          const SizedBox(height: 8),
+
+                          // Name & Client ID
+                          Text(
+                            child.name,
+                            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                          ),
+                          Text(
+                            'ID: ${child.clientId} • Orders: ${child.totalCopiedOrders} • Latency: ${child.lastLatencyMs}ms',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          ),
+                          const Spacer(),
+
+                          // Multiplier and Mode Selectors
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Multiplier Selector
+                                Row(
+                                  children: [
+                                    const Text('Multiplier: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                                    DropdownButton<double>(
+                                      value: child.multiplier,
+                                      isDense: true,
+                                      underline: const SizedBox(),
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                                      items: [0.5, 1.0, 1.5, 2.0, 3.0].map((m) {
+                                        return DropdownMenuItem<double>(
+                                          value: m,
+                                          child: Text('${m}x'),
+                                        );
+                                      }).toList(),
+                                      onChanged: (newM) {
+                                        if (newM != null) {
+                                          engine.updateChildMultiplier(child.clientId, newM);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+
+                                // Sizing / Mode Tag
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    child.copyMode,
+                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                                  ),
+                                ),
+
+                                // Make Master Quick Action
+                                InkWell(
+                                  onTap: () {
+                                    engine.setMasterAccount(child.clientId);
+                                  },
+                                  child: const Text(
+                                    'Make Master',
+                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669), decoration: TextDecoration.underline),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 4),
+
+                                // Delete Account
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _tradingAccountsHierarchy.removeWhere((a) =>
+                                          (a['loginId'] ?? a['code'] ?? a['clientId']).toString().trim().toUpperCase() == child.clientId.trim().toUpperCase());
+                                      _saveTradingAccountsToStorage();
+                                      CopyTradingEngine().syncWithStorage();
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Removed ${child.broker} Demat account (${child.clientId})')),
+                                    );
+                                  },
+                                  child: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         );
