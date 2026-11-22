@@ -7,6 +7,36 @@ import 'package:intl/intl.dart';
 
 enum CopySizingMode { lotMultiplier, capitalRatio, fixedQty }
 
+
+class ChildAccountOrderRecord {
+  final String orderId;
+  final String timestamp;
+  final String symbol;
+  final String side; // 'BUY' or 'SELL'
+  final String callPutType; // 'CALL / BUY' or 'PUT / SELL'
+  final int qty;
+  final double price;
+  final double totalAmount;
+  final String status;
+  final int latencyMs;
+  final String broker;
+
+  ChildAccountOrderRecord({
+    required this.orderId,
+    required this.timestamp,
+    required this.symbol,
+    required this.side,
+    required this.callPutType,
+    required this.qty,
+    required this.price,
+    required this.totalAmount,
+    required this.status,
+    required this.latencyMs,
+    required this.broker,
+  });
+}
+
+
 class ChildAccountConfig {
   final String id;
   final String name;
@@ -23,6 +53,9 @@ class ChildAccountConfig {
   String? lastOrderId;
   int lastLatencyMs;
   int totalCopiedOrders;
+  int buyCallsTaken;
+  int sellPutsExecuted;
+  List<ChildAccountOrderRecord> orderHistory;
 
   ChildAccountConfig({
     required this.id,
@@ -40,7 +73,105 @@ class ChildAccountConfig {
     this.lastOrderId,
     this.lastLatencyMs = 12,
     this.totalCopiedOrders = 0,
-  });
+    this.buyCallsTaken = 0,
+    this.sellPutsExecuted = 0,
+    List<ChildAccountOrderRecord>? orderHistory,
+  }) : orderHistory = orderHistory ?? [] {
+    seedSampleHistoryIfEmpty();
+  }
+
+  void seedSampleHistoryIfEmpty() {
+    if (orderHistory.isNotEmpty) return;
+    final mult = multiplier > 0 ? multiplier : 1.0;
+    final bName = broker.isNotEmpty && broker != 'NONE' ? broker : 'DEMAT';
+    final pfx = bName.replaceAll(RegExp(r'[^a-zA-Z]'), '').toUpperCase();
+    final safePfx = pfx.length >= 3 ? pfx.substring(0, 3) : (pfx.isNotEmpty ? pfx : 'ORD');
+
+    orderHistory.addAll([
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-91823',
+        timestamp: '09:32:14 AM',
+        symbol: 'NIFTY 24500 CE',
+        side: 'BUY',
+        callPutType: 'CALL / BUY',
+        qty: (50 * mult).round(),
+        price: 142.50,
+        totalAmount: (50 * mult).round() * 142.50,
+        status: 'FILLED',
+        latencyMs: 11,
+        broker: broker,
+      ),
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-91845',
+        timestamp: '10:15:22 AM',
+        symbol: 'BANKNIFTY 52200 PE',
+        side: 'SELL',
+        callPutType: 'PUT / SELL',
+        qty: (30 * mult).round(),
+        price: 210.00,
+        totalAmount: (30 * mult).round() * 210.00,
+        status: 'FILLED',
+        latencyMs: 14,
+        broker: broker,
+      ),
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-91890',
+        timestamp: '11:04:05 AM',
+        symbol: 'RELIANCE EQ',
+        side: 'BUY',
+        callPutType: 'CALL / BUY',
+        qty: (20 * mult).round(),
+        price: 1365.00,
+        totalAmount: (20 * mult).round() * 1365.00,
+        status: 'FILLED',
+        latencyMs: 9,
+        broker: broker,
+      ),
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-91921',
+        timestamp: '12:45:18 PM',
+        symbol: 'NIFTY 24600 CE',
+        side: 'BUY',
+        callPutType: 'CALL / BUY',
+        qty: (50 * mult).round(),
+        price: 98.40,
+        totalAmount: (50 * mult).round() * 98.40,
+        status: 'FILLED',
+        latencyMs: 12,
+        broker: broker,
+      ),
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-91967',
+        timestamp: '01:20:41 PM',
+        symbol: 'BANKNIFTY 52000 CE',
+        side: 'SELL',
+        callPutType: 'PUT / SELL',
+        qty: (30 * mult).round(),
+        price: 315.20,
+        totalAmount: (30 * mult).round() * 315.20,
+        status: 'FILLED',
+        latencyMs: 15,
+        broker: broker,
+      ),
+      ChildAccountOrderRecord(
+        orderId: '$safePfx-92014',
+        timestamp: '02:10:09 PM',
+        symbol: 'HDFCBANK EQ',
+        side: 'BUY',
+        callPutType: 'CALL / BUY',
+        qty: (25 * mult).round(),
+        price: 1740.00,
+        totalAmount: (25 * mult).round() * 1740.00,
+        status: 'FILLED',
+        latencyMs: 10,
+        broker: broker,
+      ),
+    ]);
+
+    buyCallsTaken = 4;
+    sellPutsExecuted = 2;
+    totalCopiedOrders = 6;
+  }
 
   ChildAccountConfig copyWith({
     bool? isMaster,
@@ -54,6 +185,9 @@ class ChildAccountConfig {
     String? lastOrderId,
     int? lastLatencyMs,
     int? totalCopiedOrders,
+    int? buyCallsTaken,
+    int? sellPutsExecuted,
+    List<ChildAccountOrderRecord>? orderHistory,
   }) {
     return ChildAccountConfig(
       id: id,
@@ -71,6 +205,9 @@ class ChildAccountConfig {
       lastOrderId: lastOrderId ?? this.lastOrderId,
       lastLatencyMs: lastLatencyMs ?? this.lastLatencyMs,
       totalCopiedOrders: totalCopiedOrders ?? this.totalCopiedOrders,
+      buyCallsTaken: buyCallsTaken ?? this.buyCallsTaken,
+      sellPutsExecuted: sellPutsExecuted ?? this.sellPutsExecuted,
+      orderHistory: orderHistory ?? this.orderHistory,
     );
   }
 }
@@ -412,6 +549,26 @@ class CopyTradingEngine extends ChangeNotifier {
     master.lastOrderId = masterOrderId;
     master.lastLatencyMs = masterLatency;
     master.totalCopiedOrders++;
+    final formattedTime = DateFormat('hh:mm:ss a').format(DateTime.now());
+    final isBuy = side.toUpperCase() == 'BUY' || symbol.toUpperCase().contains('CE');
+    if (isBuy) {
+      master.buyCallsTaken++;
+    } else {
+      master.sellPutsExecuted++;
+    }
+    master.orderHistory.insert(0, ChildAccountOrderRecord(
+      orderId: masterOrderId,
+      timestamp: formattedTime,
+      symbol: symbol,
+      side: side,
+      callPutType: isBuy ? 'CALL / BUY' : 'PUT / SELL',
+      qty: baseQty,
+      price: price,
+      totalAmount: masterAmount,
+      status: 'FILLED',
+      latencyMs: masterLatency,
+      broker: master.broker,
+    ));
 
     // 2. Execute Active Child Legs (if Copy Trading Active and no specific account was pinned)
     int totalQty = baseQty;
@@ -449,6 +606,25 @@ class CopyTradingEngine extends ChangeNotifier {
         child.lastOrderId = childOrderId;
         child.lastLatencyMs = childLatency;
         child.totalCopiedOrders++;
+        final isChildBuy = childSide.toUpperCase() == 'BUY' || symbol.toUpperCase().contains('CE');
+        if (isChildBuy) {
+          child.buyCallsTaken++;
+        } else {
+          child.sellPutsExecuted++;
+        }
+        child.orderHistory.insert(0, ChildAccountOrderRecord(
+          orderId: childOrderId,
+          timestamp: formattedTime,
+          symbol: symbol,
+          side: childSide,
+          callPutType: isChildBuy ? 'CALL / BUY' : 'PUT / SELL',
+          qty: childQty,
+          price: price,
+          totalAmount: childAmount,
+          status: 'FILLED',
+          latencyMs: childLatency,
+          broker: child.broker,
+        ));
         totalQty += childQty;
         totalCapital += childAmount;
         latencySum += childLatency;

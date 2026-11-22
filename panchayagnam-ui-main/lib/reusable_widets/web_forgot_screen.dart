@@ -117,7 +117,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                     ? 'Reset OTP ready & auto-filled: $extractedOtp'
                     : state.message,
               ),
-              backgroundColor: const Color(0xFF7C3AED),
+              backgroundColor: const Color(0xFF059669),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
@@ -193,12 +193,12 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
+                              color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
                               Icons.smartphone_outlined,
-                              color: Color(0xFF7C3AED),
+                              color: Color(0xFF059669),
                               size: 24,
                             ),
                           ),
@@ -210,7 +210,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E1B4B),
+                              color: Color(0xFF0F172A),
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -236,7 +236,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                               LengthLimitingTextInputFormatter(10),
                             ],
                             style: const TextStyle(
-                                fontSize: 14, color: Color(0xFF1E1B4B)),
+                                fontSize: 14, color: Color(0xFF0F172A)),
                             decoration: _inputDecoration(
                               hint: 'Enter your phone number',
                               icon: Icons.phone_outlined,
@@ -264,7 +264,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                     height: 14,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Color(0xFF7C3AED),
+                                      color: Color(0xFF059669),
                                     ),
                                   ),
                                 )
@@ -276,14 +276,14 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                       const Icon(
                                         Icons.timer_outlined,
                                         size: 14,
-                                        color: Color(0xFF7C3AED),
+                                        color: Color(0xFF059669),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Resend in $_timerLabel',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: Color(0xFF7C3AED),
+                                          color: Color(0xFF059669),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -296,12 +296,12 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                     icon: const Icon(
                                       Icons.refresh_rounded,
                                       size: 15,
-                                      color: Color(0xFF7C3AED),
+                                      color: Color(0xFF059669),
                                     ),
                                     label: const Text(
                                       'Resend OTP',
                                       style: TextStyle(
-                                        color: Color(0xFF7C3AED),
+                                        color: Color(0xFF059669),
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
                                       ),
@@ -318,14 +318,14 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                       Icons.sms_outlined,
                                       size: 15,
                                       color: _phoneValid
-                                          ? const Color(0xFF7C3AED)
+                                          ? const Color(0xFF059669)
                                           : const Color(0xFF9CA3AF),
                                     ),
                                     label: Text(
                                       'Send OTP',
                                       style: TextStyle(
                                         color: _phoneValid
-                                            ? const Color(0xFF7C3AED)
+                                            ? const Color(0xFF059669)
                                             : const Color(0xFF9CA3AF),
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -333,10 +333,10 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                                     ),
                                     style: TextButton.styleFrom(
                                       foregroundColor: _phoneValid
-                                          ? const Color(0xFF7C3AED)
+                                          ? const Color(0xFF059669)
                                           : const Color(0xFF9CA3AF),
                                       backgroundColor: _phoneValid
-                                          ? const Color(0xFFEDE9FE)
+                                          ? const Color(0xFFECFDF5)
                                           : const Color(0xFFF3F4F6),
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 6),
@@ -357,7 +357,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
           );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F0FB),
+      backgroundColor: const Color(0xFFF0FDF4),
       body: isMobile
           ? SafeArea(
               child: SingleChildScrollView(
@@ -369,7 +369,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                           horizontal: 20, vertical: 18),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                          colors: [Color(0xFF059669), Color(0xFF022C22)],
                         ),
                       ),
                       child: const Column(
@@ -387,7 +387,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
                           Text(
                             'Reset your 4-digit trading MPIN',
                             style: TextStyle(
-                              color: Color(0xFFEDE9FE),
+                              color: Color(0xFFECFDF5),
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
                             ),
@@ -426,7 +426,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
       hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
       suffixIcon: Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
       filled: true,
-      fillColor: const Color(0xFFFAF9FF),
+      fillColor: const Color(0xFFF8FAFC),
       contentPadding:
       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
@@ -437,7 +437,7 @@ class _WebForgotMpinScreenState extends State<WebForgotMpinScreen> {
           borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 1.5)),
+          borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFEF4444))),
@@ -461,9 +461,9 @@ class _LeftPanel extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF7C3AED),
-                Color(0xFF5B21B6),
-                Color(0xFF4C1D95)
+                Color(0xFF059669),
+                Color(0xFF065F46),
+                Color(0xFF022C22)
               ],
               stops: [0.0, 0.55, 1.0],
             ),
@@ -499,7 +499,7 @@ class _LeftPanel extends StatelessWidget {
                         TextSpan(
                             text: 'YAGNAM',
                             style: TextStyle(
-                                color: Color(0xFFDDD6FE),
+                                color: Color(0xFFA7F3D0),
                                 fontWeight: FontWeight.w300)),
                       ],
                     ),
@@ -519,7 +519,7 @@ class _LeftPanel extends StatelessWidget {
               const Text(
                 'Your account is protected with\na 4–6 digit MPIN for quick, secure access.',
                 style: TextStyle(
-                    color: Color(0xFFC4B5FD), fontSize: 14, height: 1.8),
+                    color: Color(0xFFD1FAE5), fontSize: 14, height: 1.8),
               ),
               const SizedBox(height: 40),
               _step(Icons.smartphone_outlined, 'Enter your phone number'),
@@ -545,11 +545,11 @@ class _LeftPanel extends StatelessWidget {
             color: Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: const Color(0xFFDDD6FE), size: 18),
+          child: Icon(icon, color: const Color(0xFFA7F3D0), size: 18),
         ),
         const SizedBox(width: 14),
         Text(label,
-            style: const TextStyle(color: Color(0xFFEDE9FE), fontSize: 14)),
+            style: const TextStyle(color: Color(0xFFECFDF5), fontSize: 14)),
       ],
     );
   }

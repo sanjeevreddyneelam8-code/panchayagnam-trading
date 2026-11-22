@@ -269,16 +269,11 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 2. Parent Children Trading (2nd side heading)
+      // 2. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
       const _NavItem(
-        icon: Icons.content_copy_rounded,
+        icon: Icons.hub_rounded,
         label: 'Parent Children Trading',
-        type: _NavItemType.group,
-        children: [
-          _SubNavItem(icon: Icons.account_balance_rounded, label: 'Trading Accounts'),
-          _SubNavItem(icon: Icons.group_work_rounded, label: 'Group Accounts'),
-          _SubNavItem(icon: Icons.star_rounded, label: 'Master Accounts'),
-        ],
+        type: _NavItemType.normal,
       ),
 
       // 3. Trading Markets (Main side heading with Cash, Futures, and Options separate)
@@ -376,17 +371,8 @@ class _MainDashboardState extends State<MainDashboard> {
             return const AlgoStrategiesView();
         }
 
-      case 1: // 2. Parent Children Trading
-        switch (subIdx) {
-          case 0:
-            return const GroupOrdersTab(initialHierarchyIndex: 0);
-          case 1:
-            return const GroupOrdersTab(initialHierarchyIndex: 1);
-          case 2:
-            return const GroupOrdersTab(initialHierarchyIndex: 2);
-          default:
-            return const GroupOrdersTab(initialHierarchyIndex: 0);
-        }
+      case 1: // 2. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
+        return const GroupOrdersTab(initialHierarchyIndex: 0);
 
       case 2: // 3. Trading Markets (Main side heading with Cash, Futures, and Options separate)
         switch (subIdx) {

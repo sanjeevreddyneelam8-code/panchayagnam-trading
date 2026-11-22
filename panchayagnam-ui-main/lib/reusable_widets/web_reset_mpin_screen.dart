@@ -128,12 +128,12 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
+                              color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
                               Icons.lock_reset_outlined,
-                              color: Color(0xFF7C3AED),
+                              color: Color(0xFF059669),
                               size: 24,
                             ),
                           ),
@@ -144,7 +144,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E1B4B),
+                              color: Color(0xFF0F172A),
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -160,7 +160,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                                 TextSpan(
                                   text: maskedPhone,
                                   style: const TextStyle(
-                                    color: Color(0xFF1E1B4B),
+                                    color: Color(0xFF0F172A),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -182,7 +182,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                             ],
                             style: const TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF1E1B4B),
+                                color: Color(0xFF0F172A),
                                 letterSpacing: 4,
                                 fontWeight: FontWeight.w700),
                             decoration: _inputDecoration(
@@ -205,10 +205,10 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 7),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEDE9FE),
+                                color: const Color(0xFFECFDF5),
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFC4B5FD)),
+                                    Border.all(color: const Color(0xFFD1FAE5)),
                               ),
                               child: Row(
                                 children: [
@@ -220,7 +220,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                                       'Verification OTP auto-filled: ${widget.initialOtp} (SMS Gateway in Trial Mode)',
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF5B21B6),
+                                        color: Color(0xFF065F46),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -244,7 +244,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                               LengthLimitingTextInputFormatter(4),
                             ],
                             style: const TextStyle(
-                                fontSize: 14, color: Color(0xFF1E1B4B)),
+                                fontSize: 14, color: Color(0xFF0F172A)),
                             decoration: _inputDecoration(
                               hint: 'Enter new 4-digit MPIN',
                               icon: _obscureMpin
@@ -278,7 +278,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                               LengthLimitingTextInputFormatter(4),
                             ],
                             style: const TextStyle(
-                                fontSize: 14, color: Color(0xFF1E1B4B)),
+                                fontSize: 14, color: Color(0xFF0F172A)),
                             decoration: _inputDecoration(
                               hint: 'Re-enter 4-digit MPIN',
                               icon: _obscureConfirm
@@ -350,7 +350,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
           );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F0FB),
+      backgroundColor: const Color(0xFFF0FDF4),
       body: isMobile
           ? SafeArea(
               child: SingleChildScrollView(
@@ -362,7 +362,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                           horizontal: 20, vertical: 18),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                          colors: [Color(0xFF059669), Color(0xFF022C22)],
                         ),
                       ),
                       child: const Column(
@@ -380,7 +380,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
                           Text(
                             'Create your new 4-digit trading MPIN',
                             style: TextStyle(
-                              color: Color(0xFFEDE9FE),
+                              color: Color(0xFFECFDF5),
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
                             ),
@@ -425,7 +425,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
         child: Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
       ),
       filled: true,
-      fillColor: const Color(0xFFFAF9FF),
+      fillColor: const Color(0xFFF8FAFC),
       contentPadding:
       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
@@ -437,7 +437,7 @@ class _WebResetMpinScreenState extends State<WebResetMpinScreen> {
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-          const BorderSide(color: Color(0xFF7C3AED), width: 1.5)),
+          const BorderSide(color: Color(0xFF059669), width: 1.5)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFEF4444))),
@@ -460,7 +460,7 @@ class _LeftPanel extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF7C3AED), Color(0xFF5B21B6), Color(0xFF4C1D95)],
+              colors: [Color(0xFF059669), Color(0xFF065F46), Color(0xFF022C22)],
               stops: [0.0, 0.55, 1.0],
             ),
           ),
@@ -495,7 +495,7 @@ class _LeftPanel extends StatelessWidget {
                         TextSpan(
                             text: 'YAGNAM',
                             style: TextStyle(
-                                color: Color(0xFFDDD6FE),
+                                color: Color(0xFFA7F3D0),
                                 fontWeight: FontWeight.w300)),
                       ],
                     ),
@@ -515,7 +515,7 @@ class _LeftPanel extends StatelessWidget {
               const Text(
                 'Enter the OTP and set your\nnew secure MPIN to regain access.',
                 style: TextStyle(
-                    color: Color(0xFFC4B5FD), fontSize: 14, height: 1.8),
+                    color: Color(0xFFD1FAE5), fontSize: 14, height: 1.8),
               ),
               const SizedBox(height: 40),
               _tip(Icons.timer_outlined,
@@ -543,13 +543,13 @@ class _LeftPanel extends StatelessWidget {
             color: Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: const Color(0xFFDDD6FE), size: 18),
+          child: Icon(icon, color: const Color(0xFFA7F3D0), size: 18),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Text(label,
               style: const TextStyle(
-                  color: Color(0xFFEDE9FE), fontSize: 13)),
+                  color: Color(0xFFECFDF5), fontSize: 13)),
         ),
       ],
     );

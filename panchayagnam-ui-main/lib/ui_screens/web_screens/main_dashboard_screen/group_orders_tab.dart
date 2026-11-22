@@ -22,6 +22,7 @@ import '../../../bloc/group_positions_bloc/group_positions_bloc.dart';
 import '../../../bloc/group_positions_bloc/group_positions_event.dart';
 import '../../../bloc/group_positions_bloc/group_positions_state.dart';
 import '../../../constants/colors.dart';
+import '../../../service/theme_mode_service.dart';
 import '../../../app_route/user_session.dart';
 import '../../../service/copy_trading_engine.dart';
 import '../../../service/static_ip_service.dart';
@@ -1752,6 +1753,741 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     );
   }
 
+
+  // ─── CHILD ACCOUNT DETAILED AUDIT & TRADE INSPECTOR ──────────────────────
+  void _openChildAccountDetailDialog(BuildContext context, ChildAccountConfig child, CopyTradingEngine engine) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = ThemeModeService.isDark;
+        final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+        final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+        final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
+        final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 840,
+            height: 680,
+            decoration: BoxDecoration(
+              color: dialogBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderC),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF064E3B), Color(0xFF059669)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '${child.broker} • ${child.name}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: child.isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    child.isActive ? 'ACTIVE FOLLOWER 🟢' : 'PAUSED ⏸️',
+                                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Client ID: ${child.clientId} • Multiplier: ${child.multiplier}x • Mode: ${child.copyMode}',
+                              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // KPI Stat Cards: Calls vs Sells vs Capital
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      // Calls Taken (BUY Orders)
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'CALLS / BUYS TAKEN',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${child.buyCallsTaken} Calls Taken',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Replicated bullish entries', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Sells Executed (SELL Orders / Puts)
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'PUTS / SELLS EXECUTED',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${child.sellPutsExecuted} Sells Executed',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Exits & short replications', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Total Copied Orders & Latency
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.speed_rounded, color: Color(0xFF3B82F6), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'TOTAL ORDERS & LATENCY',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${child.totalCopiedOrders} Orders (${child.lastLatencyMs}ms)',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Margin: ₹${NumberFormat('#,##,###').format(child.balance)}', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table Header Strip
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Complete Trade Audit History (${child.orderHistory.length} Executed Trades)',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: titleC),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('100% Replication Rate 🟢', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table Rows
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: tableBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderC),
+                    ),
+                    child: child.orderHistory.isEmpty
+                        ? Center(child: Text('No trades executed yet for this child account.', style: TextStyle(color: subC)))
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(10),
+                            itemCount: child.orderHistory.length,
+                            separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
+                            itemBuilder: (ctx, i) {
+                              final ord = child.orderHistory[i];
+                              final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                child: Row(
+                                  children: [
+                                    // Timestamp
+                                    SizedBox(
+                                      width: 85,
+                                      child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                    ),
+
+                                    // Action Badge (BUY / CALL vs SELL / PUT)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                      ),
+                                      child: Text(
+                                        ord.callPutType,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+
+                                    // Instrument Symbol
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        ord.symbol,
+                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC),
+                                      ),
+                                    ),
+
+                                    // Qty
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        '${ord.qty} Qty',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC),
+                                      ),
+                                    ),
+
+                                    // Price
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        '₹${ord.price.toStringAsFixed(2)}',
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC),
+                                      ),
+                                    ),
+
+                                    // Total Amount
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        '₹${NumberFormat('#,##,###').format(ord.totalAmount)}',
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+
+                                    // Order ID & Status
+                                    SizedBox(
+                                      width: 120,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            ord.orderId,
+                                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              const Text('FILLED 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                              Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+
+                // Footer Actions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text('Account State: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                          Text(
+                            child.isActive ? 'Active Mirroring' : 'Paused',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: child.isActive ? const Color(0xFF059669) : Colors.red),
+                          ),
+                        ],
+                      ),
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Close Trade Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── MASTER LEADER ACCOUNT DETAILED AUDIT & ADD CHILD MODAL ───────────────
+  void _openMasterAccountDetailDialog(BuildContext context, ChildAccountConfig master, CopyTradingEngine engine) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = ThemeModeService.isDark;
+        final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+        final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+        final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
+        final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 860,
+            height: 690,
+            decoration: BoxDecoration(
+              color: dialogBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderC),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF064E3B), Color(0xFF059669)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '${master.broker} • ${master.name}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF3C7),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'PARENT / MASTER LEADER',
+                                    style: TextStyle(color: Color(0xFF92400E), fontSize: 10.5, fontWeight: FontWeight.w900),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Client ID: ${master.clientId} • Broadcasting to ${engine.childAccounts.length} Connected Child Demats',
+                              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // + Add Child Button right inside Master Account modal!
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openAddBrokerAccountDialog(context);
+                        },
+                        icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                        label: const Text('+ Add Child Demat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 2,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Master KPI Summary Cards: Calls vs Sells vs Broadcast
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      // Master Calls Taken
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'MASTER CALLS / BUYS',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${master.buyCallsTaken} Calls Taken',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Broadcasted to all children', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Master Sells Executed
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'MASTER SELLS / PUTS',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${master.sellPutsExecuted} Sells Executed',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Exit & short cascade orders', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Followers & Pooled Margin
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.hub_rounded, color: Color(0xFF3B82F6), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'CONNECTED FOLLOWER CHILDS',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${engine.childAccounts.length} Child Demats Active',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Pooled Margin: ₹${NumberFormat('#,##,###').format(engine.pooledCapital)}', style: TextStyle(fontSize: 10.5, color: subC)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Master Signal Broadcasting History (${master.orderHistory.length} Trades)',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: titleC),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openAddBrokerAccountDialog(context);
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 14),
+                        label: const Text('+ Add Another Child', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Orders Table
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: tableBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderC),
+                    ),
+                    child: master.orderHistory.isEmpty
+                        ? Center(child: Text('No trades broadcasted yet.', style: TextStyle(color: subC)))
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(10),
+                            itemCount: master.orderHistory.length,
+                            separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
+                            itemBuilder: (ctx, i) {
+                              final ord = master.orderHistory[i];
+                              final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 85,
+                                      child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                      ),
+                                      child: Text(
+                                        ord.callPutType,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(ord.symbol, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC)),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text('${ord.qty} Qty', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text('₹${ord.price.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text('₹${NumberFormat('#,##,###').format(ord.totalAmount)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(ord.orderId, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              const Text('MASTER 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                              Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+
+                // Footer
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Broadcasting Engine: ACTIVE (Zero Delay Cascade)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Close Master Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFollowerAccountsTab(List<Map<String, dynamic>> groups) {
     return AnimatedBuilder(
       animation: CopyTradingEngine(),
@@ -2047,6 +2783,39 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                       ),
                     ),
 
+                    // Action: + Add Child
+                    ElevatedButton.icon(
+                      onPressed: () => _openAddBrokerAccountDialog(context),
+                      icon: const Icon(Icons.person_add_alt_1_rounded, size: 15),
+                      label: const Text('+ Add Child', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Action: Master Trades & Audit Dialog
+                    ElevatedButton.icon(
+                      onPressed: () => _openMasterAccountDetailDialog(context, master, engine),
+                      icon: const Icon(Icons.query_stats_rounded, size: 15),
+                      label: const Text('Master Trades', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.20),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: Colors.white38),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
                     // Change Master Dropdown
                     PopupMenuButton<String>(
                       tooltip: 'Change Master Account',
@@ -2173,26 +2942,36 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 1.85,
+                    childAspectRatio: 1.62,
                   ),
                   itemCount: children.length,
                   itemBuilder: (ctx, idx) {
                     final child = children[idx];
                     final isChildActive = child.isActive && isGlobalActive;
+                    final isDark = ThemeModeService.isDark;
+                    final cardColor = isDark ? const Color(0xFF111827) : Colors.white;
+                    final textColor = isDark ? Colors.white : const Color(0xFF111827);
+                    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+                    final borderColor = isChildActive
+                        ? (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
+                        : Colors.red.shade200;
 
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isChildActive ? const Color(0xFFE2E8F0) : Colors.red.shade100,
-                          width: 1.2,
+                    return InkWell(
+                      onTap: () => _openChildAccountDetailDialog(context, child, engine),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: borderColor,
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                        ],
-                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -2329,8 +3108,47 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                               ],
                             ),
                           ),
+                          const SizedBox(height: 8),
+
+                          // Live Trade Breakdown & Detailed Audit Button
+                          InkWell(
+                            onTap: () => _openChildAccountDetailDialog(context, child, engine),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF059669).withOpacity(0.25)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.insights_rounded, size: 13, color: Color(0xFF10B981)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Calls Taken: ${child.buyCallsTaken}  •  Sells: ${child.sellPutsExecuted}',
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857)),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'View Trades ➔',
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
+                    ),
                     );
                   },
                 ),
