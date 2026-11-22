@@ -1759,730 +1759,1070 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     showDialog(
       context: context,
       builder: (ctx) {
-        final isDark = ThemeModeService.isDark;
-        final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-        final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-        final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
-        final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-        final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+        String filterMode = 'ALL'; // 'ALL', 'CALLS', 'SELLS'
 
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 840,
-            height: 680,
-            decoration: BoxDecoration(
-              color: dialogBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: borderC),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header Banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF064E3B), Color(0xFF059669)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${child.broker} • ${child.name}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
-                                ),
-                                const SizedBox(width: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: child.isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    child.isActive ? 'ACTIVE FOLLOWER 🟢' : 'PAUSED ⏸️',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Client ID: ${child.clientId} • Multiplier: ${child.multiplier}x • Mode: ${child.copyMode}',
-                              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final isDark = ThemeModeService.isDark;
+            final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+            final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+            final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
+            final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+            final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+
+            final allOrders = child.orderHistory;
+            final filteredOrders = filterMode == 'CALLS'
+                ? allOrders.where((ord) => ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY') || ord.callPutType.contains('CALL')).toList()
+                : filterMode == 'SELLS'
+                    ? allOrders.where((ord) => ord.side.toUpperCase() == 'SELL' || ord.callPutType.contains('SELL') || ord.callPutType.contains('PUT')).toList()
+                    : allOrders;
+
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 860,
+                height: 690,
+                decoration: BoxDecoration(
+                  color: dialogBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderC),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
+                  ],
                 ),
-
-                // KPI Stat Cards: Calls vs Sells vs Capital
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Row(
-                    children: [
-                      // Calls Taken (BUY Orders)
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'CALLS / BUYS TAKEN',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${child.buyCallsTaken} Calls Taken',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Replicated bullish entries', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
+                child: Column(
+                  children: [
+                    // Header Banner
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF064E3B), Color(0xFF059669)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       ),
-                      const SizedBox(width: 12),
-
-                      // Sells Executed (SELL Orders / Puts)
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'PUTS / SELLS EXECUTED',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${child.sellPutsExecuted} Sells Executed',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Exits & short replications', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Total Copied Orders & Latency
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.speed_rounded, color: Color(0xFF3B82F6), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'TOTAL ORDERS & LATENCY',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${child.totalCopiedOrders} Orders (${child.lastLatencyMs}ms)',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Margin: ₹${NumberFormat('#,##,###').format(child.balance)}', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Table Header Strip
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Complete Trade Audit History (${child.orderHistory.length} Executed Trades)',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: titleC),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text('100% Replication Rate 🟢', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Table Rows
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: tableBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderC),
-                    ),
-                    child: child.orderHistory.isEmpty
-                        ? Center(child: Text('No trades executed yet for this child account.', style: TextStyle(color: subC)))
-                        : ListView.separated(
+                      child: Row(
+                        children: [
+                          Container(
                             padding: const EdgeInsets.all(10),
-                            itemCount: child.orderHistory.length,
-                            separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
-                            itemBuilder: (ctx, i) {
-                              final ord = child.orderHistory[i];
-                              final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                child: Row(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    // Timestamp
-                                    SizedBox(
-                                      width: 85,
-                                      child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                    Text(
+                                      '${child.broker} • ${child.name}',
+                                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                                     ),
-
-                                    // Action Badge (BUY / CALL vs SELL / PUT)
+                                    const SizedBox(width: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                        color: child.isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        ord.callPutType,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-
-                                    // Instrument Symbol
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        ord.symbol,
-                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC),
-                                      ),
-                                    ),
-
-                                    // Qty
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        '${ord.qty} Qty',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC),
-                                      ),
-                                    ),
-
-                                    // Price
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        '₹${ord.price.toStringAsFixed(2)}',
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC),
-                                      ),
-                                    ),
-
-                                    // Total Amount
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        '₹${NumberFormat('#,##,###').format(ord.totalAmount)}',
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-
-                                    // Order ID & Status
-                                    SizedBox(
-                                      width: 120,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            ord.orderId,
-                                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
-                                            children: [
-                                              const Text('FILLED 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
-                                              Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
-                                            ],
-                                          ),
-                                        ],
+                                        child.isActive ? 'ACTIVE FOLLOWER 🟢' : 'PAUSED ⏸️',
+                                        style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
                                 ),
-                              );
-                            },
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Client ID: ${child.clientId} • Multiplier: ${child.multiplier}x • Mode: ${child.copyMode}',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                                ),
+                              ],
+                            ),
                           ),
-                  ),
-                ),
-
-                // Footer Actions
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text('Account State: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
-                          Text(
-                            child.isActive ? 'Active Mirroring' : 'Paused',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: child.isActive ? const Color(0xFF059669) : Colors.red),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.white),
+                            onPressed: () => Navigator.pop(ctx),
                           ),
                         ],
                       ),
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Close Trade Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+
+                    // Interactive KPI Stat Cards: Calls vs Sells vs Capital
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                      child: Row(
+                        children: [
+                          // Calls Taken (BUY Orders)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setDialogState(() => filterMode = filterMode == 'CALLS' ? 'ALL' : 'CALLS'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'CALLS'
+                                      ? const Color(0xFF059669).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'CALLS' ? const Color(0xFF10B981) : const Color(0xFF059669).withOpacity(0.3),
+                                    width: filterMode == 'CALLS' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'CALLS'
+                                      ? [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'CALLS / BUYS TAKEN',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'CALLS')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFF059669), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${child.buyCallsTaken} Calls Taken',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Click to view only BUY/CALL orders', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Sells Executed (SELL Orders / Puts)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setDialogState(() => filterMode = filterMode == 'SELLS' ? 'ALL' : 'SELLS'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'SELLS'
+                                      ? const Color(0xFFDC2626).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'SELLS' ? const Color(0xFFEF4444) : const Color(0xFFDC2626).withOpacity(0.3),
+                                    width: filterMode == 'SELLS' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'SELLS'
+                                      ? [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'PUTS / SELLS EXECUTED',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'SELLS')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFFDC2626), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${child.sellPutsExecuted} Sells Executed',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Click to view only SELL/PUT orders', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Total Copied Orders & Latency
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setDialogState(() => filterMode = 'ALL'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'ALL'
+                                      ? const Color(0xFF2563EB).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'ALL' ? const Color(0xFF3B82F6) : const Color(0xFF2563EB).withOpacity(0.3),
+                                    width: filterMode == 'ALL' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'ALL'
+                                      ? [BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.speed_rounded, color: Color(0xFF3B82F6), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'TOTAL ORDERS & LATENCY',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'ALL')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('ALL TRADES', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${child.totalCopiedOrders} Orders (${child.lastLatencyMs}ms)',
+                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Margin: ₹${NumberFormat('#,##,###').format(child.balance)}', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Table Header Strip
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              ChoiceChip(
+                                label: Text(
+                                  'All Trades (${child.orderHistory.length})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'ALL' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'ALL',
+                                selectedColor: const Color(0xFF059669),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'ALL'),
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: Text(
+                                  'Calls / Buys (${child.buyCallsTaken})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'CALLS' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'CALLS',
+                                selectedColor: const Color(0xFF059669),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'CALLS'),
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: Text(
+                                  'Puts / Sells (${child.sellPutsExecuted})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'SELLS' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'SELLS',
+                                selectedColor: const Color(0xFFDC2626),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'SELLS'),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('100% Replication Rate 🟢', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Table Rows
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: tableBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderC),
+                        ),
+                        child: filteredOrders.isEmpty
+                            ? Center(child: Text('No trades found for this filter.', style: TextStyle(color: subC)))
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(10),
+                                itemCount: filteredOrders.length,
+                                separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
+                                itemBuilder: (ctx, i) {
+                                  final ord = filteredOrders[i];
+                                  final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 85,
+                                          child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                            borderRadius: BorderRadius.circular(5),
+                                            border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                          ),
+                                          child: Text(
+                                            ord.callPutType,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w900,
+                                              color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(ord.symbol, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC)),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text('${ord.qty} Qty', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text('₹${ord.price.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text('₹${NumberFormat('#,##,###').format(ord.totalAmount)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        SizedBox(
+                                          width: 110,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text(ord.orderId, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  const Text('COPIED 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                                  Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+
+                    // Footer
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Auto-Replication Engine: 100% Synced (Parent-Driven)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Close Audit Panel', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  // ─── MASTER LEADER ACCOUNT DETAILED AUDIT & ADD CHILD MODAL ───────────────
   void _openMasterAccountDetailDialog(BuildContext context, ChildAccountConfig master, CopyTradingEngine engine) {
     showDialog(
       context: context,
       builder: (ctx) {
-        final isDark = ThemeModeService.isDark;
-        final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-        final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-        final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
-        final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-        final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+        String filterMode = 'ALL'; // 'ALL', 'CALLS', 'SELLS', 'CHILDS'
 
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 860,
-            height: 690,
-            decoration: BoxDecoration(
-              color: dialogBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: borderC),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header Banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF064E3B), Color(0xFF059669)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${master.broker} • ${master.name}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
-                                ),
-                                const SizedBox(width: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEF3C7),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    'PARENT / MASTER LEADER',
-                                    style: TextStyle(color: Color(0xFF92400E), fontSize: 10.5, fontWeight: FontWeight.w900),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Client ID: ${master.clientId} • Broadcasting to ${engine.childAccounts.length} Connected Child Demats',
-                              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final isDark = ThemeModeService.isDark;
+            final dialogBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+            final borderC = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+            final titleC = isDark ? Colors.white : const Color(0xFF0F172A);
+            final subC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+            final tableBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
 
-                      // + Add Child Button right inside Master Account modal!
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _openAddBrokerAccountDialog(context);
-                        },
-                        icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                        label: const Text('+ Add Child Demat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 2,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
+            final allOrders = master.orderHistory;
+            final filteredOrders = filterMode == 'CALLS'
+                ? allOrders.where((ord) => ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY') || ord.callPutType.contains('CALL')).toList()
+                : filterMode == 'SELLS'
+                    ? allOrders.where((ord) => ord.side.toUpperCase() == 'SELL' || ord.callPutType.contains('SELL') || ord.callPutType.contains('PUT')).toList()
+                    : allOrders;
 
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 880,
+                height: 700,
+                decoration: BoxDecoration(
+                  color: dialogBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderC),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 30, offset: const Offset(0, 10)),
+                  ],
                 ),
-
-                // Master KPI Summary Cards: Calls vs Sells vs Broadcast
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Row(
-                    children: [
-                      // Master Calls Taken
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'MASTER CALLS / BUYS',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${master.buyCallsTaken} Calls Taken',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Broadcasted to all children', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
+                child: Column(
+                  children: [
+                    // Header Banner
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF064E3B), Color(0xFF059669)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       ),
-                      const SizedBox(width: 12),
-
-                      // Master Sells Executed
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'MASTER SELLS / PUTS',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${master.sellPutsExecuted} Sells Executed',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Exit & short cascade orders', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Followers & Pooled Margin
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.hub_rounded, color: Color(0xFF3B82F6), size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'CONNECTED FOLLOWER CHILDS',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${engine.childAccounts.length} Child Demats Active',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Pooled Margin: ₹${NumberFormat('#,##,###').format(engine.pooledCapital)}', style: TextStyle(fontSize: 10.5, color: subC)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Table Title
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Master Signal Broadcasting History (${master.orderHistory.length} Trades)',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: titleC),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _openAddBrokerAccountDialog(context);
-                        },
-                        icon: const Icon(Icons.add_rounded, size: 14),
-                        label: const Text('+ Add Another Child', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Orders Table
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: tableBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderC),
-                    ),
-                    child: master.orderHistory.isEmpty
-                        ? Center(child: Text('No trades broadcasted yet.', style: TextStyle(color: subC)))
-                        : ListView.separated(
+                      child: Row(
+                        children: [
+                          Container(
                             padding: const EdgeInsets.all(10),
-                            itemCount: master.orderHistory.length,
-                            separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
-                            itemBuilder: (ctx, i) {
-                              final ord = master.orderHistory[i];
-                              final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                child: Row(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    SizedBox(
-                                      width: 85,
-                                      child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                    Text(
+                                      '${master.broker} • ${master.name}',
+                                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                                     ),
+                                    const SizedBox(width: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                        color: const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(
-                                        ord.callPutType,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(ord.symbol, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC)),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text('${ord.qty} Qty', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text('₹${ord.price.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text('₹${NumberFormat('#,##,###').format(ord.totalAmount)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(ord.orderId, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
-                                            children: [
-                                              const Text('MASTER 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
-                                              Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
-                                            ],
-                                          ),
-                                        ],
+                                      child: const Text(
+                                        'PARENT / MASTER LEADER',
+                                        style: TextStyle(color: Color(0xFF92400E), fontSize: 10.5, fontWeight: FontWeight.w900),
                                       ),
                                     ),
                                   ],
                                 ),
-                              );
-                            },
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Client ID: ${master.clientId} • Broadcasting to ${engine.childAccounts.length} Connected Child Demats',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                                ),
+                              ],
+                            ),
                           ),
-                  ),
-                ),
 
-                // Footer
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Broadcasting Engine: ACTIVE (Zero Delay Cascade)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Close Master Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _openAddBrokerAccountDialog(context);
+                            },
+                            icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                            label: const Text('+ Add Child Demat', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 2,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.white),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Interactive Master KPI Summary Cards: Calls vs Sells vs Connected Childs
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                      child: Row(
+                        children: [
+                          // 1. MASTER CALLS / BUYS (Clickable)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  filterMode = filterMode == 'CALLS' ? 'ALL' : 'CALLS';
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'CALLS'
+                                      ? const Color(0xFF059669).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFF059669).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'CALLS' ? const Color(0xFF10B981) : const Color(0xFF059669).withOpacity(0.3),
+                                    width: filterMode == 'CALLS' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'CALLS'
+                                      ? [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.call_made_rounded, color: Color(0xFF10B981), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'MASTER CALLS / BUYS',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'CALLS')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFF059669), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${master.buyCallsTaken} Calls Taken',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Click to view only BUY/CALL orders', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // 2. MASTER SELLS / PUTS (Clickable)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  filterMode = filterMode == 'SELLS' ? 'ALL' : 'SELLS';
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'SELLS'
+                                      ? const Color(0xFFDC2626).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'SELLS' ? const Color(0xFFEF4444) : const Color(0xFFDC2626).withOpacity(0.3),
+                                    width: filterMode == 'SELLS' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'SELLS'
+                                      ? [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.call_received_rounded, color: Color(0xFFEF4444), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'MASTER SELLS / PUTS',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'SELLS')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFFDC2626), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${master.sellPutsExecuted} Sells Executed',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Click to view only SELL/PUT orders', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // 3. CONNECTED FOLLOWER CHILDS (Clickable)
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  filterMode = filterMode == 'CHILDS' ? 'ALL' : 'CHILDS';
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: filterMode == 'CHILDS'
+                                      ? const Color(0xFF2563EB).withOpacity(isDark ? 0.32 : 0.18)
+                                      : const Color(0xFF2563EB).withOpacity(isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: filterMode == 'CHILDS' ? const Color(0xFF3B82F6) : const Color(0xFF2563EB).withOpacity(0.3),
+                                    width: filterMode == 'CHILDS' ? 2 : 1,
+                                  ),
+                                  boxShadow: filterMode == 'CHILDS'
+                                      ? [BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.25), blurRadius: 8, spreadRadius: 1)]
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.hub_rounded, color: Color(0xFF3B82F6), size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'CONNECTED FOLLOWER CHILDS',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
+                                            ),
+                                          ],
+                                        ),
+                                        if (filterMode == 'CHILDS')
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(4)),
+                                            child: const Text('OPEN', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900)),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${engine.childAccounts.length} Child Demats Active',
+                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Click to view & manage linked childs', style: TextStyle(fontSize: 10.5, color: subC)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Filter Mode Switcher Strip
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              ChoiceChip(
+                                label: Text(
+                                  'All Trades (${master.orderHistory.length})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'ALL' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'ALL',
+                                selectedColor: const Color(0xFF059669),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'ALL'),
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: Text(
+                                  'Calls / Buys (${master.buyCallsTaken})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'CALLS' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'CALLS',
+                                selectedColor: const Color(0xFF059669),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'CALLS'),
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: Text(
+                                  'Sells / Puts (${master.sellPutsExecuted})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'SELLS' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'SELLS',
+                                selectedColor: const Color(0xFFDC2626),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'SELLS'),
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: Text(
+                                  'Connected Childs (${engine.childAccounts.length})',
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: filterMode == 'CHILDS' ? Colors.white : titleC),
+                                ),
+                                selected: filterMode == 'CHILDS',
+                                selectedColor: const Color(0xFF2563EB),
+                                backgroundColor: tableBg,
+                                onSelected: (_) => setDialogState(() => filterMode = 'CHILDS'),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _openAddBrokerAccountDialog(context);
+                            },
+                            icon: const Icon(Icons.add_rounded, size: 14),
+                            label: const Text('+ Add Another Child', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF059669),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Main Content: Either Connected Childs List OR Filtered Trades Table
+                    if (filterMode == 'CHILDS')
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: tableBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderC),
+                          ),
+                          child: engine.childAccounts.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.hub_outlined, size: 48, color: subC),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No Connected Follower Childs',
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: titleC),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Link child demats to automatically replicate orders from ${master.broker} (${master.clientId}).',
+                                        style: TextStyle(fontSize: 12, color: subC),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          _openAddBrokerAccountDialog(context);
+                                        },
+                                        icon: const Icon(Icons.add_rounded, size: 16),
+                                        label: const Text('+ Add Follower Child Demat'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF059669),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.all(12),
+                                  itemCount: engine.childAccounts.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                  itemBuilder: (ctx, i) {
+                                    final ch = engine.childAccounts[i];
+                                    return Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: borderC),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF059669).withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              ch.broker.toUpperCase(),
+                                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Color(0xFF059669)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      ch.name,
+                                                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: titleC),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: ch.isActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                        border: Border.all(color: ch.isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                                      ),
+                                                      child: Text(
+                                                        ch.isActive ? 'REPLICATING 🟢' : 'PAUSED ⏸️',
+                                                        style: TextStyle(
+                                                          fontSize: 9.5,
+                                                          fontWeight: FontWeight.w800,
+                                                          color: ch.isActive ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  'Client ID: ${ch.clientId} • Multiplier: ${ch.multiplier}x • Margin: ₹${NumberFormat('#,##,###').format(ch.balance)}',
+                                                  style: TextStyle(fontSize: 11.5, color: subC),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            tooltip: 'View Child Demat Audit',
+                                            icon: const Icon(Icons.analytics_outlined, size: 20, color: Color(0xFF2563EB)),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              _openChildAccountDetailDialog(context, ch, engine);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      )
+                    else
+                      // Orders Table
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: tableBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderC),
+                          ),
+                          child: filteredOrders.isEmpty
+                              ? Center(child: Text('No matching trades found for this filter.', style: TextStyle(color: subC)))
+                              : ListView.separated(
+                                  padding: const EdgeInsets.all(10),
+                                  itemCount: filteredOrders.length,
+                                  separatorBuilder: (_, __) => Divider(height: 1, color: borderC),
+                                  itemBuilder: (ctx, i) {
+                                    final ord = filteredOrders[i];
+                                    final isBuy = ord.side.toUpperCase() == 'BUY' || ord.callPutType.contains('BUY');
+
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 85,
+                                            child: Text(ord.timestamp, style: TextStyle(fontSize: 11, color: subC, fontWeight: FontWeight.w600)),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: isBuy ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                              borderRadius: BorderRadius.circular(5),
+                                              border: Border.all(color: isBuy ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                                            ),
+                                            child: Text(
+                                              ord.callPutType,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                                color: isBuy ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            flex: 3,
+                                            child: Text(ord.symbol, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: titleC)),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text('${ord.qty} Qty', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text('₹${ord.price.toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: titleC)),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text('₹${NumberFormat('#,##,###').format(ord.totalAmount)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          SizedBox(
+                                            width: 120,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(ord.orderId, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    const Text('MASTER 🟢 ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                                                    Text('${ord.latencyMs}ms', style: TextStyle(fontSize: 9.5, color: subC)),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
+
+                    // Footer
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Broadcasting Engine: ACTIVE (Zero Delay Cascade)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: subC)),
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Close Master Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

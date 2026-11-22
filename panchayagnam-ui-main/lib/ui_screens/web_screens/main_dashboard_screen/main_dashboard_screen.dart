@@ -586,10 +586,17 @@ class _MainDashboardState extends State<MainDashboard> {
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF031416) : Colors.white,
+        color: isDark ? const Color(0xFF031416) : const Color(0xFF064E3B),
+        gradient: isDark
+            ? null
+            : const LinearGradient(
+                colors: [Color(0xFF064E3B), Color(0xFF065F46), Color(0xFF047857)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
         border: Border(
           bottom: BorderSide(
-            color: isDark ? const Color(0xFF063B32) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF063B32) : const Color(0xFF047857),
             width: 1,
           ),
         ),
@@ -630,8 +637,8 @@ class _MainDashboardState extends State<MainDashboard> {
                   const SizedBox(width: 8),
                   Text(
                     'Panchayagnam',
-                    style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.2,
@@ -672,21 +679,21 @@ class _MainDashboardState extends State<MainDashboard> {
                 height: 32,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: isDark ? const Color(0xFF38BDF8).withOpacity(0.45) : const Color(0xFFCBD5E1)),
+                  border: Border.all(color: isDark ? const Color(0xFF38BDF8).withOpacity(0.45) : Colors.white.withOpacity(0.35)),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.04), blurRadius: 4, offset: const Offset(0, 1)),
+                    BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.06), blurRadius: 4, offset: const Offset(0, 1)),
                   ],
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.search_rounded, size: 14, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                    Icon(Icons.search_rounded, size: 14, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF6EE7B7)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Search scrip, strike...',
-                        style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.white.withOpacity(0.85), fontSize: 11, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -694,10 +701,10 @@ class _MainDashboardState extends State<MainDashboard> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        color: isDark ? const Color(0xFF334155) : Colors.white.withOpacity(0.22),
                         borderRadius: const BorderRadius.all(Radius.circular(3)),
                       ),
-                      child: const Text('LIVE', style: TextStyle(color: Color(0xFF10B981), fontSize: 8.5, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                      child: const Text('LIVE', style: TextStyle(color: Color(0xFF34D399), fontSize: 8.5, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
                     ),
                   ],
                 ),
@@ -1017,14 +1024,14 @@ class _MainDashboardState extends State<MainDashboard> {
                     ],
                     child: Container(
                       padding: const EdgeInsets.all(5),
-                      child: const Icon(Icons.help_outline_rounded, color: Color(0xFF94A3B8), size: 18),
+                      child: Icon(Icons.help_outline_rounded, color: isDark ? const Color(0xFF94A3B8) : Colors.white70, size: 18),
                     ),
                   ),
 
                   IconButton(
                     icon: Icon(
                       _isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                      color: _isDarkMode ? const Color(0xFFFBBF24) : const Color(0xFF94A3B8),
+                      color: _isDarkMode ? const Color(0xFFFBBF24) : Colors.white,
                       size: 18,
                     ),
                     tooltip: _isDarkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme',
@@ -1442,9 +1449,9 @@ class _MainDashboardState extends State<MainDashboard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
+                    color: isDark ? const Color(0xFF0F172A) : Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.white.withOpacity(0.35)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1473,14 +1480,14 @@ class _MainDashboardState extends State<MainDashboard> {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: const TextStyle(
-                            color: Color(0xFFE2E8F0),
+                            color: Colors.white,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF94A3B8)),
+                      Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: isDark ? const Color(0xFF94A3B8) : Colors.white70),
                     ],
                   ),
                 ),
@@ -4738,7 +4745,7 @@ class _AnimatedSidebar extends StatelessWidget {
       height: double.infinity,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF031416) : Colors.white,
+        color: isDark ? const Color(0xFF031416) : const Color(0xFF064E3B),
         gradient: isDark
             ? const LinearGradient(
                 colors: [_kGradientTop, _kGradientMid, _kGradientBottom],
@@ -4746,11 +4753,16 @@ class _AnimatedSidebar extends StatelessWidget {
                 end: Alignment.bottomCenter,
               )
             : const LinearGradient(
-                colors: [Colors.white, Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+                colors: [Color(0xFF064E3B), Color(0xFF065F46), Color(0xFF047857)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-        border: isDark ? null : const Border(right: BorderSide(color: Color(0xFFE2E8F0))),
+        border: Border(
+          right: BorderSide(
+            color: isDark ? const Color(0xFF063B32) : const Color(0xFF047857),
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4842,14 +4854,14 @@ class _NavGroupTileState extends State<_NavGroupTile> {
     final isDark = ThemeModeService.isDark;
     final active = widget.isGroupActive || widget.isFlyoutOpen;
     final iconColor = active || _hovered
-        ? (isDark ? Colors.white : const Color(0xFF0F172A))
-        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
+        ? Colors.white
+        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFFA7F3D0));
     final bgColor = widget.isFlyoutOpen
-        ? const Color(0xFF059669).withOpacity(0.4)
+        ? const Color(0xFF10B981).withOpacity(0.4)
         : (widget.isGroupActive
-            ? (isDark ? Colors.white.withOpacity(0.18) : const Color(0xFFE2E8F0))
+            ? Colors.white.withOpacity(0.20)
             : (_hovered
-                ? (isDark ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                ? Colors.white.withOpacity(0.10)
                 : Colors.transparent));
 
     return Padding(
@@ -5140,7 +5152,7 @@ class _SectionLabel extends StatelessWidget {
         child: Text(
           'NAVIGATION',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.4),
+            color: ThemeModeService.isDark ? Colors.white.withOpacity(0.4) : const Color(0xFFA7F3D0).withOpacity(0.85),
             fontSize: 9,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.2,
@@ -5302,15 +5314,14 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
   Color get _iconColor {
     final isDark = ThemeModeService.isDark;
     if (widget.isLogout) return const Color(0xFFEF4444);
-    if (widget.isActive || _hovered) return isDark ? Colors.white : const Color(0xFF0F172A);
-    return isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    if (widget.isActive || _hovered) return Colors.white;
+    return isDark ? const Color(0xFF94A3B8) : const Color(0xFFA7F3D0);
   }
 
   Color get _bgColor {
-    final isDark = ThemeModeService.isDark;
     if (widget.isLogout && _hovered) return Colors.red.withOpacity(0.12);
-    if (widget.isActive) return isDark ? Colors.white.withOpacity(0.15) : const Color(0xFFE2E8F0);
-    if (_hovered) return isDark ? Colors.white.withOpacity(0.09) : const Color(0xFFF1F5F9);
+    if (widget.isActive) return Colors.white.withOpacity(0.20);
+    if (_hovered) return Colors.white.withOpacity(0.10);
     return Colors.transparent;
   }
 

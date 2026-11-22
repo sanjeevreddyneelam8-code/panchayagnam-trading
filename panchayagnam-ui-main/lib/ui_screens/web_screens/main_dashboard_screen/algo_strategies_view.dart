@@ -367,6 +367,9 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _startLivePnlStream();
   }
 
@@ -1788,8 +1791,10 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
 
         return Scaffold(
           backgroundColor: bg,
-          body: Column(
-        children: [
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           // ── Panchayagnam Style Institutional Header Banner ──
           Container(
             padding: const EdgeInsets.fromLTRB(28, 20, 28, 16),
@@ -1967,6 +1972,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
             child: TabBar(
               controller: _tabController,
+              onTap: (idx) => setState(() {}),
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               labelColor: Colors.black, // Sharp Black Letters
@@ -2037,26 +2043,21 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
               ],
             ),
           ),
-          // ── Tab Views ──
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                Column(
-                  children: [
-                    _buildInstantAutoTerminal(isDark, cardBg, borderCol, textMain, textSub),
-                    Expanded(child: _buildDeployedStrategiesTab()),
-                  ],
-                ),
-                _buildMarketplaceTab(),
-                _buildExecutionFeedTab(),
-                _buildRuleBuilderTab(),
-              ],
-            ),
-          ),
+          // ── Active Tab Content (Unified Full-Page Scrolling) ──
+          if (_tabController.index == 0) ...[
+            _buildInstantAutoTerminal(isDark, cardBg, borderCol, textMain, textSub),
+            _buildDeployedStrategiesTab(),
+          ] else if (_tabController.index == 1) ...[
+            _buildMarketplaceTab(),
+          ] else if (_tabController.index == 2) ...[
+            _buildExecutionFeedTab(),
+          ] else ...[
+            _buildRuleBuilderTab(),
+          ],
         ],
       ),
-    );
+    ),
+  );
       },
     );
   }
@@ -2367,7 +2368,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         ? _strategies
         : _strategies.where((s) => s.status == _activeFilter).toList();
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2641,7 +2642,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     final int crossCount = screenWidth > 1300 ? 3 : (screenWidth > 850 ? 2 : 1);
     final double aspectRatio = screenWidth > 1300 ? 1.05 : (screenWidth > 850 ? 1.15 : 1.3);
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3056,7 +3057,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
   // ── Tab 3: Real-Time Automated Execution Feed ──────────────────────────────
 
   Widget _buildExecutionFeedTab() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3202,7 +3203,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
   // ── Tab 4: Visual Rule Builder ─────────────────────────────────────────────
 
   Widget _buildRuleBuilderTab() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
