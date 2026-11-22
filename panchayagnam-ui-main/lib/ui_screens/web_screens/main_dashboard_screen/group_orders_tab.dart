@@ -1605,6 +1605,41 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     ),
                     const SizedBox(height: 12),
 
+                    if (selectedBroker == 'Angel One') ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF93C5FD)),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline_rounded, color: Color(0xFF1D4ED8), size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Angel One SmartAPI 30-Second Rule:',
+                                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'When creating your app on smartapi.angelbroking.com, LEAVE THE "IP ADDRESS" FIELD COMPLETELY BLANK. Do NOT type any IP! Your trades are automatically routed through our dedicated static IP in the background.',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF1E3A8A), height: 1.35),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // API Key
                     const Text('Broker API Key', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
                     const SizedBox(height: 5),

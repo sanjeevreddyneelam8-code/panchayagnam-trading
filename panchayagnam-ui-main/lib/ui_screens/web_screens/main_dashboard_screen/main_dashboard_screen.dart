@@ -911,7 +911,7 @@ class _MainDashboardState extends State<MainDashboard> {
 
                       final liveIp = LiveMarketDataService().serverOutboundIp;
                       return Tooltip(
-                        message: isOwner ? '👑 Dedicated Owner IP: $liveIp (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: $liveIp · Click to Copy',
+                        message: isOwner ? '👑 Dedicated Owner IP: $liveIp (Active) · Click to Manage IP Pool' : 'Dedicated Static IP Active: $liveIp · Click for Setup Guide',
                         child: InkWell(
                           onTap: () {
                             if (isOwner) {
@@ -920,15 +920,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 _bodyKey = UniqueKey();
                               });
                             } else {
-                              Clipboard.setData(ClipboardData(text: liveIp));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Dedicated Static IP copied: $liveIp'),
-                                  backgroundColor: const Color(0xFF059669),
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
+                              _showStaticIpGuideDialog(context, liveIp);
                             }
                           },
                           borderRadius: BorderRadius.circular(6),
@@ -2534,6 +2526,125 @@ class _MainDashboardState extends State<MainDashboard> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Understood')),
+        ],
+      ),
+    );
+  }
+
+  void _showStaticIpGuideDialog(BuildContext context, String ip) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = ThemeModeService.isDark;
+        final bg = isDark ? const Color(0xFF0F172A) : Colors.white;
+        final textC = isDark ? Colors.white : const Color(0xFF111827);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: bg,
+          child: Container(
+            width: 520,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.router_rounded, color: Color(0xFF059669), size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Dedicated Static IP Route', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: textC)),
+                          Text('Institutional Cloud Gateway: $ip', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                        ],
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFF59E0B)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 20),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'IMPORTANT FOR ANGEL ONE SMARTAPI:\nDo NOT type this IP into Angel One\'s "IP Address" box! Leave that box completely EMPTY (BLANK).\n\nWhy? Angel One\'s website only allows one manual registration per IP. Our server automatically routes all your trades through this Dedicated Static IP in the background!',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF92400E), height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('30-Second Angel One App Setup:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textC)),
+                const SizedBox(height: 10),
+                _buildGuideStepRow('1', 'Go to smartapi.angelbroking.com & click "Create An App"'),
+                _buildGuideStepRow('2', 'App Name: Panchayagnam Trade | Redirect URL: https://panchayagnam.com'),
+                _buildGuideStepRow('3', 'IP Address field: LEAVE BLANK (Do NOT type any IP)'),
+                _buildGuideStepRow('4', 'Copy your generated API Key and paste it into Panchayagnam'),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: ip));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('IP copied for record! Remember: Keep IP box blank in Angel One!'),
+                            backgroundColor: Color(0xFF059669),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 14),
+                      label: const Text('Copy IP (For Record)', style: TextStyle(fontSize: 11.5)),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                      child: const Text('Understood, Close'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGuideStepRow(String step, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: const BoxDecoration(color: Color(0xFF059669), shape: BoxShape.circle),
+            child: Center(child: Text(step, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.35))),
         ],
       ),
     );
