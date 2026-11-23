@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 enum CopySizingMode { lotMultiplier, capitalRatio, fixedQty }
@@ -301,100 +303,194 @@ class CopyTradingEngine extends ChangeNotifier {
     return true;
   }
 
-  void syncWithStorage() {
+  void syncWithStorage({bool notify = true}) {
     try {
+      final Map<String, ChildAccountConfig> merged = {};
+
       // 1. Read from py_permanent_demat_accounts_v2 (Primary storage used by ChildAccountsTab & ServiceClass)
       final permRaw = html.window.localStorage['py_permanent_demat_accounts_v2'];
       if (permRaw != null && permRaw.isNotEmpty) {
-        final decoded = List<Map<String, dynamic>>.from(
-          (jsonDecode(permRaw) as List).map((x) => Map<String, dynamic>.from(x as Map)),
-        );
-        final realAccounts = decoded.where((a) => isRealBrokerAccount(a['clientId'] ?? a['loginId'])).toList();
+        try {
+          final decoded = List<Map<String, dynamic>>.from(
+            (jsonDecode(permRaw) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+          );
+          final realAccounts = decoded.where((a) => isRealBrokerAccount(a['clientId'] ?? a['loginId'])).toList();
 
-        // Purge residual mock accounts from browser storage immediately
-        if (realAccounts.length != decoded.length) {
-          html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(realAccounts);
-        }
-
-        if (realAccounts.isNotEmpty) {
-          _accounts.clear();
           for (final a in realAccounts) {
+            final cid = (a['clientId'] ?? a['loginId'] ?? '').toString().trim();
+            final normKey = cid.toUpperCase();
             final broker = (a['brokerType'] ?? a['broker'] ?? 'ANGELONE').toString().toUpperCase();
             final name = (a['userName'] ?? a['nickName'] ?? a['name'] ?? '$broker Demat').toString();
-            final cid = (a['clientId'] ?? a['loginId'] ?? '').toString();
             final isMaster = a['isOwnAccount'] == true || a['isAdmin'] == true;
             final bal = (a['availableCash'] as num?)?.toDouble() ?? 1000000.0;
-            _accounts.add(
-              ChildAccountConfig(
-                id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}').toString(),
-                name: name,
-                broker: broker,
-                clientId: cid,
-                isMaster: isMaster,
-                multiplier: 1.0,
-                isActive: a['active'] != false,
-                balance: bal,
-                status: 'ONLINE',
-              ),
+            final mult = (a['multiplier'] as num?)?.toDouble() ?? 1.0;
+            final active = a['active'] != false;
+            final copyMode = (a['copyMode'] ?? 'ALL').toString();
+            final maxLoss = (a['maxDailyLoss'] as num?)?.toDouble() ?? 15000.0;
+
+            merged[normKey] = ChildAccountConfig(
+              id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}_$cid').toString(),
+              name: name,
+              broker: broker,
+              clientId: cid,
+              isMaster: isMaster,
+              multiplier: mult,
+              isActive: active,
+              balance: bal,
+              status: active ? 'ONLINE' : 'PAUSED',
+              copyMode: copyMode,
+              maxDailyLoss: maxLoss,
             );
           }
-          if (!_accounts.any((a) => a.isMaster) && _accounts.isNotEmpty) {
-            _accounts.first.isMaster = true;
-          }
-          notifyListeners();
-          return;
+        } catch (e) {
+          debugPrint('Error parsing py_permanent_demat_accounts_v2: $e');
         }
       }
 
+      // 2. Read from panchayagnam_trading_accounts & custom_trading_accounts
       final saved = html.window.localStorage['panchayagnam_trading_accounts'] ??
           html.window.sessionStorage['custom_trading_accounts'];
       if (saved != null && saved.isNotEmpty) {
-        final decoded = List<Map<String, dynamic>>.from(
-          (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
-        );
-        final customOnly = decoded.where((a) => isRealBrokerAccount(a['loginId'] ?? a['code'])).toList();
+        try {
+          final decoded = List<Map<String, dynamic>>.from(
+            (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
+          );
+          final customOnly = decoded.where((a) => isRealBrokerAccount(a['loginId'] ?? a['code'] ?? a['clientId'])).toList();
 
-        // Purge residual mock accounts
-        if (customOnly.length != decoded.length) {
-          html.window.localStorage['panchayagnam_trading_accounts'] = jsonEncode(customOnly);
-        }
-
-        if (customOnly.isNotEmpty) {
-          _accounts.clear();
           for (final a in customOnly) {
-            final broker = (a['broker'] ?? 'ANGELONE').toString().toUpperCase();
+            final cid = (a['loginId'] ?? a['code'] ?? a['clientId'] ?? '').toString().trim();
+            final normKey = cid.toUpperCase();
+            final broker = (a['broker'] ?? a['brokerType'] ?? 'ANGELONE').toString().toUpperCase();
             final name = (a['nickname'] ?? a['name'] ?? '$broker Demat').toString();
-            final cid = (a['loginId'] ?? a['code'] ?? '').toString();
             final isMaster = a['isMaster'] == true || (a['role']?.toString().contains('MASTER') ?? false);
-            final rawBal = a['margin']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '1500000';
-            final bal = double.tryParse(rawBal) ?? 1500000.0;
-            _accounts.add(
-              ChildAccountConfig(
-                id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}').toString(),
+            final rawBal = a['margin']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '1000000';
+            final bal = double.tryParse(rawBal) ?? 1000000.0;
+            final rawMult = a['multiplier']?.toString().replaceAll('x', '') ?? '1.0';
+            final mult = double.tryParse(rawMult) ?? 1.0;
+            final active = a['live'] != false && a['status'] != 'Paused';
+
+            if (merged.containsKey(normKey)) {
+              final existing = merged[normKey]!;
+              merged[normKey] = ChildAccountConfig(
+                id: existing.id,
+                name: (name.isNotEmpty && !name.contains('Demat')) ? name : existing.name,
+                broker: (broker.isNotEmpty && broker != 'NONE') ? broker : existing.broker,
+                clientId: cid,
+                isMaster: isMaster || existing.isMaster,
+                multiplier: mult > 0 ? mult : existing.multiplier,
+                isActive: active,
+                balance: existing.balance > 0 ? existing.balance : bal,
+                status: active ? 'ONLINE' : 'PAUSED',
+                copyMode: existing.copyMode,
+                maxDailyLoss: existing.maxDailyLoss,
+                lastOrderId: existing.lastOrderId,
+                lastLatencyMs: existing.lastLatencyMs,
+                totalCopiedOrders: existing.totalCopiedOrders,
+                buyCallsTaken: existing.buyCallsTaken,
+                sellPutsExecuted: existing.sellPutsExecuted,
+                orderHistory: existing.orderHistory,
+              );
+            } else {
+              merged[normKey] = ChildAccountConfig(
+                id: (a['id'] ?? 'acc_${DateTime.now().millisecondsSinceEpoch}_$cid').toString(),
                 name: name,
                 broker: broker,
                 clientId: cid,
                 isMaster: isMaster,
-                multiplier: double.tryParse(a['multiplier']?.toString().replaceAll('x', '') ?? '1.0') ?? 1.0,
-                isActive: a['live'] != false && a['status'] != 'Paused',
+                multiplier: mult,
+                isActive: active,
                 balance: bal,
-                status: 'ONLINE',
-              ),
-            );
+                status: active ? 'ONLINE' : 'PAUSED',
+              );
+            }
           }
-          if (!_accounts.any((a) => a.isMaster) && _accounts.isNotEmpty) {
-            _accounts.first.isMaster = true;
-          }
-          notifyListeners();
-          return;
+        } catch (e) {
+          debugPrint('Error parsing panchayagnam_trading_accounts: $e');
         }
       }
 
-      // No accounts connected
       _accounts.clear();
-      notifyListeners();
+      _accounts.addAll(merged.values);
+
+      // Ensure exactly one master account
+      if (_accounts.isNotEmpty) {
+        if (!_accounts.any((a) => a.isMaster)) {
+          _accounts.first.isMaster = true;
+        } else {
+          // If multiple accounts are marked master, keep only the first one
+          bool foundFirstMaster = false;
+          for (final acc in _accounts) {
+            if (acc.isMaster) {
+              if (!foundFirstMaster) {
+                foundFirstMaster = true;
+              } else {
+                acc.isMaster = false;
+              }
+            }
+          }
+        }
+      }
+
+      // Persist the combined consistent set to both storage keys
+      _syncMergedToStorage();
+
+      if (notify) {
+        if (WidgetsBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
+        } else {
+          notifyListeners();
+        }
+      }
     } catch (e) {
       debugPrint('Error syncing CopyTradingEngine with storage: $e');
+    }
+  }
+
+  void _syncMergedToStorage() {
+    try {
+      // 1. Save to py_permanent_demat_accounts_v2
+      final permList = _accounts.map((a) => {
+        'id': a.id,
+        'broker': a.broker,
+        'brokerType': a.broker,
+        'userName': a.name,
+        'name': a.name,
+        'nickName': a.name,
+        'clientId': a.clientId,
+        'loginId': a.clientId,
+        'isOwnAccount': a.isMaster,
+        'isAdmin': a.isMaster,
+        'active': a.isActive,
+        'availableCash': a.balance,
+        'multiplier': a.multiplier,
+        'copyMode': a.copyMode,
+        'maxDailyLoss': a.maxDailyLoss,
+      }).toList();
+      html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(permList);
+
+      // 2. Save to panchayagnam_trading_accounts & sessionStorage
+      final customList = _accounts.map((a) => {
+        'id': a.id,
+        'loginId': a.clientId,
+        'code': a.clientId,
+        'clientId': a.clientId,
+        'nickname': a.name,
+        'name': a.name,
+        'broker': a.broker,
+        'brokerType': a.broker,
+        'platform': a.broker.contains('MOTILAL') ? 'MOTILAL_OPENAPI' : 'API',
+        'role': a.isMaster ? 'PARENT / MASTER LEADER' : 'CHILD (Follower)',
+        'isMaster': a.isMaster,
+        'multiplier': '${a.multiplier}x',
+        'live': a.isActive,
+        'status': a.isActive ? 'Connected' : 'Paused',
+        'margin': '₹${a.balance.toStringAsFixed(0)}',
+      }).toList();
+      final customEncoded = jsonEncode(customList);
+      html.window.localStorage['panchayagnam_trading_accounts'] = customEncoded;
+      html.window.sessionStorage['custom_trading_accounts'] = customEncoded;
+    } catch (e) {
+      debugPrint('Error syncing merged accounts to storage: $e');
     }
   }
 
@@ -450,33 +546,47 @@ class CopyTradingEngine extends ChangeNotifier {
 
   void setMasterAccount(String clientId) {
     for (var acc in _accounts) {
-      acc.isMaster = (acc.clientId == clientId);
+      acc.isMaster = (acc.clientId.trim().toUpperCase() == clientId.trim().toUpperCase());
     }
+    _syncMergedToStorage();
+    notifyListeners();
+  }
+
+  void deleteAccount(String clientId) {
+    _accounts.removeWhere((a) => a.clientId.trim().toUpperCase() == clientId.trim().toUpperCase());
+    if (!_accounts.any((a) => a.isMaster) && _accounts.isNotEmpty) {
+      _accounts.first.isMaster = true;
+    }
+    _syncMergedToStorage();
     notifyListeners();
   }
 
   void updateChildMultiplier(String clientId, double multiplier) {
-    final acc = _accounts.firstWhere((a) => a.clientId == clientId, orElse: () => _accounts.first);
+    final acc = _accounts.firstWhere((a) => a.clientId.trim().toUpperCase() == clientId.trim().toUpperCase(), orElse: () => _accounts.first);
     acc.multiplier = multiplier;
+    _syncMergedToStorage();
     notifyListeners();
   }
 
   void toggleChildActive(String clientId, bool active) {
-    final acc = _accounts.firstWhere((a) => a.clientId == clientId, orElse: () => _accounts.first);
+    final acc = _accounts.firstWhere((a) => a.clientId.trim().toUpperCase() == clientId.trim().toUpperCase(), orElse: () => _accounts.first);
     acc.isActive = active;
     acc.status = active ? 'ONLINE' : 'PAUSED';
+    _syncMergedToStorage();
     notifyListeners();
   }
 
   void updateChildCopyMode(String clientId, String mode) {
-    final acc = _accounts.firstWhere((a) => a.clientId == clientId, orElse: () => _accounts.first);
+    final acc = _accounts.firstWhere((a) => a.clientId.trim().toUpperCase() == clientId.trim().toUpperCase(), orElse: () => _accounts.first);
     acc.copyMode = mode;
+    _syncMergedToStorage();
     notifyListeners();
   }
 
   void updateChildMaxLoss(String clientId, double maxLoss) {
-    final acc = _accounts.firstWhere((a) => a.clientId == clientId, orElse: () => _accounts.first);
+    final acc = _accounts.firstWhere((a) => a.clientId.trim().toUpperCase() == clientId.trim().toUpperCase(), orElse: () => _accounts.first);
     acc.maxDailyLoss = maxLoss;
+    _syncMergedToStorage();
     notifyListeners();
   }
 

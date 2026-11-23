@@ -190,31 +190,34 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
 
   void _loadTradingAccountsFromStorage() {
     try {
-      final saved = html.window.localStorage['panchayagnam_trading_accounts'] ??
-          html.window.sessionStorage['custom_trading_accounts'];
-      if (saved != null && saved.isNotEmpty) {
-        final decoded = List<Map<String, dynamic>>.from(
-          (jsonDecode(saved) as List).map((x) => Map<String, dynamic>.from(x as Map)),
-        );
-        // Exclude all dummy/seed accounts permanently
-        final realOnly = decoded.where((a) {
-          final cid = (a['loginId'] ?? a['code'] ?? a['clientId'] ?? '').toString();
-          return CopyTradingEngine.isRealBrokerAccount(cid);
-        }).toList();
-
-        if (realOnly.isNotEmpty) {
-          _tradingAccountsHierarchy.clear();
-          _tradingAccountsHierarchy.addAll(realOnly);
-          _saveTradingAccountsToStorage();
-          CopyTradingEngine().syncWithStorage();
-          return;
+      CopyTradingEngine().syncWithStorage(notify: false);
+      final engine = CopyTradingEngine();
+      if (engine.accounts.isNotEmpty) {
+        _tradingAccountsHierarchy.clear();
+        for (final acc in engine.accounts) {
+          _tradingAccountsHierarchy.add({
+            'id': acc.id,
+            'loginId': acc.clientId,
+            'code': acc.clientId,
+            'clientId': acc.clientId,
+            'nickname': acc.name,
+            'name': acc.name,
+            'broker': acc.broker,
+            'brokerType': acc.broker,
+            'platform': acc.broker.contains('MOTILAL') ? 'MOTILAL_OPENAPI' : 'API',
+            'role': acc.isMaster ? 'PARENT / MASTER LEADER' : 'CHILD (Follower)',
+            'isMaster': acc.isMaster,
+            'multiplier': '${acc.multiplier}x',
+            'live': acc.isActive,
+            'status': acc.isActive ? 'Connected' : 'Paused',
+            'margin': '₹${acc.balance.toStringAsFixed(0)}',
+          });
         }
+        return;
       }
     } catch (_) {}
 
     _tradingAccountsHierarchy.clear();
-    _saveTradingAccountsToStorage();
-    CopyTradingEngine().syncWithStorage();
   }
 
   void _saveTradingAccountsToStorage() {
@@ -222,6 +225,30 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
       final encoded = jsonEncode(_tradingAccountsHierarchy);
       html.window.localStorage['panchayagnam_trading_accounts'] = encoded;
       html.window.sessionStorage['custom_trading_accounts'] = encoded;
+
+      final permList = _tradingAccountsHierarchy.map((a) {
+        final cid = (a['loginId'] ?? a['code'] ?? a['clientId'] ?? '').toString();
+        final broker = (a['broker'] ?? a['brokerType'] ?? 'ANGELONE').toString();
+        final name = (a['nickname'] ?? a['name'] ?? '$broker Demat').toString();
+        final isMaster = a['isMaster'] == true || (a['role']?.toString().contains('MASTER') ?? false);
+        return {
+          'id': a['id'] ?? 'ACC_${DateTime.now().millisecondsSinceEpoch}_$cid',
+          'broker': broker,
+          'brokerType': broker.toUpperCase().replaceAll(' ', ''),
+          'userName': name,
+          'name': name,
+          'nickName': name,
+          'clientId': cid,
+          'loginId': cid,
+          'isOwnAccount': isMaster,
+          'isAdmin': isMaster,
+          'active': a['live'] != false && a['status'] != 'Paused',
+          'availableCash': 1000000.0,
+          'multiplier': double.tryParse(a['multiplier']?.toString().replaceAll('x', '') ?? '1.0') ?? 1.0,
+          'copyMode': 'ALL',
+        };
+      }).toList();
+      html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(permList);
     } catch (_) {}
   }
 
@@ -544,64 +571,56 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     const SizedBox(height: 16),
 
                     // Modern Telemetry Strip (Dynamically connected to CopyTradingEngine)
-                    Row(
-                      children: [
-                        Builder(
-                          builder: (context) {
-                            final engine = CopyTradingEngine()..syncWithStorage();
-                            final master = engine.masterAccount;
-                            final hasMaster = engine.hasConnectedAccount && master.clientId.isNotEmpty && master.broker != 'NONE';
-                            final val = hasMaster ? '${master.name} (${master.broker} ${master.clientId})' : 'NO MASTER DEMAT';
-                            final sub = hasMaster ? 'Master Live & Broadcasting 🟢' : 'Connect Demat to activate copy trading';
-                            return _buildTopStatCard(
+                    AnimatedBuilder(
+                      animation: CopyTradingEngine(),
+                      builder: (context, _) {
+                        final engine = CopyTradingEngine();
+                        final master = engine.masterAccount;
+                        final hasMaster = engine.hasConnectedAccount && master.clientId.isNotEmpty && master.broker != 'NONE';
+                        final val = hasMaster ? '${master.name} (${master.broker} ${master.clientId})' : 'NO MASTER DEMAT';
+                        final sub = hasMaster ? 'Master Live & Broadcasting 🟢' : 'Connect Demat to activate copy trading';
+                        final pooled = engine.pooledCapital;
+                        final pooledStr = pooled > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(pooled) : '₹0.00';
+                        final count = engine.totalAccountsCount;
+                        final followers = engine.childAccounts.length;
+                        final active = engine.activeChildAccounts.length;
+
+                        return Row(
+                          children: [
+                            _buildTopStatCard(
                               label: 'MASTER DEMAT ACCOUNT',
                               value: val,
                               subtext: sub,
                               color: hasMaster ? const Color(0xFF059669) : const Color(0xFFD97706),
                               icon: Icons.shield_rounded,
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        Builder(
-                          builder: (context) {
-                            final engine = CopyTradingEngine();
-                            final pooled = engine.pooledCapital;
-                            final pooledStr = pooled > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(pooled) : '₹0.00';
-                            final count = engine.totalAccountsCount;
-                            return _buildTopStatCard(
+                            ),
+                            const SizedBox(width: 12),
+                            _buildTopStatCard(
                               label: 'POOLED LIQUID CAPITAL',
                               value: pooledStr,
                               subtext: count > 0 ? 'Pooled across $count Broker Demats' : 'No accounts synced',
                               color: const Color(0xFF059669),
                               icon: Icons.account_balance_wallet_rounded,
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        Builder(
-                          builder: (context) {
-                            final engine = CopyTradingEngine();
-                            final followers = engine.childAccounts.length;
-                            final active = engine.activeChildAccounts.length;
-                            return _buildTopStatCard(
+                            ),
+                            const SizedBox(width: 12),
+                            _buildTopStatCard(
                               label: 'CONNECTED FOLLOWER DEMATS',
                               value: '$active / $followers Accounts Active',
                               subtext: followers > 0 ? 'Mirroring Master trades' : 'Click Master Accounts to link childs',
                               color: const Color(0xFF059669),
                               icon: Icons.hub_rounded,
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        _buildTopStatCard(
-                          label: 'REPLICATION LATENCY',
-                          value: '11ms Ultra-Low Latency',
-                          subtext: '100% Replication Rate',
-                          color: const Color(0xFFD97706),
-                          icon: Icons.speed_rounded,
-                        ),
-                      ],
+                            ),
+                            const SizedBox(width: 12),
+                            _buildTopStatCard(
+                              label: 'REPLICATION LATENCY',
+                              value: '11ms Ultra-Low Latency',
+                              subtext: '100% Replication Rate',
+                              color: const Color(0xFFD97706),
+                              icon: Icons.speed_rounded,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -626,8 +645,9 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                         children: [
                           const Icon(Icons.hub_rounded, size: 17),
                           const SizedBox(width: 8),
-                          Builder(
-                            builder: (context) {
+                          AnimatedBuilder(
+                            animation: CopyTradingEngine(),
+                            builder: (context, _) {
                               final count = CopyTradingEngine().totalAccountsCount;
                               return Text('Copy Trading Matrix ($count)');
                             },
@@ -1759,6 +1779,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                     }
                     _saveTradingAccountsToStorage();
                     CopyTradingEngine().syncWithStorage();
+                    _loadTradingAccountsFromStorage();
                   });
 
                   Navigator.pop(ctx);
@@ -3471,8 +3492,8 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                                     setState(() {
                                       _tradingAccountsHierarchy.removeWhere((a) =>
                                           (a['loginId'] ?? a['code'] ?? a['clientId']).toString().trim().toUpperCase() == child.clientId.trim().toUpperCase());
-                                      _saveTradingAccountsToStorage();
-                                      CopyTradingEngine().syncWithStorage();
+                                      CopyTradingEngine().deleteAccount(child.clientId);
+                                      _loadTradingAccountsFromStorage();
                                     });
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('Removed ${child.broker} Demat account (${child.clientId})')),
@@ -5129,6 +5150,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                             );
 
                             CopyTradingEngine().syncWithStorage();
+                            _loadTradingAccountsFromStorage();
                             setState(() {});
                             Navigator.pop(ctx);
                             final feeTxt = isOwner
