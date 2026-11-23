@@ -89,7 +89,7 @@ public class PyBrokerController {
     private com.py.demataccount.service.impl.BrokerLoginService brokerLoginService;
 
     @Autowired(required = false)
-    private com.py.brokers.angel.service.AngelOneApisService angelOneApisService;
+    private com.py.brokers.angel.client.service.AngelOneApisService angelOneApisService;
 
     @Autowired(required = false)
     private com.py.common.util.TotpUtil totpUtil;
