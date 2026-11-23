@@ -11,6 +11,7 @@ import '../../../bloc/auth_bloc/auth_state.dart';
 import '../../../bloc/auth_bloc/authbloc.dart';
 import '../../../reusable_widets/web_forgot_screen.dart';
 import '../../../service/service_class.dart';
+import '../../../service/copy_trading_engine.dart';
 import '../web_register_screen/web_register_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -527,6 +528,7 @@ class _RightSignInPanelState extends State<_RightSignInPanel> {
             phoneNumber: state.phoneNumber,
             userId: state.userId,
           );
+          CopyTradingEngine().fetchServerChildAccountsAndBalances();
           context.go(AppRoutes.dashboard);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(

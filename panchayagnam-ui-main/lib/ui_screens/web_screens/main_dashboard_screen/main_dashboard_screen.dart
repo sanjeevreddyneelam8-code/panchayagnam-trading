@@ -273,6 +273,8 @@ class _MainDashboardState extends State<MainDashboard> {
     super.initState();
     MainDashboard.onNavigateToBrokersGlobal = _navigateToBrokers;
     _hydrateSession();
+    CopyTradingEngine().syncWithStorage();
+    CopyTradingEngine().fetchServerChildAccountsAndBalances();
     LiveMarketDataService().addListener(_onLiveMarketQuotesUpdated);
     LiveMarketDataService().start();
     _onLiveMarketQuotesUpdated();
