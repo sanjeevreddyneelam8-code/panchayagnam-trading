@@ -469,6 +469,10 @@ public class PyBrokerController {
         if (userOpt.isPresent() && userOpt.get().getRole() == PyUser.Role.SUPER_ADMIN) {
             return;
         }
+        if (childAccountRepository != null && account.getClientId() != null
+                && childAccountRepository.findByPyUserIdAndClientId(authenticatedUserId, account.getClientId().trim()).isPresent()) {
+            return;
+        }
         if (account.getPyUser() == null || !account.getPyUser().getId().equals(authenticatedUserId)) {
             log.warn("Security rejection: authenticated user {} attempted to access demat account {} owned by pyUser {}",
                     authenticatedUserId, accId, account.getPyUser() != null ? account.getPyUser().getId() : null);
@@ -733,6 +737,28 @@ public class PyBrokerController {
         }
         try {
             var accounts = childAccountRepository.findByPyUserIdOrderByCreatedAtAsc(targetPyId);
+            if (accounts.isEmpty() && pyBrokerAccountRepository != null) {
+                var brokerAccounts = pyBrokerAccountRepository.findByPyUserIdOrderByIsOwnDesc(targetPyId).stream()
+                        .filter(a -> !Boolean.TRUE.equals(a.getIsOwn()))
+                        .map(a -> {
+                            com.py.demataccount.entity.PyCopyTradingChildAccountEntity entity = new com.py.demataccount.entity.PyCopyTradingChildAccountEntity();
+                            entity.setPyUserId(targetPyId);
+                            entity.setClientId(a.getClientId());
+                            entity.setBroker(a.getBrokerType() != null ? a.getBrokerType().name() : "ANGELONE");
+                            entity.setName(a.getUserName() != null ? a.getUserName() : a.getClientId());
+                            entity.setMultiplier(1.0);
+                            entity.setCopyMode("ALL");
+                            entity.setActive(Boolean.TRUE.equals(a.getActive()));
+                            entity.setBalance(1000000.0);
+                            entity.setMaxDailyLoss(15000.0);
+                            return entity;
+                        })
+                        .toList();
+                if (!brokerAccounts.isEmpty()) {
+                    childAccountRepository.saveAll(brokerAccounts);
+                    return ResponseEntity.ok(ApiResponse.success("Fetched child accounts from broker accounts", brokerAccounts));
+                }
+            }
             return ResponseEntity.ok(ApiResponse.success("Fetched child accounts", accounts));
         } catch (Exception e) {
             log.error("Failed to fetch copy trading child accounts for pyId={}: {}", targetPyId, e.getMessage());

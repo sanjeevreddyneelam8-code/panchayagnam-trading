@@ -281,7 +281,11 @@ public class SmartConnect {
             if (orderParams.getTriggerprice() != null) {
                 params.put("triggerprice", orderParams.getTriggerprice());
             }
-            params.put("variety", variety != null ? variety : "NORMAL");
+            String safeVariety = (variety != null && !variety.isBlank()) ? variety.trim().toUpperCase() : "NORMAL";
+            if (!"STOPLOSS".equals(safeVariety) && !"ROBO".equals(safeVariety)) {
+                safeVariety = "NORMAL";
+            }
+            params.put("variety", safeVariety);
 
             JSONObject jsonObject = smartAPIRequestHandler.postRequest(
                     this.apiKey, url, params, this.getAccessToken());
@@ -353,7 +357,11 @@ public class SmartConnect {
             if (orderParams.getDuration() != null) {
                 params.put("duration", orderParams.getDuration());
             }
-            params.put("variety", variety);
+            String safeVariety = (variety != null && !variety.isBlank()) ? variety.trim().toUpperCase() : "NORMAL";
+            if (!"STOPLOSS".equals(safeVariety) && !"ROBO".equals(safeVariety)) {
+                safeVariety = "NORMAL";
+            }
+            params.put("variety", safeVariety);
             params.put("orderid", orderId);
 
             JSONObject jsonObject = smartAPIRequestHandler.postRequest(
@@ -386,7 +394,11 @@ public class SmartConnect {
         try {
             String url = routes.get("api.order.cancel");
             JSONObject params = new JSONObject();
-            params.put("variety", variety);
+            String safeVariety = (variety != null && !variety.isBlank()) ? variety.trim().toUpperCase() : "NORMAL";
+            if (!"STOPLOSS".equals(safeVariety) && !"ROBO".equals(safeVariety)) {
+                safeVariety = "NORMAL";
+            }
+            params.put("variety", safeVariety);
             params.put("orderid", orderId);
 
             JSONObject jsonObject = smartAPIRequestHandler.postRequest(

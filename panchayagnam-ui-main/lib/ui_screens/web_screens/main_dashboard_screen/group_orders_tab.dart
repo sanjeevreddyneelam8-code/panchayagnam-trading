@@ -1785,11 +1785,25 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                       _tradingAccountsHierarchy.add(accountData);
                     }
                     _saveTradingAccountsToStorage();
+                    if (!isMasterAcc) {
+                      _saveChildAccountToStorage(
+                        broker: selectedBroker,
+                        name: nicknameCtrl.text.trim().isNotEmpty ? nicknameCtrl.text.trim() : '$selectedBroker Demat',
+                        clientId: cid,
+                        multiplier: multiplier,
+                        copyMode: 'ALL',
+                      );
+                    }
                     CopyTradingEngine().syncWithStorage();
                     _loadTradingAccountsFromStorage();
                   });
 
                   Navigator.pop(ctx);
+                  if (mounted) {
+                    setState(() {
+                      _loadTradingAccountsFromStorage();
+                    });
+                  }
                   final feeNotice = isOwner
                       ? '👑 Owner Privilege: Free slot'
                       : '₹500 deducted from wallet (Remaining: ₹${WalletService.instance.balance.toStringAsFixed(0)})';

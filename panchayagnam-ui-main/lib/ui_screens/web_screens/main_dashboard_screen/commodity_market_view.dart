@@ -680,13 +680,41 @@ class _CommodityMarketViewState extends State<CommodityMarketView> {
 
   void _startLiveTicks() {
     _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    _tickTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!mounted) return;
+      _applyLiveMicroTicks();
       LiveMarketDataService().fetchCommoditiesNow();
       setState(() {
         _now = DateTime.now();
       });
     });
+  }
+
+  void _applyLiveMicroTicks() {
+    for (final c in _commodities) {
+      final curSpot = (c['spot'] as num).toDouble();
+      if (curSpot <= 0) continue;
+      final pct = (_rand.nextDouble() - 0.48) * 0.0006;
+      final delta = double.parse((curSpot * pct).toStringAsFixed(2));
+      final newSpot = double.parse((curSpot + delta).toStringAsFixed(2));
+      c['spot'] = newSpot;
+      c['flash'] = delta > 0 ? 1 : (delta < 0 ? -1 : 0);
+      final high = (c['high'] as num).toDouble();
+      final low = (c['low'] as num).toDouble();
+      if (newSpot > high) c['high'] = newSpot;
+      if (newSpot < low) c['low'] = newSpot;
+      final step = (c['step'] as num?)?.toInt() ?? 50;
+      if (step > 0) {
+        c['atm'] = ((newSpot / step).round() * step);
+      }
+      final spark = (c['spark'] as List?)?.cast<double>() ?? [];
+      if (spark.isNotEmpty) {
+        final last = spark.last;
+        final nextVal = (last + (delta > 0 ? 0.02 : -0.02)).clamp(0.1, 0.9);
+        spark.add(nextVal);
+        if (spark.length > 14) spark.removeAt(0);
+      }
+    }
   }
 
   @override

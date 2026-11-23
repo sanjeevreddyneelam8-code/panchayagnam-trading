@@ -70,10 +70,10 @@ public class MasterMobileCopyTradingService {
                 return;
             }
 
-            // Find all active Master accounts (isOwn = true)
+            // Find all active Master accounts (isOwn = true or default)
             List<PyBrokerAccountEntity> masterAccounts = pyBrokerAccountRepository.findAll().stream()
-                    .filter(a -> Boolean.TRUE.equals(a.getIsOwn())
-                            && Boolean.TRUE.equals(a.getActive())
+                    .filter(a -> (a.getIsOwn() == null || Boolean.TRUE.equals(a.getIsOwn()))
+                            && (a.getActive() == null || Boolean.TRUE.equals(a.getActive()))
                             && a.getBrokerType() == BrokerType.ANGELONE
                             && a.getSecret() != null
                             && a.getSecret().getApiKey() != null
@@ -157,6 +157,22 @@ public class MasterMobileCopyTradingService {
                             .filter(c -> Boolean.TRUE.equals(c.getActive()))
                             .toList()
                             : List.of();
+
+                    if (children.isEmpty() && pyBrokerAccountRepository != null) {
+                        children = pyBrokerAccountRepository.findByPyUserIdOrderByIsOwnDesc(pyUserId).stream()
+                                .filter(a -> !Boolean.TRUE.equals(a.getIsOwn()) && (a.getActive() == null || Boolean.TRUE.equals(a.getActive())))
+                                .map(a -> {
+                                    PyCopyTradingChildAccountEntity c = new PyCopyTradingChildAccountEntity();
+                                    c.setClientId(a.getClientId());
+                                    c.setBroker(a.getBrokerType() != null ? a.getBrokerType().name() : "ANGELONE");
+                                    c.setName(a.getUserName() != null ? a.getUserName() : a.getClientId());
+                                    c.setMultiplier(1.0);
+                                    c.setCopyMode("ALL");
+                                    c.setActive(true);
+                                    return c;
+                                })
+                                .toList();
+                    }
 
                     if (children.isEmpty()) {
                         log.info("[Master Mobile Copy] No active follower child accounts configured for pyUserId={}", pyUserId);

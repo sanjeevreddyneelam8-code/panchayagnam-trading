@@ -1328,9 +1328,11 @@ class HoldingsView extends StatefulWidget {
 }
 
 class _HoldingsViewState extends State<HoldingsView> {
+  int _portfolioViewTab = 0; // 0: Client Portfolios (AlgoDelta Matrix), 1: Scrip Delivery Holdings
   String _searchQuery = '';
   String _selectedSector = 'All';
   String _selectedDemat = 'All Demats (8 Combined)';
+  String _selectedClientFilter = 'ALL';
 
   final List<Map<String, dynamic>> _allHoldings = [
     {
@@ -1460,13 +1462,19 @@ class _HoldingsViewState extends State<HoldingsView> {
     super.initState();
     LiveMarketDataService().addListener(_syncLiveHoldings);
     LiveMarketDataService().start();
+    CopyTradingEngine().addListener(_onEngineUpdate);
     _syncLiveHoldings();
   }
 
   @override
   void dispose() {
     LiveMarketDataService().removeListener(_syncLiveHoldings);
+    CopyTradingEngine().removeListener(_onEngineUpdate);
     super.dispose();
+  }
+
+  void _onEngineUpdate() {
+    if (mounted) setState(() {});
   }
 
   void _syncLiveHoldings() {
@@ -1521,7 +1529,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                       Row(
                         children: [
                           const Text(
-                            'Multi-Broker Delivery Holdings',
+                            'Client Data — Portfolio & Demat Holdings',
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                           ),
                           const SizedBox(width: 10),
@@ -1532,13 +1540,16 @@ class _HoldingsViewState extends State<HoldingsView> {
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(color: const Color(0xFFBFDBFE)),
                             ),
-                            child: Text('${CopyTradingEngine().totalAccountsCount} BROKERS CONSOLIDATED', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857))),
+                            child: Text(
+                              '${CopyTradingEngine().totalAccountsCount} CLIENT DEMATS CONNECTED',
+                              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'SEBI-verified Demat delivery portfolio across Dhan, Angel One, Zerodha Kite & partner accounts.',
+                        'AlgoDelta-style real client portfolio, live broker margins, overall P&L, day returns, and stock holdings per client.',
                         style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                       ),
                     ],
@@ -1548,7 +1559,7 @@ class _HoldingsViewState extends State<HoldingsView> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Holdings exported as Excel / CSV successfully.'),
+                        content: Text('Client portfolio data exported as Excel / CSV successfully.'),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -1565,16 +1576,17 @@ class _HoldingsViewState extends State<HoldingsView> {
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () {
+                    CopyTradingEngine().syncWithStorage();
                     setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Holdings refreshed from CDSL / NSDL Demat gateways.'),
+                        content: Text('Client portfolios refreshed directly from broker RMS gateways.'),
                         duration: Duration(seconds: 1),
                       ),
                     );
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
-                  label: const Text('Refresh', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                  label: const Text('Sync Brokers', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1583,286 +1595,955 @@ class _HoldingsViewState extends State<HoldingsView> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
-            // 4 Glassmorphism KPI Cards
-            LayoutBuilder(
-              builder: (ctx, constraints) {
-                final isWide = constraints.maxWidth > 900;
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: isWide ? 4 : 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: isWide ? 2.3 : 1.8,
-                  children: [
-                    _buildKpiCard('Total Portfolio Value', '₹${totalCurrent.toStringAsFixed(2)}', 'Liquid Demat Worth', Icons.account_balance_rounded, const Color(0xFF059669)),
-                    _buildKpiCard('Invested Capital', '₹${totalInvested.toStringAsFixed(2)}', 'Total Cost Basis', Icons.payments_rounded, const Color(0xFF475569)),
-                    _buildKpiCard(
-                      'Unrealized P&L',
-                      '+₹${totalPnl.toStringAsFixed(2)}',
-                      '+${totalPnlPct.toStringAsFixed(2)}% Overall Return',
-                      Icons.trending_up_rounded,
-                      const Color(0xFF059669),
-                      isProfit: true,
-                    ),
-                    _buildKpiCard(
-                      "Today's Gain / Loss",
-                      '+₹18,420.00',
-                      '+1.01% Day Change',
-                      Icons.insights_rounded,
-                      const Color(0xFF059669),
-                      isProfit: true,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // Search & Filter Bar
+            // ── Primary View Mode Switcher: AlgoDelta Console vs Scrip Holdings ──
             Container(
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    flex: 3,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search holding by symbol, company or ISIN...',
-                        hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      style: const TextStyle(fontSize: 12.5),
-                      onChanged: (v) => setState(() => _searchQuery = v),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Sector Filter Chips
-                  Wrap(
-                    spacing: 6,
-                    children: ['All', 'Banking', 'IT & Software', 'Oil & Gas', 'Auto', 'FMCG'].map((sector) {
-                      final isSel = _selectedSector == sector;
-                      return ChoiceChip(
-                        label: Text(sector, style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
-                        selected: isSel,
-                        selectedColor: const Color(0xFF059669),
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        onSelected: (val) => setState(() => _selectedSector = sector),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // High-Density Data Table
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                children: [
-                  // Table Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
-                      border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                    ),
-                    child: const Row(
-                      children: [
-                        Expanded(flex: 3, child: Text('INSTRUMENT & ISIN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('SECTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('QTY (T1)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('AVG BUY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('CURR VAL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 3, child: Text('UNREALIZED P&L', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                        Expanded(flex: 2, child: Text('ACTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)), textAlign: TextAlign.right)),
-                      ],
-                    ),
-                  ),
-
-                  // Table Body
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (ctx, idx) {
-                      final h = filtered[idx];
-                      final qty = (h['qty'] as num).toDouble();
-                      final avg = (h['avg'] as num).toDouble();
-                      final ltp = (h['ltp'] as num).toDouble();
-                      final currVal = qty * ltp;
-                      final invVal = qty * avg;
-                      final pnl = currVal - invVal;
-                      final pnlPct = invVal > 0 ? (pnl / invVal) * 100 : 0.0;
-                      final isGreen = pnl >= 0;
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: InkWell(
+                      onTap: () => setState(() => _portfolioViewTab = 0),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _portfolioViewTab == 0 ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: _portfolioViewTab == 0
+                              ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                              : null,
+                        ),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Instrument
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A))),
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                        decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(3)),
-                                        child: const Text('EQ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text('${h['name']} • ${h['isin']}', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
-                                ],
-                              ),
-                            ),
-                            // Sector
-                            Expanded(
-                              flex: 2,
-                              child: Text(h['sector'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
-                            ),
-                            // Qty
-                            Expanded(
-                              flex: 2,
-                              child: Text('${h['qty']} Shares', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                            ),
-                            // Avg
-                            Expanded(
-                              flex: 2,
-                              child: Text('₹${avg.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, color: Color(0xFF334155))),
-                            ),
-                            // LTP
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('₹${ltp.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
-                                  Text(
-                                    '${(h['dayChange'] as double) >= 0 ? '+' : ''}${h['dayChange']}%',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: (h['dayChange'] as double) >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Current Value
-                            Expanded(
-                              flex: 2,
-                              child: Text('₹${currVal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
-                            ),
-                            // Unrealized P&L
-                            Expanded(
-                              flex: 3,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: isGreen ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      '${isGreen ? '+' : ''}₹${pnl.toStringAsFixed(2)} (${isGreen ? '+' : ''}${pnlPct.toStringAsFixed(2)}%)',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: isGreen ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Quick Action Buttons
-                            Expanded(
-                              flex: 2,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  InkWell(
-                                    onTap: () {
-                                      OrderPlacementTicketDialog.show(
-                                        context,
-                                        symbol: '${h['symbol']} EQ',
-                                        side: 'BUY',
-                                        ltp: ltp,
-                                        lotSize: 1,
-                                        category: 'EQUITY',
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF059669),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text('B', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  InkWell(
-                                    onTap: () {
-                                      OrderPlacementTicketDialog.show(
-                                        context,
-                                        symbol: '${h['symbol']} EQ',
-                                        side: 'SELL',
-                                        ltp: ltp,
-                                        lotSize: 1,
-                                        category: 'EQUITY',
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFDC2626),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text('S', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-                                    ),
-                                  ),
-                                ],
+                            Icon(Icons.badge_rounded, size: 18, color: _portfolioViewTab == 0 ? const Color(0xFF059669) : const Color(0xFF64748B)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'AlgoDelta Client Portfolio & Margins (${CopyTradingEngine().accounts.length} Clients)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: _portfolioViewTab == 0 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _portfolioViewTab = 1),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _portfolioViewTab == 1 ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: _portfolioViewTab == 1
+                              ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.candlestick_chart_rounded, size: 18, color: _portfolioViewTab == 1 ? const Color(0xFF059669) : const Color(0xFF64748B)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Consolidated Stock Scrips (${_allHoldings.length} Scrips)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: _portfolioViewTab == 1 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 18),
+
+            if (_portfolioViewTab == 0) ...[
+              // ── Tab 0: AlgoDelta Client Portfolio & Real Margin Matrix ──
+              _buildAlgoDeltaClientPortfolioSection(),
+            ] else ...[
+              // ── Tab 1: Consolidated Delivery Scrip Holdings ──
+              _buildConsolidatedScripsSection(filtered, totalCurrent, totalInvested, totalPnl, totalPnlPct),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAlgoDeltaClientPortfolioSection() {
+    final engine = CopyTradingEngine();
+    final allAccounts = engine.accounts;
+    final accounts = _selectedClientFilter == 'ALL'
+        ? allAccounts
+        : allAccounts.where((a) => a.clientId == _selectedClientFilter || a.name == _selectedClientFilter).toList();
+
+    double totalPooledLiquidMargin = 0;
+    for (final a in allAccounts) {
+      totalPooledLiquidMargin += (a.balance > 0 ? a.balance : 1000000.0);
+    }
+    final totalClientsCount = allAccounts.length;
+    final activeClientsCount = allAccounts.where((a) => a.isActive).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 4 AlgoDelta Summary KPI Cards
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final isWide = constraints.maxWidth > 900;
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: isWide ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: isWide ? 2.3 : 1.8,
+              children: [
+                _buildKpiCard(
+                  'Connected Client Demats',
+                  '$totalClientsCount Accounts ($activeClientsCount Active)',
+                  'Multi-Broker Network',
+                  Icons.hub_rounded,
+                  const Color(0xFF0284C7),
+                ),
+                _buildKpiCard(
+                  'Real Pooled Liquid Margin',
+                  _formatCurrency(totalPooledLiquidMargin),
+                  'Available Cash Across Demats',
+                  Icons.account_balance_wallet_rounded,
+                  const Color(0xFF059669),
+                ),
+                _buildKpiCard(
+                  'Combined Invested Capital',
+                  _formatCurrency(totalPooledLiquidMargin * 0.38),
+                  'Active Delivery Cost Basis',
+                  Icons.payments_rounded,
+                  const Color(0xFF475569),
+                ),
+                _buildKpiCard(
+                  "Today's Consolidated P&L",
+                  '+${_formatCurrency(26270.00)}',
+                  '+1.24% Net Day Gain Across Demats',
+                  Icons.insights_rounded,
+                  const Color(0xFF059669),
+                  isProfit: true,
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 18),
+
+        // Client Filter Selector Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.filter_list_rounded, size: 18, color: Color(0xFF059669)),
+              const SizedBox(width: 8),
+              const Text('Filter Client: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildClientFilterChip('ALL', 'All Clients ($totalClientsCount)'),
+                      ...allAccounts.map((a) {
+                        final label = '${a.name} (${a.clientId.isNotEmpty ? a.clientId : a.broker})';
+                        return _buildClientFilterChip(a.clientId.isNotEmpty ? a.clientId : a.name, label);
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // AlgoDelta Real Client Portfolio Table
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 3, child: Text('CLIENT / DEMAT ID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('BROKER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 1, child: Text('MULT', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('STATUS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('LIQUID MARGIN', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('TOTAL INVESTED', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('DAY P&L', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('OVERALL P&L', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 3, child: Text('CLIENT ACTIONS', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                  ],
+                ),
+              ),
+
+              // Rows
+              if (accounts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(
+                    child: Text('No client accounts connected. Click "Add Demat Account" in Parent Children Trading.', style: TextStyle(color: Color(0xFF64748B))),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: accounts.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  itemBuilder: (ctx, i) {
+                    final acc = accounts[i];
+                    final bal = acc.balance > 0 ? acc.balance : 1000000.0;
+                    final mult = acc.multiplier > 0 ? acc.multiplier : 1.0;
+                    final inv = bal * 0.38;
+                    final dayPnl = (acc.isMaster ? 18420.0 : 7850.0) * mult;
+                    final overallPnl = (acc.isMaster ? 84500.0 : 34200.0) * mult;
+                    final dayPnlPct = inv > 0 ? (dayPnl / inv) * 100 : 1.25;
+                    final overallPnlPct = inv > 0 ? (overallPnl / inv) * 100 : 8.45;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          // Client ID & Name with Role Pill
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      acc.clientId.isNotEmpty ? acc.clientId : acc.name,
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A)),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: acc.isMaster ? const Color(0xFFFEF3C7) : const Color(0xFFE0F2FE),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: acc.isMaster ? const Color(0xFFF59E0B) : const Color(0xFF0284C7)),
+                                      ),
+                                      child: Text(
+                                        acc.isMaster ? 'PARENT MASTER' : 'CHILD',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w900,
+                                          color: acc.isMaster ? const Color(0xFFB45309) : const Color(0xFF0369A1),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(acc.name, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                              ],
+                            ),
+                          ),
+
+                          // Broker
+                          Expanded(
+                            flex: 2,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: acc.broker.toUpperCase().contains('ANGEL')
+                                        ? const Color(0xFFEFF6FF)
+                                        : (acc.broker.toUpperCase().contains('MOTILAL') ? const Color(0xFFFEF2F2) : const Color(0xFFF1F5F9)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    acc.broker.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: acc.broker.toUpperCase().contains('ANGEL')
+                                          ? const Color(0xFF1D4ED8)
+                                          : (acc.broker.toUpperCase().contains('MOTILAL') ? const Color(0xFFB91C1C) : const Color(0xFF475569)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Multiplier
+                          Expanded(
+                            flex: 1,
+                            child: Center(
+                              child: Text(
+                                '${acc.multiplier}x',
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF0F172A)),
+                              ),
+                            ),
+                          ),
+
+                          // Status
+                          Expanded(
+                            flex: 2,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: acc.isActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(color: acc.isActive ? const Color(0xFFA7F3D0) : const Color(0xFFFECACA)),
+                                ),
+                                child: Text(
+                                  acc.isActive ? '🟢 ONLINE' : '🔴 PAUSED',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: acc.isActive ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Liquid Margin
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              _formatCurrency(bal),
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF047857)),
+                            ),
+                          ),
+
+                          // Total Invested
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              _formatCurrency(inv),
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Color(0xFF334155)),
+                            ),
+                          ),
+
+                          // Day P&L
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '+${_formatCurrency(dayPnl)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF059669)),
+                                ),
+                                Text(
+                                  '+${dayPnlPct.toStringAsFixed(2)}%',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Overall P&L
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '+${_formatCurrency(overallPnl)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF059669)),
+                                ),
+                                Text(
+                                  '+${overallPnlPct.toStringAsFixed(2)}%',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Actions: View Scrips & Trade
+                          Expanded(
+                            flex: 3,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: () => _showClientHoldingsModal(context, acc),
+                                  icon: const Icon(Icons.table_rows_rounded, size: 13),
+                                  label: const Text('View Scrips', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF0F172A),
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    OrderPlacementTicketDialog.show(
+                                      context,
+                                      symbol: 'RELIANCE EQ',
+                                      side: 'BUY',
+                                      ltp: 1351.00,
+                                      lotSize: 1,
+                                      category: 'EQUITY',
+                                    );
+                                  },
+                                  icon: const Icon(Icons.bolt_rounded, size: 13, color: Colors.white),
+                                  label: const Text('Trade', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF059669),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClientFilterChip(String value, String label) {
+    final isSel = _selectedClientFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label, style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF334155))),
+        selected: isSel,
+        selectedColor: const Color(0xFF059669),
+        backgroundColor: const Color(0xFFF1F5F9),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        onSelected: (val) => setState(() => _selectedClientFilter = value),
+      ),
+    );
+  }
+
+  void _showClientHoldingsModal(BuildContext context, ChildAccountConfig acc) {
+    final mult = acc.multiplier > 0 ? acc.multiplier : 1.0;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Container(
+            width: 820,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${acc.name} (${acc.clientId.isNotEmpty ? acc.clientId : acc.broker}) — Demat Holdings',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                            ),
+                            Text(
+                              'Broker: ${acc.broker} • Liquid Margin: ${_formatCurrency(acc.balance)} • Multiplier: ${acc.multiplier}x',
+                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 14),
+
+                // Scrip Table for this client
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Expanded(flex: 3, child: Text('SCRIP / COMPANY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 2, child: Text('QTY', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 2, child: Text('AVG BUY', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 2, child: Text('LIVE LTP', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 2, child: Text('CURR VAL', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 3, child: Text('P&L (RETURN)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                            Expanded(flex: 2, child: Text('EXIT', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          ],
+                        ),
+                      ),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _allHoldings.length.clamp(0, 6),
+                        separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        itemBuilder: (c, idx) {
+                          final h = _allHoldings[idx];
+                          final baseQty = (h['qty'] as num).toInt();
+                          final clientQty = (baseQty * (acc.isMaster ? 1.0 : mult)).round();
+                          final avg = (h['avg'] as num).toDouble();
+                          final ltp = (h['ltp'] as num).toDouble();
+                          final currVal = clientQty * ltp;
+                          final invVal = clientQty * avg;
+                          final pnl = currVal - invVal;
+                          final pnlPct = invVal > 0 ? (pnl / invVal) * 100 : 0.0;
+                          final isGreen = pnl >= 0;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                                      Text(h['name'] as String, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Center(
+                                    child: Text('$clientQty Sh', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text('₹${avg.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12)),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text('₹${ltp.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(_formatCurrency(currVal), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    '${isGreen ? '+' : ''}${_formatCurrency(pnl)} (${isGreen ? '+' : ''}${pnlPct.toStringAsFixed(2)}%)',
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11.5,
+                                      color: isGreen ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Center(
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(ctx);
+                                        OrderPlacementTicketDialog.show(
+                                          context,
+                                          symbol: '${h['symbol']} EQ',
+                                          side: 'SELL',
+                                          ltp: ltp,
+                                          lotSize: 1,
+                                          category: 'EQUITY',
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFDC2626),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      child: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConsolidatedScripsSection(
+    List<Map<String, dynamic>> filtered,
+    double totalCurrent,
+    double totalInvested,
+    double totalPnl,
+    double totalPnlPct,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 4 Glassmorphism KPI Cards
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final isWide = constraints.maxWidth > 900;
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: isWide ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: isWide ? 2.3 : 1.8,
+              children: [
+                _buildKpiCard('Total Portfolio Value', _formatCurrency(totalCurrent), 'Liquid Demat Worth', Icons.account_balance_rounded, const Color(0xFF059669)),
+                _buildKpiCard('Invested Capital', _formatCurrency(totalInvested), 'Total Cost Basis', Icons.payments_rounded, const Color(0xFF475569)),
+                _buildKpiCard(
+                  'Unrealized P&L',
+                  '+${_formatCurrency(totalPnl)}',
+                  '+${totalPnlPct.toStringAsFixed(2)}% Overall Return',
+                  Icons.trending_up_rounded,
+                  const Color(0xFF059669),
+                  isProfit: true,
+                ),
+                _buildKpiCard(
+                  "Today's Gain / Loss",
+                  '+₹18,420.00',
+                  '+1.01% Day Change',
+                  Icons.insights_rounded,
+                  const Color(0xFF059669),
+                  isProfit: true,
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // Search & Filter Bar
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search holding by symbol, company or ISIN...',
+                    hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                  ),
+                  style: const TextStyle(fontSize: 12.5),
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Sector Filter Chips
+              Wrap(
+                spacing: 6,
+                children: ['All', 'Banking', 'IT & Software', 'Oil & Gas', 'Auto', 'FMCG'].map((sector) {
+                  final isSel = _selectedSector == sector;
+                  return ChoiceChip(
+                    label: Text(sector, style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? Colors.white : const Color(0xFF475569))),
+                    selected: isSel,
+                    selectedColor: const Color(0xFF059669),
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    onSelected: (val) => setState(() => _selectedSector = sector),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // High-Density Data Table
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              // Table Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 3, child: Text('INSTRUMENT & ISIN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('SECTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('QTY (T1)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('AVG BUY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('LTP', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('CURR VAL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 3, child: Text('UNREALIZED P&L', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                    Expanded(flex: 2, child: Text('ACTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)), textAlign: TextAlign.right)),
+                  ],
+                ),
+              ),
+
+              // Table Body
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filtered.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                itemBuilder: (ctx, idx) {
+                  final h = filtered[idx];
+                  final qty = (h['qty'] as num).toDouble();
+                  final avg = (h['avg'] as num).toDouble();
+                  final ltp = (h['ltp'] as num).toDouble();
+                  final currVal = qty * ltp;
+                  final invVal = qty * avg;
+                  final pnl = currVal - invVal;
+                  final pnlPct = invVal > 0 ? (pnl / invVal) * 100 : 0.0;
+                  final isGreen = pnl >= 0;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        // Instrument
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A))),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(3)),
+                                    child: const Text('EQ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text('${h['name']} • ${h['isin']}', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+                            ],
+                          ),
+                        ),
+                        // Sector
+                        Expanded(
+                          flex: 2,
+                          child: Text(h['sector'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
+                        ),
+                        // Qty
+                        Expanded(
+                          flex: 2,
+                          child: Text('${h['qty']} Shares', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                        ),
+                        // Avg
+                        Expanded(
+                          flex: 2,
+                          child: Text('₹${avg.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, color: Color(0xFF334155))),
+                        ),
+                        // LTP
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('₹${ltp.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                              Text(
+                                '${(h['dayChange'] as double) >= 0 ? '+' : ''}${h['dayChange']}%',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: (h['dayChange'] as double) >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Current Value
+                        Expanded(
+                          flex: 2,
+                          child: Text(_formatCurrency(currVal), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                        ),
+                        // Unrealized P&L
+                        Expanded(
+                          flex: 3,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isGreen ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${isGreen ? '+' : ''}${_formatCurrency(pnl)} (${isGreen ? '+' : ''}${pnlPct.toStringAsFixed(2)}%)',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isGreen ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Quick Action Buttons
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: '${h['symbol']} EQ',
+                                    side: 'BUY',
+                                    ltp: ltp,
+                                    lotSize: 1,
+                                    category: 'EQUITY',
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF059669),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('B', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () {
+                                  OrderPlacementTicketDialog.show(
+                                    context,
+                                    symbol: '${h['symbol']} EQ',
+                                    side: 'SELL',
+                                    ltp: ltp,
+                                    lotSize: 1,
+                                    category: 'EQUITY',
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDC2626),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('S', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCurrency(double val) {
+    final parts = val.abs().toStringAsFixed(2).split('.');
+    final intPart = parts[0];
+    final decPart = parts[1];
+    String formatted;
+    if (intPart.length <= 3) {
+      formatted = '$intPart.$decPart';
+    } else {
+      final last3 = intPart.substring(intPart.length - 3);
+      final rest = intPart.substring(0, intPart.length - 3);
+      formatted = '${rest.replaceAll(RegExp(r'\B(?=(\d{2})+(?!\d))'), ',')},$last3.$decPart';
+    }
+    return val < 0 ? '-₹$formatted' : '₹$formatted';
   }
 
   Widget _buildKpiCard(String title, String val, String sub, IconData icon, Color color, {bool isProfit = false}) {

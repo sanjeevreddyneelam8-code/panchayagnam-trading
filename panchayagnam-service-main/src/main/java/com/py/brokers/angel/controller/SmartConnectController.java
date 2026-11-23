@@ -159,7 +159,7 @@ public class SmartConnectController {
 
     @PostMapping("/order/place")
     public ResponseEntity<?> placeOrder(@RequestBody OrderParams orderParams,
-            @RequestParam(defaultValue = "regular") String variety) {
+            @RequestParam(defaultValue = "NORMAL") String variety) {
         if (paperTradingService.isPaperTradingEnabled()) {
             return ResponseEntity.badRequest().body("Direct SmartConnect order placement is disabled during paper trading. Use /pyBrokerApi/order/buy or /order/sell.");
         }
@@ -171,7 +171,7 @@ public class SmartConnectController {
     @PutMapping("/order/modify/{orderId}")
     public ResponseEntity<?> modifyOrder(@PathVariable String orderId,
             @RequestBody OrderParams orderParams,
-            @RequestParam(defaultValue = "regular") String variety) {
+            @RequestParam(defaultValue = "NORMAL") String variety) {
         if (paperTradingService.isPaperTradingEnabled()) {
             return ResponseEntity.badRequest().body("Direct SmartConnect order modification is disabled during paper trading. Use /pyBrokerApi/modifyOrder.");
         }

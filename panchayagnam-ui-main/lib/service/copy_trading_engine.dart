@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import '../constants/api_url_constants.dart';
 import '../constants/auth_header_helper.dart';
 import 'live_market_data_service.dart';
+import 'service_class.dart';
 
 enum CopySizingMode { lotMultiplier, capitalRatio, fixedQty }
 
@@ -530,6 +531,17 @@ class CopyTradingEngine extends ChangeNotifier {
   Future<void> fetchServerChildAccountsAndBalances() async {
     try {
       final pyUserId = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 1;
+
+      // 1. Authoritative sync from server PostgreSQL database:
+      // Fetches master Demat + linked child Demats across all laptops!
+      try {
+        final serverAccounts = await ServiceClass().fetchDematAccountsApi(pyUserId);
+        if (serverAccounts.isNotEmpty) {
+          syncWithStorage(notify: false);
+        }
+      } catch (_) {}
+
+      // 2. Fetch persistent copy trading config (multipliers, copy modes, active state)
       final url = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/copy-trading/accounts?pyId=$pyUserId');
       final res = await http.get(url, headers: AuthHeaderHelper.getHeaders()).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {

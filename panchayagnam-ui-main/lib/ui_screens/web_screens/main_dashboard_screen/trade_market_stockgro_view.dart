@@ -149,54 +149,73 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
 
   void _initMarketData() {
     _liveIndices = [
-      {
-        'name': 'NIFTY 50',
-        'price': 24218.65,
-        'prev': 24092.40,
-        'pcr': '1.18',
-        'spark': [0.72, 0.68, 0.61, 0.64, 0.52, 0.46, 0.49, 0.35, 0.28, 0.22],
-        'lot': 25,
-      },
-      {
-        'name': 'BANK NIFTY',
-        'price': 51842.30,
-        'prev': 51510.15,
-        'pcr': '1.12',
-        'spark': [0.76, 0.70, 0.72, 0.58, 0.50, 0.53, 0.41, 0.36, 0.29, 0.24],
-        'lot': 15,
-      },
-      {
-        'name': 'FINNIFTY',
-        'price': 23945.80,
-        'prev': 23812.00,
-        'pcr': '1.09',
-        'spark': [0.68, 0.65, 0.58, 0.55, 0.48, 0.44, 0.39, 0.35, 0.30, 0.25],
-        'lot': 25,
-      },
-      {
-        'name': 'SENSEX',
-        'price': 79845.10,
-        'prev': 79412.50,
-        'pcr': '1.15',
-        'spark': [0.74, 0.69, 0.63, 0.59, 0.54, 0.47, 0.42, 0.34, 0.31, 0.20],
-        'lot': 10,
-      },
-      {
-        'name': 'MIDCAP NIFTY',
-        'price': 12684.45,
-        'prev': 12540.90,
-        'pcr': '1.24',
-        'spark': [0.80, 0.71, 0.64, 0.60, 0.49, 0.43, 0.37, 0.30, 0.22, 0.16],
-        'lot': 50,
-      },
-      {
-        'name': 'INDIA VIX',
-        'price': 14.22,
-        'prev': 14.40,
-        'pcr': 'COOL',
-        'spark': [0.25, 0.30, 0.35, 0.33, 0.44, 0.48, 0.52, 0.58, 0.63, 0.68],
-        'lot': 1,
-      },
+      // Major Benchmark Indices
+      {'name': 'NIFTY 50', 'price': 24218.65, 'prev': 24092.40, 'pcr': '1.18', 'spark': [0.72, 0.68, 0.61, 0.64, 0.52, 0.46, 0.49, 0.35, 0.28, 0.22], 'lot': 25},
+      {'name': 'BANK NIFTY', 'price': 51842.30, 'prev': 51510.15, 'pcr': '1.12', 'spark': [0.76, 0.70, 0.72, 0.58, 0.50, 0.53, 0.41, 0.36, 0.29, 0.24], 'lot': 15},
+      {'name': 'FINNIFTY', 'price': 23945.80, 'prev': 23812.00, 'pcr': '1.09', 'spark': [0.68, 0.65, 0.58, 0.55, 0.48, 0.44, 0.39, 0.35, 0.30, 0.25], 'lot': 25},
+      {'name': 'SENSEX', 'price': 79845.10, 'prev': 79412.50, 'pcr': '1.15', 'spark': [0.74, 0.69, 0.63, 0.59, 0.54, 0.47, 0.42, 0.34, 0.31, 0.20], 'lot': 10},
+      {'name': 'MIDCAP NIFTY', 'price': 12684.45, 'prev': 12540.90, 'pcr': '1.24', 'spark': [0.80, 0.71, 0.64, 0.60, 0.49, 0.43, 0.37, 0.30, 0.22, 0.16], 'lot': 50},
+      {'name': 'BANKEX', 'price': 58920.40, 'prev': 58510.00, 'pcr': '1.08', 'spark': [0.70, 0.66, 0.60, 0.55, 0.49, 0.45, 0.38, 0.32, 0.28, 0.21], 'lot': 15},
+      {'name': 'NIFTY IT', 'price': 42890.30, 'prev': 42450.00, 'pcr': '1.14', 'spark': [0.75, 0.68, 0.62, 0.58, 0.50, 0.44, 0.38, 0.31, 0.25, 0.18], 'lot': 25},
+      {'name': 'NIFTY AUTO', 'price': 24150.80, 'prev': 23920.00, 'pcr': '1.10', 'spark': [0.71, 0.65, 0.59, 0.54, 0.48, 0.42, 0.36, 0.30, 0.24, 0.19], 'lot': 25},
+      {'name': 'NIFTY PHARMA', 'price': 22680.50, 'prev': 22490.00, 'pcr': '1.06', 'spark': [0.65, 0.60, 0.56, 0.51, 0.47, 0.43, 0.39, 0.35, 0.30, 0.26], 'lot': 25},
+      {'name': 'NIFTY METAL', 'price': 9450.20, 'prev': 9310.00, 'pcr': '1.21', 'spark': [0.78, 0.72, 0.65, 0.59, 0.51, 0.45, 0.39, 0.32, 0.25, 0.17], 'lot': 25},
+      {'name': 'NIFTY ENERGY', 'price': 39120.60, 'prev': 38780.00, 'pcr': '1.11', 'spark': [0.69, 0.64, 0.58, 0.52, 0.46, 0.41, 0.35, 0.29, 0.23, 0.18], 'lot': 25},
+      {'name': 'NIFTY FMCG', 'price': 58240.10, 'prev': 58010.00, 'pcr': '1.04', 'spark': [0.62, 0.58, 0.55, 0.51, 0.48, 0.45, 0.41, 0.37, 0.33, 0.29], 'lot': 25},
+      {'name': 'INDIA VIX', 'price': 14.22, 'prev': 14.40, 'pcr': 'COOL', 'spark': [0.25, 0.30, 0.35, 0.33, 0.44, 0.48, 0.52, 0.58, 0.63, 0.68], 'lot': 1},
+
+      // Top 45 NIFTY Bluechips with Streaming Quotes
+      {'name': 'RELIANCE', 'price': 1351.00, 'prev': 1377.50, 'pcr': '1.08', 'spark': [0.70, 0.65, 0.60, 0.54, 0.48, 0.42, 0.35, 0.28, 0.22, 0.18], 'lot': 1},
+      {'name': 'TCS', 'price': 4180.00, 'prev': 4153.00, 'pcr': '1.15', 'spark': [0.68, 0.62, 0.58, 0.53, 0.47, 0.41, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'HDFCBANK', 'price': 817.80, 'prev': 846.00, 'pcr': '0.94', 'spark': [0.75, 0.69, 0.63, 0.57, 0.50, 0.44, 0.37, 0.31, 0.24, 0.17], 'lot': 1},
+      {'name': 'INFY', 'price': 1105.20, 'prev': 1099.80, 'pcr': '1.18', 'spark': [0.65, 0.60, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.21], 'lot': 1},
+      {'name': 'ICICIBANK', 'price': 1264.00, 'prev': 1253.00, 'pcr': '1.12', 'spark': [0.72, 0.66, 0.61, 0.55, 0.49, 0.43, 0.36, 0.30, 0.24, 0.19], 'lot': 1},
+      {'name': 'BHARTIARTL', 'price': 1610.20, 'prev': 1595.00, 'pcr': '1.20', 'spark': [0.74, 0.68, 0.62, 0.56, 0.50, 0.44, 0.38, 0.32, 0.26, 0.20], 'lot': 1},
+      {'name': 'SBIN', 'price': 815.30, 'prev': 821.00, 'pcr': '1.05', 'spark': [0.68, 0.63, 0.58, 0.52, 0.46, 0.41, 0.35, 0.29, 0.23, 0.18], 'lot': 1},
+      {'name': 'ITC', 'price': 472.50, 'prev': 469.80, 'pcr': '1.10', 'spark': [0.60, 0.56, 0.52, 0.48, 0.44, 0.40, 0.36, 0.32, 0.28, 0.24], 'lot': 1},
+      {'name': 'LT', 'price': 3680.00, 'prev': 3632.00, 'pcr': '1.22', 'spark': [0.76, 0.70, 0.64, 0.58, 0.51, 0.45, 0.38, 0.31, 0.25, 0.18], 'lot': 1},
+      {'name': 'KOTAKBANK', 'price': 1745.00, 'prev': 1762.00, 'pcr': '0.98', 'spark': [0.66, 0.61, 0.56, 0.51, 0.46, 0.40, 0.35, 0.29, 0.24, 0.19], 'lot': 1},
+      {'name': 'HINDUNILVR', 'price': 2380.00, 'prev': 2395.00, 'pcr': '1.02', 'spark': [0.64, 0.60, 0.56, 0.52, 0.48, 0.43, 0.39, 0.34, 0.30, 0.25], 'lot': 1},
+      {'name': 'AXISBANK', 'price': 1145.00, 'prev': 1138.00, 'pcr': '1.14', 'spark': [0.71, 0.65, 0.60, 0.54, 0.48, 0.42, 0.36, 0.30, 0.24, 0.19], 'lot': 1},
+      {'name': 'TATAMOTORS', 'price': 965.40, 'prev': 952.00, 'pcr': '1.25', 'spark': [0.78, 0.71, 0.65, 0.58, 0.52, 0.45, 0.39, 0.32, 0.26, 0.19], 'lot': 1},
+      {'name': 'MARUTI', 'price': 12450.00, 'prev': 12380.00, 'pcr': '1.11', 'spark': [0.69, 0.63, 0.58, 0.53, 0.47, 0.41, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'SUNPHARMA', 'price': 1820.00, 'prev': 1805.00, 'pcr': '1.16', 'spark': [0.73, 0.67, 0.61, 0.55, 0.49, 0.43, 0.37, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'BAJFINANCE', 'price': 6890.00, 'prev': 6825.00, 'pcr': '1.19', 'spark': [0.75, 0.69, 0.62, 0.56, 0.50, 0.43, 0.37, 0.30, 0.24, 0.18], 'lot': 1},
+      {'name': 'NTPC', 'price': 374.80, 'prev': 370.20, 'pcr': '1.24', 'spark': [0.77, 0.70, 0.63, 0.57, 0.51, 0.44, 0.38, 0.31, 0.25, 0.18], 'lot': 1},
+      {'name': 'ONGC', 'price': 265.40, 'prev': 262.90, 'pcr': '1.13', 'spark': [0.70, 0.64, 0.59, 0.53, 0.47, 0.41, 0.35, 0.29, 0.24, 0.19], 'lot': 1},
+      {'name': 'POWERGRID', 'price': 324.50, 'prev': 320.80, 'pcr': '1.20', 'spark': [0.74, 0.68, 0.61, 0.55, 0.49, 0.43, 0.36, 0.30, 0.24, 0.18], 'lot': 1},
+      {'name': 'ADANIENT', 'price': 2677.90, 'prev': 2709.00, 'pcr': '0.96', 'spark': [0.65, 0.60, 0.55, 0.49, 0.44, 0.39, 0.34, 0.28, 0.23, 0.18], 'lot': 1},
+      {'name': 'COALINDIA', 'price': 445.00, 'prev': 441.50, 'pcr': '1.15', 'spark': [0.71, 0.65, 0.59, 0.53, 0.47, 0.41, 0.35, 0.29, 0.24, 0.19], 'lot': 1},
+      {'name': 'TATASTEEL', 'price': 148.50, 'prev': 146.20, 'pcr': '1.22', 'spark': [0.76, 0.69, 0.63, 0.57, 0.50, 0.44, 0.37, 0.31, 0.24, 0.18], 'lot': 1},
+      {'name': 'JSWSTEEL', 'price': 985.00, 'prev': 972.00, 'pcr': '1.18', 'spark': [0.73, 0.67, 0.61, 0.55, 0.48, 0.42, 0.36, 0.30, 0.24, 0.19], 'lot': 1},
+      {'name': 'TITAN', 'price': 3420.00, 'prev': 3402.00, 'pcr': '1.09', 'spark': [0.68, 0.62, 0.57, 0.51, 0.46, 0.40, 0.35, 0.29, 0.24, 0.19], 'lot': 1},
+      {'name': 'M&M', 'price': 2940.00, 'prev': 2895.00, 'pcr': '1.26', 'spark': [0.79, 0.72, 0.66, 0.59, 0.53, 0.46, 0.39, 0.32, 0.26, 0.19], 'lot': 1},
+      {'name': 'ULTRACEMCO', 'price': 11250.00, 'prev': 11180.00, 'pcr': '1.12', 'spark': [0.70, 0.64, 0.59, 0.53, 0.47, 0.41, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'ASIANPAINT', 'price': 2840.00, 'prev': 2865.00, 'pcr': '0.99', 'spark': [0.63, 0.59, 0.54, 0.49, 0.45, 0.40, 0.35, 0.30, 0.25, 0.21], 'lot': 1},
+      {'name': 'BAJAJFINSV', 'price': 1720.00, 'prev': 1705.00, 'pcr': '1.14', 'spark': [0.72, 0.66, 0.60, 0.54, 0.48, 0.42, 0.36, 0.30, 0.24, 0.19], 'lot': 1},
+      {'name': 'NESTLEIND', 'price': 2280.00, 'prev': 2292.00, 'pcr': '1.01', 'spark': [0.61, 0.57, 0.53, 0.49, 0.45, 0.41, 0.37, 0.33, 0.29, 0.25], 'lot': 1},
+      {'name': 'TECHM', 'price': 1680.00, 'prev': 1665.00, 'pcr': '1.17', 'spark': [0.74, 0.68, 0.62, 0.56, 0.50, 0.43, 0.37, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'HCLTECH', 'price': 1840.00, 'prev': 1825.00, 'pcr': '1.16', 'spark': [0.73, 0.67, 0.61, 0.55, 0.49, 0.43, 0.37, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'WIPRO', 'price': 565.00, 'prev': 558.00, 'pcr': '1.12', 'spark': [0.69, 0.63, 0.58, 0.52, 0.47, 0.41, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'ADANIPORTS', 'price': 1185.00, 'prev': 1172.00, 'pcr': '1.19', 'spark': [0.75, 0.68, 0.62, 0.56, 0.49, 0.43, 0.37, 0.30, 0.24, 0.18], 'lot': 1},
+      {'name': 'GRASIM', 'price': 2640.00, 'prev': 2615.00, 'pcr': '1.13', 'spark': [0.70, 0.64, 0.59, 0.53, 0.47, 0.41, 0.35, 0.30, 0.24, 0.19], 'lot': 1},
+      {'name': 'CIPLA', 'price': 1520.00, 'prev': 1508.00, 'pcr': '1.15', 'spark': [0.72, 0.66, 0.60, 0.54, 0.48, 0.42, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'DRREDDY', 'price': 6750.00, 'prev': 6710.00, 'pcr': '1.10', 'spark': [0.68, 0.62, 0.57, 0.52, 0.46, 0.41, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'HEROMOTOCO', 'price': 4890.00, 'prev': 4840.00, 'pcr': '1.16', 'spark': [0.73, 0.67, 0.61, 0.55, 0.49, 0.43, 0.37, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'EICHERMOT', 'price': 4720.00, 'prev': 4680.00, 'pcr': '1.14', 'spark': [0.71, 0.65, 0.59, 0.53, 0.47, 0.42, 0.36, 0.30, 0.25, 0.20], 'lot': 1},
+      {'name': 'SBILIFE', 'price': 1610.00, 'prev': 1598.00, 'pcr': '1.08', 'spark': [0.66, 0.61, 0.56, 0.51, 0.46, 0.41, 0.36, 0.31, 0.26, 0.21], 'lot': 1},
+      {'name': 'HDFCLIFE', 'price': 725.00, 'prev': 719.00, 'pcr': '1.11', 'spark': [0.69, 0.63, 0.58, 0.53, 0.47, 0.42, 0.37, 0.31, 0.26, 0.21], 'lot': 1},
+      {'name': 'BRITANNIA', 'price': 4980.00, 'prev': 4950.00, 'pcr': '1.05', 'spark': [0.64, 0.59, 0.55, 0.50, 0.46, 0.41, 0.37, 0.32, 0.27, 0.22], 'lot': 1},
+      {'name': 'DIVISLAB', 'price': 5820.00, 'prev': 5760.00, 'pcr': '1.18', 'spark': [0.75, 0.68, 0.62, 0.56, 0.49, 0.43, 0.37, 0.30, 0.24, 0.18], 'lot': 1},
+      {'name': 'BPCL', 'price': 312.00, 'prev': 308.50, 'pcr': '1.14', 'spark': [0.71, 0.65, 0.59, 0.54, 0.48, 0.42, 0.36, 0.31, 0.25, 0.20], 'lot': 1},
+      {'name': 'HINDALCO', 'price': 655.00, 'prev': 648.00, 'pcr': '1.20', 'spark': [0.76, 0.69, 0.63, 0.57, 0.50, 0.44, 0.38, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'APOLLOHOSP', 'price': 7120.00, 'prev': 7040.00, 'pcr': '1.17', 'spark': [0.74, 0.67, 0.61, 0.55, 0.49, 0.43, 0.37, 0.31, 0.25, 0.19], 'lot': 1},
+      {'name': 'TRENT', 'price': 7120.00, 'prev': 6980.00, 'pcr': '1.28', 'spark': [0.81, 0.74, 0.67, 0.60, 0.53, 0.46, 0.39, 0.32, 0.25, 0.18], 'lot': 1},
+      {'name': 'BEL', 'price': 298.50, 'prev': 292.00, 'pcr': '1.24', 'spark': [0.78, 0.71, 0.64, 0.58, 0.51, 0.45, 0.38, 0.31, 0.25, 0.18], 'lot': 1},
+      {'name': 'TATAPOWER', 'price': 418.00, 'prev': 412.00, 'pcr': '1.21', 'spark': [0.75, 0.69, 0.62, 0.56, 0.50, 0.43, 0.37, 0.30, 0.24, 0.18], 'lot': 1},
+      {'name': 'BHEL', 'price': 238.00, 'prev': 232.00, 'pcr': '1.25', 'spark': [0.79, 0.72, 0.65, 0.59, 0.52, 0.45, 0.39, 0.32, 0.25, 0.18], 'lot': 1},
+      {'name': 'HAL', 'price': 4380.00, 'prev': 4290.00, 'pcr': '1.27', 'spark': [0.80, 0.73, 0.66, 0.59, 0.53, 0.46, 0.39, 0.32, 0.25, 0.18], 'lot': 1},
+      {'name': 'MAZDOCK', 'price': 4380.00, 'prev': 4260.00, 'pcr': '1.30', 'spark': [0.82, 0.75, 0.68, 0.61, 0.54, 0.47, 0.40, 0.33, 0.26, 0.18], 'lot': 1},
     ];
 
     _alphaCalls = [
@@ -333,17 +352,23 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
       'SENSEX': 'SENSEX',
       'MIDCAP NIFTY': 'MIDCPNIFTY',
       'INDIA VIX': 'INDIAVIX',
+      'BANKEX': 'BANKEX',
+      'NIFTY IT': 'NIFTYIT',
+      'NIFTY AUTO': 'NIFTYAUTO',
+      'NIFTY PHARMA': 'NIFTYPHARMA',
+      'NIFTY METAL': 'NIFTYMETAL',
+      'NIFTY ENERGY': 'NIFTYENERGY',
+      'NIFTY FMCG': 'NIFTYFMCG',
     };
 
     for (final idx in _liveIndices) {
-      final key = indexKeyMap[idx['name']?.toString() ?? ''];
-      if (key != null) {
-        final q = svc.getQuote(key);
-        if (q != null && q.ltp > 0) {
-          idx['price'] = q.ltp;
-          idx['prev'] = q.prevClose > 0 ? q.prevClose : q.ltp;
-          updated = true;
-        }
+      final nameStr = idx['name']?.toString() ?? '';
+      final key = indexKeyMap[nameStr] ?? nameStr.replaceAll(' ', '').toUpperCase();
+      final q = svc.getQuote(key);
+      if (q != null && q.ltp > 0) {
+        idx['price'] = q.ltp;
+        idx['prev'] = q.prevClose > 0 ? q.prevClose : q.ltp;
+        updated = true;
       }
     }
 
@@ -664,10 +689,18 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
 
   // ── 2. Live Market Telemetry Bar ──
   Widget _buildMarketTelemetryStrip(bool isDark, Color borderCol) {
-    final vix = (_liveIndices[5]['price'] as num).toDouble();
-    final vixPrev = (_liveIndices[5]['prev'] as num).toDouble();
+    final vixItem = _liveIndices.firstWhere(
+      (it) => it['name'] == 'INDIA VIX',
+      orElse: () => {'price': 14.22, 'prev': 14.40},
+    );
+    final vix = (vixItem['price'] as num).toDouble();
+    final vixPrev = (vixItem['prev'] as num).toDouble();
     final vixPct = ((vix - vixPrev) / vixPrev) * 100;
-    final niftySpot = (_liveIndices[0]['price'] as num).toDouble();
+    final niftyItem = _liveIndices.firstWhere(
+      (it) => it['name'] == 'NIFTY 50',
+      orElse: () => {'price': 24218.65, 'prev': 24092.40},
+    );
+    final niftySpot = (niftyItem['price'] as num).toDouble();
 
     return Container(
       width: double.infinity,
@@ -2089,6 +2122,36 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
           {'sym': 'COALINDIA', 'ltp': 445.00, 'chg': '+1.80%', 'rvol': '2.0x', 'tgt': 480.0, 'sl': 428.0},
         ],
       },
+      {
+        'title': 'Breakdown Below 50-EMA & Heavy Short Buildup',
+        'desc': 'High-volume bear breakdown slicing through multi-month key exponential moving averages with surging Open Interest.',
+        'tag': 'BEAR BREAKDOWN',
+        'strength': '94% SHORT BUILDUP',
+        'tagCol': const Color(0xFFEF4444),
+        'results': [
+          {'sym': 'HDFCBANK', 'ltp': 1650.00, 'chg': '-2.15%', 'rvol': '3.4x', 'tgt': 1580.0, 'sl': 1690.0},
+          {'sym': 'KOTAKBANK', 'ltp': 1720.00, 'chg': '-2.80%', 'rvol': '3.1x', 'tgt': 1640.0, 'sl': 1765.0},
+          {'sym': 'TITAN', 'ltp': 3380.00, 'chg': '-3.10%', 'rvol': '2.8x', 'tgt': 3240.0, 'sl': 3460.0},
+          {'sym': 'ASIANPAINT', 'ltp': 2790.00, 'chg': '-2.45%', 'rvol': '2.9x', 'tgt': 2680.0, 'sl': 2855.0},
+          {'sym': 'BAJAJ-AUTO', 'ltp': 9240.00, 'chg': '-3.60%', 'rvol': '3.5x', 'tgt': 8800.0, 'sl': 9480.0},
+          {'sym': 'EICHERMOT', 'ltp': 4720.00, 'chg': '-2.90%', 'rvol': '2.7x', 'tgt': 4520.0, 'sl': 4840.0},
+        ],
+      },
+      {
+        'title': 'RSI Overbought Bearish Reversal (> 78 Breakdown)',
+        'desc': 'Momentum exhaustion with high-volume profit booking and negative MACD histogram divergence.',
+        'tag': 'BEAR REVERSAL',
+        'strength': '89% EXHAUSTION',
+        'tagCol': const Color(0xFFF43F5E),
+        'results': [
+          {'sym': 'BEL', 'ltp': 288.00, 'chg': '-3.40%', 'rvol': '3.2x', 'tgt': 270.0, 'sl': 298.0},
+          {'sym': 'HAL', 'ltp': 4280.00, 'chg': '-4.15%', 'rvol': '3.8x', 'tgt': 4050.0, 'sl': 4420.0},
+          {'sym': 'TRENT', 'ltp': 6940.00, 'chg': '-2.60%', 'rvol': '2.6x', 'tgt': 6650.0, 'sl': 7120.0},
+          {'sym': 'DIXON', 'ltp': 14200.00, 'chg': '-3.85%', 'rvol': '3.1x', 'tgt': 13500.0, 'sl': 14650.0},
+          {'sym': 'VOLTAS', 'ltp': 1680.00, 'chg': '-2.75%', 'rvol': '2.5x', 'tgt': 1590.0, 'sl': 1735.0},
+          {'sym': 'POLYCAB', 'ltp': 6480.00, 'chg': '-3.20%', 'rvol': '2.9x', 'tgt': 6180.0, 'sl': 6670.0},
+        ],
+      },
     ];
 
     return ListView(
@@ -2157,6 +2220,9 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                         ? '${liveQ.changePct >= 0 ? '+' : ''}${liveQ.changePct.toStringAsFixed(2)}%'
                         : (r['chg'] as String);
 
+                    final isNeg = chg.trim().startsWith('-');
+                    final chgCol = isNeg ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+
                     return InkWell(
                       onTap: () {
                         final isOpt = sym.contains(' CE') || sym.contains(' PE');
@@ -2164,7 +2230,7 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                         OrderPlacementTicketDialog.show(
                           context,
                           symbol: sym,
-                          side: 'BUY',
+                          side: isNeg ? 'SELL' : 'BUY',
                           ltp: ltp,
                           lotSize: lot,
                           category: isOpt ? 'F&O' : 'EQUITY',
@@ -2185,23 +2251,23 @@ class _TradeMarketStockGroViewState extends State<TradeMarketStockGroView>
                             const SizedBox(width: 6),
                             Text('₹${_formatIndian(ltp)}', style: TextStyle(color: textMain, fontSize: 11.5)),
                             const SizedBox(width: 6),
-                            Text(chg, style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w900)),
+                            Text(chg, style: TextStyle(color: chgCol, fontSize: 11, fontWeight: FontWeight.w900)),
                             if (r.containsKey('rvol')) ...[
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withOpacity(0.12),
+                                  color: chgCol.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   r['rvol'] as String,
-                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
+                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: chgCol),
                                 ),
                               ),
                             ],
                             const SizedBox(width: 6),
-                            const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF10B981)),
+                            Icon(isNeg ? Icons.trending_down_rounded : Icons.flash_on_rounded, size: 14, color: chgCol),
                           ],
                         ),
                       ),

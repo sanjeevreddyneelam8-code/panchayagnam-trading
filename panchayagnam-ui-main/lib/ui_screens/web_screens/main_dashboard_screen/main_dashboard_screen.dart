@@ -400,7 +400,19 @@ class _MainDashboardState extends State<MainDashboard> {
     final isSuperAdmin = currentUserRole == 'SUPER_ADMIN';
 
     return [
-      // 1. Auto Trading (1st side heading)
+      // 1. Market Overview & Radar (User Request: On Top)
+      const _NavItem(
+        icon: Icons.radar_rounded,
+        label: 'Market Overview & Radar',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trades'),
+          _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
+          _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant Scanners'),
+        ],
+      ),
+
+      // 2. Auto Trading
       const _NavItem(
         icon: Icons.psychology_rounded,
         label: 'Auto Trading',
@@ -413,29 +425,17 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 2. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
+      // 3. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
       const _NavItem(
         icon: Icons.hub_rounded,
         label: 'Parent Children Trading',
         type: _NavItemType.normal,
       ),
 
-      // 3. Market Overview & Radar (SEBI Alpha Trades, Market Movers & Shockers, Quant Scanners)
-      const _NavItem(
-        icon: Icons.radar_rounded,
-        label: 'Market Overview & Radar',
-        type: _NavItemType.group,
-        children: [
-          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trades'),
-          _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
-          _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant Scanners'),
-        ],
-      ),
-
-      // 4. Trading Markets (Cash, Futures, Option Chain unified, Indices, Stocks Basket)
+      // 4. Market Trading (Renamed from Trading Markets)
       const _NavItem(
         icon: Icons.candlestick_chart_rounded,
-        label: 'Trading Markets',
+        label: 'Market Trading',
         type: _NavItemType.group,
         children: [
           _SubNavItem(icon: Icons.account_balance_wallet_outlined, label: '🟢 Cash Market (Stocks / Equity)'),
@@ -516,7 +516,19 @@ class _MainDashboardState extends State<MainDashboard> {
     final subIdx = _currentSelection.subIndex ?? 0;
 
     switch (topIdx) {
-      case 0: // 1. Auto Trading
+      case 0: // 1. Market Overview & Radar (User Request: Put on top)
+        switch (subIdx) {
+          case 0:
+            return const TradeMarketStockGroView(initialTabIndex: 1); // Alpha Trades
+          case 1:
+            return const TradeMarketStockGroView(initialTabIndex: 2); // Market Movers & Shockers
+          case 2:
+            return const TradeMarketStockGroView(initialTabIndex: 3); // Quant Scanners
+          default:
+            return const TradeMarketStockGroView(initialTabIndex: 0);
+        }
+
+      case 1: // 2. Auto Trading
         switch (subIdx) {
           case 0:
             return const AlgoStrategiesView();
@@ -530,22 +542,10 @@ class _MainDashboardState extends State<MainDashboard> {
             return const AlgoStrategiesView();
         }
 
-      case 1: // 2. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
+      case 2: // 3. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
         return const GroupOrdersTab(initialHierarchyIndex: 0);
 
-      case 2: // 3. Market Overview & Radar (User Request: Alpha Trades, Market Movers, Quant Scanners)
-        switch (subIdx) {
-          case 0:
-            return const TradeMarketStockGroView(initialTabIndex: 1); // Alpha Trades
-          case 1:
-            return const TradeMarketStockGroView(initialTabIndex: 2); // Market Movers & Shockers
-          case 2:
-            return const TradeMarketStockGroView(initialTabIndex: 3); // Quant Scanners
-          default:
-            return const TradeMarketStockGroView(initialTabIndex: 1);
-        }
-
-      case 3: // 4. Trading Markets (Cash, Futures, Option Chain unified, Indices, Stocks Basket)
+      case 3: // 4. Market Trading (Renamed from Trading Markets)
         switch (subIdx) {
           case 0:
             return CashMarketView(
@@ -885,7 +885,7 @@ class _MainDashboardState extends State<MainDashboard> {
                         child: InkWell(
                           onTap: () {
                             setState(() {
-                              _currentSelection = const _NavSelection(1, 1);
+                              _currentSelection = const _NavSelection(2, 0); // Parent Children Trading
                               _bodyKey = UniqueKey();
                             });
                           },
@@ -937,19 +937,19 @@ class _MainDashboardState extends State<MainDashboard> {
                           onNavigateToBrokers: _navigateToBrokers,
                           onNavigateToParentChild: () {
                             setState(() {
-                              _currentSelection = const _NavSelection(1, 0);
+                              _currentSelection = const _NavSelection(2, 0); // Parent Children Trading
                               _bodyKey = UniqueKey();
                             });
                           },
                           onNavigateToAutoTrading: () {
                             setState(() {
-                              _currentSelection = const _NavSelection(0, 0);
+                              _currentSelection = const _NavSelection(1, 0); // Auto Trading
                               _bodyKey = UniqueKey();
                             });
                           },
                           onNavigateToVirtualPractice: () {
                             setState(() {
-                              _currentSelection = const _NavSelection(0, 3);
+                              _currentSelection = const _NavSelection(1, 3); // Paper Trading
                               _bodyKey = UniqueKey();
                             });
                           },
@@ -1665,7 +1665,7 @@ class _MainDashboardState extends State<MainDashboard> {
       },
       onOpenAutoTrading: () {
         setState(() {
-          _currentSelection = const _NavSelection(0, 0); // Auto Trading
+          _currentSelection = const _NavSelection(1, 0); // Auto Trading
           _bodyKey = UniqueKey();
         });
       },
@@ -5660,8 +5660,9 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                         maxLines: 1,
                         style: TextStyle(
                           color: _iconColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import '../../../constants/api_url_constants.dart';
 import '../../../constants/auth_header_helper.dart';
 import '../../../models/ScripInfo.dart';
+import '../../../service/live_market_data_service.dart';
 
 /// Real OHLC Candle model for technical chart rendering
 class ChartCandle {
@@ -208,41 +210,54 @@ class _ChartsViewState extends State<ChartsView> {
     _selectedInstrument = _chartInstruments.first;
     _currentLtp = _basePrices[_selectedInstrument.name] ?? 24150.50;
     _loadCandlesForSelected();
+    LiveMarketDataService().addListener(_syncLiveQuote);
+    LiveMarketDataService().start();
+    _syncLiveQuote();
     _startLivePriceTicker();
   }
 
   @override
   void dispose() {
+    LiveMarketDataService().removeListener(_syncLiveQuote);
     _liveTicker?.cancel();
     super.dispose();
   }
 
-  /// Live ticker simulating continuous micro-fluctuations on the latest candle
-  void _startLivePriceTicker() {
-    _liveTicker?.cancel();
-    _liveTicker = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted || _candles.isEmpty) return;
-      final rand = math.Random();
-      final base = _basePrices[_selectedInstrument.name] ?? 2000.0;
-      final delta = (rand.nextDouble() - 0.48) * (base * 0.0008);
+  /// Live ticker syncing real NSE/Angel One market ticks continuously into the chart
+  void _syncLiveQuote() {
+    if (!mounted || _candles.isEmpty) return;
+    final svc = LiveMarketDataService();
+    final cleanSym = _selectedInstrument.tradingSymbol.replaceAll('-EQ', '').replaceAll(' ', '').toUpperCase();
+    final nameSym = _selectedInstrument.name.toUpperCase().replaceAll(' ', '');
+    final q = svc.getQuote(cleanSym) ?? svc.getQuote(nameSym);
+
+    if (q != null && q.ltp > 0) {
       setState(() {
-        _currentLtp = double.parse((_currentLtp + delta).toStringAsFixed(2));
+        _currentLtp = q.ltp;
+        final base = q.prevClose > 0 ? q.prevClose : (_basePrices[_selectedInstrument.name] ?? q.ltp);
         _dayChange = _currentLtp - base;
-        _dayChangePct = (_dayChange / base) * 100;
+        _dayChangePct = q.changePct != 0 ? q.changePct : ((_dayChange / base) * 100);
 
         final last = _candles.last;
-        final newHigh = math.max(last.high, _currentLtp);
-        final newLow = math.min(last.low, _currentLtp);
-        final newVol = last.volume + rand.nextInt(120);
+        final newHigh = q.high > 0 ? math.max(last.high, q.high) : math.max(last.high, _currentLtp);
+        final newLow = q.low > 0 ? math.min(last.low, q.low) : math.min(last.low, _currentLtp);
 
         _candles[_candles.length - 1] = last.copyWith(
           close: _currentLtp,
           high: newHigh,
           low: newLow,
-          volume: newVol,
+          volume: q.volume > 0 ? q.volume : last.volume,
         );
         _lastFetchTime = DateTime.now();
       });
+    }
+  }
+
+  void _startLivePriceTicker() {
+    _liveTicker?.cancel();
+    _liveTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _candles.isEmpty) return;
+      _syncLiveQuote();
     });
   }
 
@@ -560,6 +575,21 @@ class _ChartsViewState extends State<ChartsView> {
                       ),
                       icon: const Icon(Icons.arrow_downward_rounded, size: 16),
                       label: Text('SELL ${_selectedInstrument.name.split('-')[0]}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final sym = _selectedInstrument.name.replaceAll(' ', '').toUpperCase();
+                        final tvSym = sym == 'NIFTY50' ? 'NSE:NIFTY' : (sym == 'BANKNIFTY' ? 'NSE:BANKNIFTY' : 'NSE:$sym');
+                        html.window.open('https://in.tradingview.com/chart/?symbol=$tvSym', '_blank');
+                      },
+                      icon: const Icon(Icons.open_in_new_rounded, size: 15, color: Colors.white),
+                      label: const Text('TradingView Live Chart ↗', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                      ),
                     ),
                   ],
                 ),

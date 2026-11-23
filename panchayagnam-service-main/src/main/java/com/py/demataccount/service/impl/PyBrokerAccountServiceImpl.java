@@ -799,7 +799,11 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 AngelOnePlaceOrderRequest orderRequest = new AngelOnePlaceOrderRequest();
                 orderRequest.setApiKey(secret.getApiKey());
                 orderRequest.setAccessToken(accessToken);
-                orderRequest.setVariety(audit.getVariety());
+                String varietyToUse = audit.getVariety();
+                if (varietyToUse == null || (!"STOPLOSS".equalsIgnoreCase(varietyToUse) && !"ROBO".equalsIgnoreCase(varietyToUse))) {
+                    varietyToUse = "NORMAL";
+                }
+                orderRequest.setVariety(varietyToUse);
 
                 String exchange = request.getExchange() != null ? request.getExchange().trim().toUpperCase() : "NSE";
                 String productType = request.getProductType() != null ? request.getProductType().trim().toUpperCase() : "DELIVERY";
