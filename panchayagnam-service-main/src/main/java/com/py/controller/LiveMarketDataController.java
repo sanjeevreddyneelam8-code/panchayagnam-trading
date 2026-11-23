@@ -79,7 +79,13 @@ public class LiveMarketDataController {
             "ZOMATO", "PNB", "JIOFIN", "HINDALCO", "JSWSTEEL",
             "ASIANPAINT", "DIVISLAB", "POLYCAB", "BHEL", "PFC", "REC",
             "INDHOTEL", "MOTHERSON", "CGPOWER", "TATACOMM", "MAZDOCK",
-            "CHOLAFIN", "BHARATFORG", "SUPREMEIND", "SOLARINDS", "MCX", "BERGEPAINT"
+            "CHOLAFIN", "BHARATFORG", "SUPREMEIND", "SOLARINDS", "MCX", "BERGEPAINT",
+            "NTPC", "ONGC", "POWERGRID", "ADANIPORTS", "TATAPOWER", "COALINDIA",
+            "BPCL", "GAIL", "NHPC", "BANKBARODA", "CANBK", "IDFCFIRSTB",
+            "BAJAJFINSV", "SHRIRAMFIN", "SBILIFE", "HDFCLIFE", "TECHM", "LTIM",
+            "NAUKRI", "M&M", "BAJAJ-AUTO", "EICHERMOT", "HEROMOTOCO", "TVSMOTOR",
+            "VEDL", "JINDALSTEL", "HINDUNILVR", "ULTRACEMCO", "GRASIM", "CIPLA",
+            "DRREDDY", "BRITANNIA", "APOLLOHOSP"
     );
 
     private static final List<String> DEFAULT_COMMODITIES = List.of(
@@ -90,6 +96,8 @@ public class LiveMarketDataController {
     );
 
     private static final Map<String, String> ANGEL_NSE_TOKENS = new LinkedHashMap<>();
+    private static final Map<String, String> SYMBOL_TO_TOKEN = new ConcurrentHashMap<>();
+
     static {
         ANGEL_NSE_TOKENS.put("99926000", "NIFTY");
         ANGEL_NSE_TOKENS.put("99926009", "BANKNIFTY");
@@ -136,6 +144,66 @@ public class LiveMarketDataController {
         ANGEL_NSE_TOKENS.put("18143", "JIOFIN");
         ANGEL_NSE_TOKENS.put("1363", "HINDALCO");
         ANGEL_NSE_TOKENS.put("11723", "JSWSTEEL");
+        ANGEL_NSE_TOKENS.put("11630", "NTPC");
+        ANGEL_NSE_TOKENS.put("2475", "ONGC");
+        ANGEL_NSE_TOKENS.put("14977", "POWERGRID");
+        ANGEL_NSE_TOKENS.put("15083", "ADANIPORTS");
+        ANGEL_NSE_TOKENS.put("3426", "TATAPOWER");
+        ANGEL_NSE_TOKENS.put("20374", "COALINDIA");
+        ANGEL_NSE_TOKENS.put("526", "BPCL");
+        ANGEL_NSE_TOKENS.put("4717", "GAIL");
+        ANGEL_NSE_TOKENS.put("14299", "PFC");
+        ANGEL_NSE_TOKENS.put("15355", "REC");
+        ANGEL_NSE_TOKENS.put("438", "BHEL");
+        ANGEL_NSE_TOKENS.put("13270", "NHPC");
+        ANGEL_NSE_TOKENS.put("4668", "BANKBARODA");
+        ANGEL_NSE_TOKENS.put("10794", "CANBK");
+        ANGEL_NSE_TOKENS.put("11184", "IDFCFIRSTB");
+        ANGEL_NSE_TOKENS.put("16675", "BAJAJFINSV");
+        ANGEL_NSE_TOKENS.put("4306", "SHRIRAMFIN");
+        ANGEL_NSE_TOKENS.put("21808", "SBILIFE");
+        ANGEL_NSE_TOKENS.put("467", "HDFCLIFE");
+        ANGEL_NSE_TOKENS.put("685", "CHOLAFIN");
+        ANGEL_NSE_TOKENS.put("13538", "TECHM");
+        ANGEL_NSE_TOKENS.put("17818", "LTIM");
+        ANGEL_NSE_TOKENS.put("13751", "NAUKRI");
+        ANGEL_NSE_TOKENS.put("2031", "M&M");
+        ANGEL_NSE_TOKENS.put("16669", "BAJAJ-AUTO");
+        ANGEL_NSE_TOKENS.put("910", "EICHERMOT");
+        ANGEL_NSE_TOKENS.put("1348", "HEROMOTOCO");
+        ANGEL_NSE_TOKENS.put("8479", "TVSMOTOR");
+        ANGEL_NSE_TOKENS.put("422", "BHARATFORG");
+        ANGEL_NSE_TOKENS.put("4204", "MOTHERSON");
+        ANGEL_NSE_TOKENS.put("3063", "VEDL");
+        ANGEL_NSE_TOKENS.put("6733", "JINDALSTEL");
+        ANGEL_NSE_TOKENS.put("1394", "HINDUNILVR");
+        ANGEL_NSE_TOKENS.put("236", "ASIANPAINT");
+        ANGEL_NSE_TOKENS.put("11532", "ULTRACEMCO");
+        ANGEL_NSE_TOKENS.put("1232", "GRASIM");
+        ANGEL_NSE_TOKENS.put("694", "CIPLA");
+        ANGEL_NSE_TOKENS.put("881", "DRREDDY");
+        ANGEL_NSE_TOKENS.put("547", "BRITANNIA");
+        ANGEL_NSE_TOKENS.put("157", "APOLLOHOSP");
+        ANGEL_NSE_TOKENS.put("10940", "DIVISLAB");
+        ANGEL_NSE_TOKENS.put("11654", "MAZDOCK");
+        ANGEL_NSE_TOKENS.put("10945", "SUPREMEIND");
+        ANGEL_NSE_TOKENS.put("3352", "SOLARINDS");
+        ANGEL_NSE_TOKENS.put("31181", "MCX");
+        ANGEL_NSE_TOKENS.put("410", "BERGEPAINT");
+        ANGEL_NSE_TOKENS.put("15104", "INDHOTEL");
+        ANGEL_NSE_TOKENS.put("7452", "CGPOWER");
+
+        // Build reverse lookup
+        ANGEL_NSE_TOKENS.forEach((token, sym) -> SYMBOL_TO_TOKEN.put(sym, token));
+    }
+
+    public static String getTokenForSymbol(String symbol) {
+        if (symbol == null || symbol.isBlank()) return null;
+        String clean = symbol.trim().toUpperCase()
+                .replaceAll("-EQ$", "")
+                .replaceAll(" EQ$", "")
+                .replaceAll("\\s+", "");
+        return SYMBOL_TO_TOKEN.get(clean);
     }
 
     private final HttpClient httpClient = HttpClient.newBuilder()

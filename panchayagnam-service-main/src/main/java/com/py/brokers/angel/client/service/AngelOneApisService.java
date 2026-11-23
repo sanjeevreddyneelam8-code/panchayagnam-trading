@@ -358,38 +358,46 @@ public class AngelOneApisService {
                         }
                     } else {
                         String baseTicker = upperSym.split("[\\s-]")[0];
-                        JSONObject searchParams = new JSONObject();
-                        searchParams.put("exchange", exchange);
-                        searchParams.put("searchscrip", baseTicker);
-                        JSONObject searchResp = apiRequestHandler.postRequest(
-                                request.getApiKey(),
-                                routes.get("api.search.script.data"),
-                                searchParams,
-                                request.getAccessToken());
-                        JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
-                        if (dataArr != null && dataArr.length() > 0) {
-                            JSONObject bestMatch = null;
-                            String eqTarget = baseTicker + "-EQ";
-                            for (int i = 0; i < dataArr.length(); i++) {
-                                JSONObject item = dataArr.optJSONObject(i);
-                                if (item == null) continue;
-                                String sym = item.optString("tradingsymbol", "").toUpperCase();
-                                if (sym.equals(upperSym) || sym.equals(eqTarget)) {
-                                    bestMatch = item;
-                                    break;
+                        String knownToken = com.py.controller.LiveMarketDataController.getTokenForSymbol(baseTicker);
+                        if (knownToken != null && !knownToken.isBlank()) {
+                            symbolToken = knownToken;
+                            tradingSymbol = baseTicker + "-EQ";
+                            log.info("Auto-resolved AngelOne equity from static token map | symbol={} token={}",
+                                    tradingSymbol, symbolToken);
+                        } else {
+                            JSONObject searchParams = new JSONObject();
+                            searchParams.put("exchange", exchange);
+                            searchParams.put("searchscrip", baseTicker);
+                            JSONObject searchResp = apiRequestHandler.postRequest(
+                                    request.getApiKey(),
+                                    routes.get("api.search.script.data"),
+                                    searchParams,
+                                    request.getAccessToken());
+                            JSONArray dataArr = searchResp != null ? searchResp.optJSONArray("data") : null;
+                            if (dataArr != null && dataArr.length() > 0) {
+                                JSONObject bestMatch = null;
+                                String eqTarget = baseTicker + "-EQ";
+                                for (int i = 0; i < dataArr.length(); i++) {
+                                    JSONObject item = dataArr.optJSONObject(i);
+                                    if (item == null) continue;
+                                    String sym = item.optString("tradingsymbol", "").toUpperCase();
+                                    if (sym.equals(upperSym) || sym.equals(eqTarget)) {
+                                        bestMatch = item;
+                                        break;
+                                    }
+                                    if (bestMatch == null && sym.startsWith(baseTicker)) {
+                                        bestMatch = item;
+                                    }
                                 }
-                                if (bestMatch == null && sym.startsWith(baseTicker)) {
-                                    bestMatch = item;
+                                if (bestMatch == null) {
+                                    bestMatch = dataArr.optJSONObject(0);
                                 }
-                            }
-                            if (bestMatch == null) {
-                                bestMatch = dataArr.optJSONObject(0);
-                            }
-                            if (bestMatch != null) {
-                                tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
-                                symbolToken = bestMatch.optString("symboltoken", symbolToken);
-                                log.info("Auto-resolved AngelOne equity | query={} -> exchange={} symbol={} token={}",
-                                        upperSym, exchange, tradingSymbol, symbolToken);
+                                if (bestMatch != null) {
+                                    tradingSymbol = bestMatch.optString("tradingsymbol", tradingSymbol);
+                                    symbolToken = bestMatch.optString("symboltoken", symbolToken);
+                                    log.info("Auto-resolved AngelOne equity | query={} -> exchange={} symbol={} token={}",
+                                            upperSym, exchange, tradingSymbol, symbolToken);
+                                }
                             }
                         }
                     }
@@ -456,6 +464,10 @@ public class AngelOneApisService {
                 }
             }
 
+            if ("MARKET".equalsIgnoreCase(orderType)) {
+                price = 0.0;
+            }
+
             OrderParams orderParams = new OrderParams();
             orderParams.setExchange(exchange);
             orderParams.setTradingsymbol(tradingSymbol);
@@ -512,6 +524,12 @@ public class AngelOneApisService {
 
             if (rejectionReason != null) {
                 log.error("❌ AngelOne order {} was REJECTED by RMS: {}", order.orderId, rejectionReason);
+                if (rejectionReason.contains("AB4036") || rejectionReason.toLowerCase().contains("cautionary")) {
+                    throw new RuntimeException("Exchange Cautionary Listing (Code: AB4036): Intraday (MIS) is not allowed by the exchange for " + tradingSymbol + ". Please switch to DELIVERY (CNC) to place this order.");
+                }
+                if (rejectionReason.toLowerCase().contains("circuit limit")) {
+                    throw new RuntimeException("Circuit Limit: Order price exceeds the circuit limit. Place as a MARKET order for instant execution at live market price.");
+                }
                 throw new RuntimeException("Angel One rejected: " + rejectionReason);
             }
 

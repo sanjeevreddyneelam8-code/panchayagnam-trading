@@ -64,13 +64,13 @@ class LiveMarketDataService extends ChangeNotifier {
   DateTime? _lastQuotesFetch;
   DateTime? _lastCommoditiesFetch;
   DateTime? _backoffUntil;
-  int _backoffSeconds = 30;
+  int _backoffSeconds = 4;
   String _serverOutboundIp = '178.214.212.207';
 
-  static const Duration _quotesPollInterval = Duration(seconds: 20);
-  static const Duration _minQuotesCooldown = Duration(seconds: 15);
-  static const Duration _minCommoditiesCooldown = Duration(seconds: 18);
-  static const Duration _minOptionChainCooldown = Duration(seconds: 18);
+  static const Duration _quotesPollInterval = Duration(seconds: 4);
+  static const Duration _minQuotesCooldown = Duration(seconds: 2);
+  static const Duration _minCommoditiesCooldown = Duration(seconds: 6);
+  static const Duration _minOptionChainCooldown = Duration(seconds: 6);
 
   bool get isLiveConnected => _isLiveConnected;
   DateTime? get lastUpdated => _lastUpdated;
@@ -94,16 +94,16 @@ class LiveMarketDataService extends ChangeNotifier {
   void _triggerBackoff({int? overrideSeconds}) {
     final secs = overrideSeconds ?? _backoffSeconds;
     _backoffUntil = DateTime.now().add(Duration(seconds: secs));
-    _backoffSeconds = (_backoffSeconds * 2).clamp(30, 180);
+    _backoffSeconds = (_backoffSeconds + 2).clamp(4, 10);
   }
 
   void _resetBackoff() {
     _backoffUntil = null;
-    _backoffSeconds = 30;
+    _backoffSeconds = 4;
   }
 
-  /// Temporarily pauses background polling (e.g., while placing a live broker order)
-  void pauseBriefly([Duration duration = const Duration(seconds: 12)]) {
+  /// Non-blocking brief pause, capped to 2 seconds max so UI never appears frozen
+  void pauseBriefly([Duration duration = const Duration(seconds: 2)]) {
     final target = DateTime.now().add(duration);
     if (_backoffUntil == null || target.isAfter(_backoffUntil!)) {
       _backoffUntil = target;

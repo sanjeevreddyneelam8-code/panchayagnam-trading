@@ -14,14 +14,114 @@ import '../ui_screens/web_screens/main_dashboard_screen/main_dashboard_screen.da
 
 class OrderPlacementTicketDialog extends StatefulWidget {
   final String symbol;
+  final String? token;
   final String side; // 'BUY' or 'SELL'
   final double ltp;
   final int lotSize;
   final String category; // 'EQUITY' or 'F&O' or 'COMMODITY'
 
+  static const Map<String, String> standardTokens = {
+    'NIFTY': '99926000',
+    'BANKNIFTY': '99926009',
+    'FINNIFTY': '99926037',
+    'MIDCPNIFTY': '99926074',
+    'SENSEX': '99919000',
+    'INDIAVIX': '99926017',
+    'RELIANCE': '2885',
+    'HDFCBANK': '1333',
+    'INFY': '1594',
+    'TCS': '11536',
+    'SBIN': '3045',
+    'ICICIBANK': '4963',
+    'BHARTIARTL': '10604',
+    'ITC': '1660',
+    'LT': '11483',
+    'KOTAKBANK': '1922',
+    'AXISBANK': '5900',
+    'BAJFINANCE': '317',
+    'TATAMOTORS': '3456',
+    'MARUTI': '10999',
+    'SUNPHARMA': '3351',
+    'ADANIENT': '25',
+    'ADANIPORTS': '15083',
+    'NTPC': '11630',
+    'POWERGRID': '14977',
+    'ONGC': '2475',
+    'TATAPOWER': '3426',
+    'IOC': '1624',
+    'COALINDIA': '20374',
+    'BPCL': '526',
+    'BEL': '383',
+    'GAIL': '4717',
+    'PFC': '14299',
+    'REC': '15355',
+    'BHEL': '438',
+    'NHPC': '13270',
+    'BANKBARODA': '4668',
+    'CANBK': '10794',
+    'IDFCFIRSTB': '11184',
+    'YESBANK': '11915',
+    'BAJAJFINSV': '16675',
+    'SHRIRAMFIN': '4306',
+    'SBILIFE': '21808',
+    'HDFCLIFE': '467',
+    'CHOLAFIN': '685',
+    'JIOFIN': '18143',
+    'WIPRO': '3787',
+    'HCLTECH': '7229',
+    'TECHM': '13538',
+    'LTIM': '17818',
+    'COFORGE': '11543',
+    'PERSISTENT': '18365',
+    'TATACOMM': '3432',
+    'DIXON': '21690',
+    'ZOMATO': '5097',
+    'NAUKRI': '13751',
+    'M&M': '2031',
+    'BAJAJ-AUTO': '16669',
+    'EICHERMOT': '910',
+    'HEROMOTOCO': '1348',
+    'TVSMOTOR': '8479',
+    'BHARATFORG': '422',
+    'MOTHERSON': '4204',
+    'TATASTEEL': '3499',
+    'JSWSTEEL': '11723',
+    'HINDALCO': '1363',
+    'VEDL': '3063',
+    'JINDALSTEL': '6733',
+    'HINDUNILVR': '1394',
+    'TITAN': '3506',
+    'ASIANPAINT': '236',
+    'ULTRACEMCO': '11532',
+    'NESTLEIND': '17963',
+    'GRASIM': '1232',
+    'CIPLA': '694',
+    'DRREDDY': '881',
+    'BRITANNIA': '547',
+    'APOLLOHOSP': '157',
+    'DIVISLAB': '10940',
+    'TRENT': '1964',
+    'IDEA': '14366',
+    'ABB': '13',
+    'HAL': '2303',
+    'POLICYBZR': '6656',
+    'POWERINDIA': '18457',
+    'SIEMENS': '3150',
+    'PNB': '10666',
+    'POLYCAB': '9590',
+    'INDHOTEL': '15104',
+    'CGPOWER': '7452',
+    'MAZDOCK': '11654',
+    'SUPREMEIND': '10945',
+    'SOLARINDS': '3352',
+    'MCX': '31181',
+    'BERGEPAINT': '410',
+  };
+
   const OrderPlacementTicketDialog({
     super.key,
     required this.symbol,
+    this.token,
     required this.side,
     required this.ltp,
     this.lotSize = 1,
@@ -31,6 +131,7 @@ class OrderPlacementTicketDialog extends StatefulWidget {
   static void show(
     BuildContext context, {
     required String symbol,
+    String? token,
     required String side,
     required double ltp,
     int lotSize = 1,
@@ -47,6 +148,7 @@ class OrderPlacementTicketDialog extends StatefulWidget {
       barrierColor: Colors.black.withOpacity(0.6),
       builder: (ctx) => OrderPlacementTicketDialog(
         symbol: symbol,
+        token: token,
         side: side,
         ltp: ltp,
         lotSize: lotSize,
@@ -215,12 +317,15 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     if (_isCommodity) {
       _selectedExchange = 'MCX';
       _productType = 'CARRYFORWARD';
+      _orderType = 'LIMIT';
     } else if (_isFnO) {
       _selectedExchange = isBfo ? 'BFO' : 'NFO';
       _productType = 'CARRYFORWARD';
+      _orderType = 'LIMIT';
     } else {
       _selectedExchange = 'NSE';
       _productType = 'DELIVERY'; // Default to normal Delivery for Cash Equity
+      _orderType = 'MARKET'; // Default Cash equity to MARKET for fast instant execution without circuit rejections!
     }
 
     // Auto-detect if Indian market is currently closed -> enable AMO (After Market Order)
@@ -452,10 +557,21 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     });
 
     final messenger = ScaffoldMessenger.of(context);
-    LiveMarketDataService().pauseBriefly(const Duration(seconds: 15));
+    LiveMarketDataService().pauseBriefly(const Duration(seconds: 2));
     final endpoint = _side == 'BUY'
         ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
         : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
+
+    final cleanSym = widget.symbol
+        .toUpperCase()
+        .replaceAll('-EQ', '')
+        .replaceAll(' EQ', '')
+        .replaceAll(' 50', '')
+        .replaceAll(' ', '')
+        .trim();
+    final resolvedToken = (widget.token != null && widget.token!.isNotEmpty)
+        ? widget.token!
+        : (OrderPlacementTicketDialog.standardTokens[cleanSym] ?? '');
 
     try {
       final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
@@ -469,7 +585,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               'accId': int.tryParse(selectedAcc.id),
               'clientId': selectedAcc.clientId,
               'tradingSymbol': apiSymbol,
-              'symbolToken': '',
+              'symbolToken': resolvedToken,
               'exchange': _selectedExchange,
               'quantity': _quantity,
               'orderType': apiOrderType,
@@ -650,7 +766,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final availableMargin = _liveAvailableMargin ?? (selectedAcc.balance > 0 ? selectedAcc.balance : 0.0);
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final maxDialogHeight = math.min(screenHeight - 32.0, 500.0);
+    final maxDialogHeight = math.min(screenHeight - 32.0, 620.0);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -974,61 +1090,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // No. of shares / Lots
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _isFnO
-                                        ? 'Quantity (Multiples of $_effectiveLotSize)'
-                                        : 'Quantity (Shares)',
-                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                                  ),
-                                  Text(
-                                    _isFnO
-                                        ? '1 Lot = $_effectiveLotSize Qty'
-                                        : 'Min: 1 Share',
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 5),
-                              Container(
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
-                                      onPressed: () => _onQtyChanged(_quantity - _effectiveLotSize),
-                                    ),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _qtyCtrl,
-                                        keyboardType: TextInputType.number,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                        onChanged: (v) {
-                                          final val = int.tryParse(v);
-                                          if (val != null) setState(() => _quantity = val);
-                                        },
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
-                                      onPressed: () => _onQtyChanged(_quantity + _effectiveLotSize),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Order Type: LIMIT (left), MARKET (right), AMO
+                              // Order Type: MARKET (default for cash), LIMIT, AMO
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -1038,9 +1100,9 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                   ),
                                   Row(
                                     children: [
-                                      _buildTypeChip('LIMIT'),
-                                      const SizedBox(width: 6),
                                       _buildTypeChip('MARKET'),
+                                      const SizedBox(width: 6),
+                                      _buildTypeChip('LIMIT'),
                                       const SizedBox(width: 6),
                                       InkWell(
                                         onTap: () => setState(() => _isAmo = !_isAmo),
@@ -1127,12 +1189,12 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFE2E8F0),
+                                              color: const Color(0xFFDCFCE7),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: const Text(
                                               'MARKET',
-                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569)),
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -1149,6 +1211,60 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                     ],
                                   ),
                                 ),
+                              const SizedBox(height: 12),
+
+                              // No. of shares / Lots
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _isFnO
+                                        ? 'Quantity (Multiples of $_effectiveLotSize)'
+                                        : 'Quantity (Shares)',
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                                  ),
+                                  Text(
+                                    _isFnO
+                                        ? '1 Lot = $_effectiveLotSize Qty'
+                                        : 'Min: 1 Share',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove, size: 16, color: Color(0xFF64748B)),
+                                      onPressed: () => _onQtyChanged(_quantity - _effectiveLotSize),
+                                    ),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _qtyCtrl,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                        onChanged: (v) {
+                                          final val = int.tryParse(v);
+                                          if (val != null) setState(() => _quantity = val);
+                                        },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add, size: 16, color: Color(0xFF64748B)),
+                                      onPressed: () => _onQtyChanged(_quantity + _effectiveLotSize),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 10),
 
                               // Smart Orders Accordion (STOP LOSS & GTT)
@@ -1300,28 +1416,85 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                         Container(
                           width: double.infinity,
                           margin: const EdgeInsets.only(bottom: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEF2F2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: const Color(0xFFFCA5A5)),
                           ),
-                          child: Row(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 16),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _orderErrorMessage!,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF991B1B),
-                                    height: 1.3,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 16),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _orderErrorMessage!,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF991B1B),
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_orderErrorMessage!.toLowerCase().contains('circuit limit') ||
+                                  _orderErrorMessage!.toLowerCase().contains('market order')) ...[
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 32,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.bolt_rounded, size: 14),
+                                    label: const Text('Switch to MARKET Order & Place Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    ),
+                                    onPressed: _isSubmitting ? null : () {
+                                      setState(() {
+                                        _orderType = 'MARKET';
+                                        _orderErrorMessage = null;
+                                      });
+                                      _executeOrder();
+                                    },
                                   ),
                                 ),
-                              ),
+                              ],
+                              if (_orderErrorMessage!.contains('AB4036') ||
+                                  _orderErrorMessage!.toLowerCase().contains('cautionary')) ...[
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 32,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.inventory_2_rounded, size: 14),
+                                    label: const Text('Switch to DELIVERY (CNC) & Place Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF047857),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    ),
+                                    onPressed: _isSubmitting ? null : () {
+                                      setState(() {
+                                        _productType = 'DELIVERY';
+                                        _orderErrorMessage = null;
+                                      });
+                                      _executeOrder();
+                                    },
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),

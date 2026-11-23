@@ -11,6 +11,7 @@ import '../../../service/theme_mode_service.dart';
 /// Stock Item for Cash / Equity Market
 class CashStockItem {
   final String symbol;
+  final String? token;
   final String companyName;
   final String exchange;
   final String sector;
@@ -26,6 +27,7 @@ class CashStockItem {
 
   const CashStockItem({
     required this.symbol,
+    this.token,
     required this.companyName,
     this.exchange = 'NSE',
     required this.sector,
@@ -1314,9 +1316,11 @@ class _CashMarketViewState extends State<CashMarketView> {
 
   void _openCashOrderTicket(CashStockItem stock, String side) {
     final ltp = _getLiveLtp(stock);
+    final tok = stock.token ?? OrderPlacementTicketDialog.standardTokens[stock.symbol];
     OrderPlacementTicketDialog.show(
       context,
       symbol: stock.symbol,
+      token: tok,
       side: side,
       ltp: ltp,
       lotSize: 1, // Cash shares are 1 share lot!

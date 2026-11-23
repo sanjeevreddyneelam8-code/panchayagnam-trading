@@ -803,13 +803,24 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                     }
                 }
 
+                String tokenToUse = request.getSymbolToken();
+                if (tokenToUse == null || tokenToUse.isBlank()) {
+                    String tok = com.py.controller.LiveMarketDataController.getTokenForSymbol(tradingSymbol);
+                    if (tok != null && !tok.isBlank()) {
+                        tokenToUse = tok;
+                    }
+                }
+
+                String orderTypeToUse = request.getOrderType() != null ? request.getOrderType().trim().toUpperCase() : "LIMIT";
+                Double priceToUse = "MARKET".equalsIgnoreCase(orderTypeToUse) ? 0.0 : request.getPrice();
+
                 orderRequest.setExchange(exchange);
                 orderRequest.setTradingsymbol(request.getTradingSymbol());
-                orderRequest.setSymboltoken(request.getSymbolToken());
-                orderRequest.setOrdertype(request.getOrderType());
+                orderRequest.setSymboltoken(tokenToUse != null ? tokenToUse : "");
+                orderRequest.setOrdertype(orderTypeToUse);
                 orderRequest.setProducttype(productType);
                 orderRequest.setQuantity(request.getQuantity());
-                orderRequest.setPrice(request.getPrice());
+                orderRequest.setPrice(priceToUse != null ? priceToUse : 0.0);
                 orderRequest.setDuration("DAY");
                 orderRequest.setTransactiontype(transactionType);
                 orderRequest.setSquareoff("0");

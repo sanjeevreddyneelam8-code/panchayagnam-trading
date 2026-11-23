@@ -1129,6 +1129,7 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
               OrderPlacementTicketDialog.show(
                 context,
                 symbol: sym,
+                token: (item['token'] ?? item['symbolToken'])?.toString(),
                 side: 'BUY',
                 ltp: price,
                 lotSize: lot,
@@ -1153,6 +1154,7 @@ class _LiveMarketSearchDialogState extends State<LiveMarketSearchDialog> {
               OrderPlacementTicketDialog.show(
                 context,
                 symbol: sym,
+                token: (item['token'] ?? item['symbolToken'])?.toString(),
                 side: 'SELL',
                 ltp: price,
                 lotSize: lot,
