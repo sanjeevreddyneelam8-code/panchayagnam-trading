@@ -471,7 +471,7 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 }
                 return new JSONObject();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("AngelOne RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
             return new JSONObject();
         }

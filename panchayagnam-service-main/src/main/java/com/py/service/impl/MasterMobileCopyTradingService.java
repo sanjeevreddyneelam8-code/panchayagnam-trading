@@ -186,7 +186,7 @@ public class MasterMobileCopyTradingService {
                                 childReq.setSymbolToken(symbolToken);
                                 childReq.setExchange(exchange);
                                 childReq.setQuantity(childQty);
-                                childReq.setOrdertype(orderType.contains("MARKET") ? "MARKET" : "LIMIT");
+                                childReq.setOrderType(orderType.contains("MARKET") ? "MARKET" : "LIMIT");
                                 childReq.setPrice(price);
                                 childReq.setProductType(productType);
                                 childReq.setVariety("NORMAL");
