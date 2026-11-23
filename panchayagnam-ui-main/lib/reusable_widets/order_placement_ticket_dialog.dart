@@ -152,24 +152,37 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
   late TextEditingController _targetCtrl;
 
   bool get _isFnO {
-    final upperSym = widget.symbol.toUpperCase();
-    final upperCat = widget.category.toUpperCase();
-    return upperCat == 'F&O' ||
-        upperCat == 'OPTIONS' ||
-        upperCat == 'OPTION' ||
-        upperCat == 'FUTURES' ||
-        upperSym.endsWith(' CE') ||
-        upperSym.endsWith(' PE') ||
-        upperSym.endsWith('CE') ||
-        upperSym.endsWith('PE') ||
-        upperSym.contains(' FUT') ||
-        upperSym.endsWith('FUT') ||
-        RegExp(r'\d{2}[A-Z]{3}').hasMatch(upperSym);
+    final upperCat = widget.category.toUpperCase().trim();
+    if (upperCat == 'EQUITY' || upperCat == 'CASH') return false;
+
+    final upperSym = widget.symbol.toUpperCase().trim();
+    if (upperSym.endsWith('-EQ') || upperSym.endsWith(' EQ')) return false;
+
+    if (upperCat == 'F&O' || upperCat == 'OPTIONS' || upperCat == 'OPTION' || upperCat == 'FUTURES') {
+      return true;
+    }
+
+    if (upperSym.endsWith(' CE') || upperSym.endsWith(' PE') || upperSym.endsWith(' FUT')) {
+      return true;
+    }
+    // Only match CE/PE when preceded by digits (strike price) so standard stock names like "RELIANCE" or "FINANCE" never trigger F&O
+    if (RegExp(r'\d+(CE|PE)$').hasMatch(upperSym)) {
+      return true;
+    }
+    if (RegExp(r'\d*(FUT)$').hasMatch(upperSym) || upperSym.endsWith('-FUT')) {
+      return true;
+    }
+    if (RegExp(r'\d{2}[A-Z]{3}').hasMatch(upperSym)) {
+      return true;
+    }
+
+    return false;
   }
 
   bool get _isCommodity {
-    final upperCat = widget.category.toUpperCase();
-    final upperSym = widget.symbol.toUpperCase();
+    final upperCat = widget.category.toUpperCase().trim();
+    if (upperCat == 'EQUITY' || upperCat == 'CASH') return false;
+    final upperSym = widget.symbol.toUpperCase().trim();
     return upperCat == 'COMMODITY' ||
         upperSym.startsWith('CRUDEOIL') ||
         upperSym.startsWith('GOLD') ||
@@ -177,6 +190,14 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
         upperSym.startsWith('NATURALGAS') ||
         upperSym.startsWith('COPPER') ||
         upperSym.startsWith('ZINC');
+  }
+
+  bool get _isOption {
+    if (!_isFnO) return false;
+    final upperSym = widget.symbol.toUpperCase().trim();
+    return upperSym.endsWith(' CE') ||
+        upperSym.endsWith(' PE') ||
+        RegExp(r'\d+(CE|PE)$').hasMatch(upperSym);
   }
 
   @override
@@ -285,11 +306,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final totalValue = effectivePrice * _quantity;
 
     if (_isFnO) {
-      final isOption = widget.symbol.toUpperCase().endsWith('CE') ||
-          widget.symbol.toUpperCase().endsWith('PE') ||
-          widget.symbol.toUpperCase().endsWith(' CE') ||
-          widget.symbol.toUpperCase().endsWith(' PE');
-      if (isOption) {
+      if (_isOption) {
         if (_side == 'BUY') {
           return totalValue; // Option buy = 100% premium paid upfront
         } else {
@@ -315,11 +332,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
 
   String get _marginLeverageTag {
     if (_isFnO) {
-      final isOption = widget.symbol.toUpperCase().endsWith('CE') ||
-          widget.symbol.toUpperCase().endsWith('PE') ||
-          widget.symbol.toUpperCase().endsWith(' CE') ||
-          widget.symbol.toUpperCase().endsWith(' PE');
-      if (isOption) {
+      if (_isOption) {
         return _side == 'BUY' ? '100% Premium' : (_productType == 'INTRADAY' ? 'MIS SPAN' : 'SPAN + Exposure');
       }
       return _productType == 'INTRADAY' ? 'MIS (~7.5% Margin)' : 'NRML (~14% Margin)';
@@ -425,7 +438,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     } else if (_productType == 'PAY_LATER') {
       apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'MARGIN';
     } else if (_productType == 'CARRYFORWARD') {
-      apiProductType = 'CARRYFORWARD';
+      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
     } else {
       apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
     }

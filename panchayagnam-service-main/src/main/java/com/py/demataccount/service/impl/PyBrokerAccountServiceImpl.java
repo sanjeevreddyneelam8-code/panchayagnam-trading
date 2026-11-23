@@ -789,11 +789,25 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 orderRequest.setApiKey(secret.getApiKey());
                 orderRequest.setAccessToken(accessToken);
                 orderRequest.setVariety(audit.getVariety());
-                orderRequest.setExchange(request.getExchange());
+
+                String exchange = request.getExchange() != null ? request.getExchange().trim().toUpperCase() : "NSE";
+                String productType = request.getProductType() != null ? request.getProductType().trim().toUpperCase() : "DELIVERY";
+                String tradingSymbol = request.getTradingSymbol() != null ? request.getTradingSymbol().trim().toUpperCase() : "";
+
+                // RMS Safeguard: For NSE/BSE Cash market equities, CARRYFORWARD/NRML is not allowed. Map to DELIVERY.
+                if (exchange.equals("NSE") || exchange.equals("BSE") || tradingSymbol.endsWith("-EQ") || tradingSymbol.endsWith(" EQ")) {
+                    if ("CARRYFORWARD".equals(productType) || "NRML".equals(productType) || "CNC".equals(productType)) {
+                        productType = "DELIVERY";
+                    } else if ("MIS".equals(productType)) {
+                        productType = "INTRADAY";
+                    }
+                }
+
+                orderRequest.setExchange(exchange);
                 orderRequest.setTradingsymbol(request.getTradingSymbol());
                 orderRequest.setSymboltoken(request.getSymbolToken());
                 orderRequest.setOrdertype(request.getOrderType());
-                orderRequest.setProducttype(request.getProductType());
+                orderRequest.setProducttype(productType);
                 orderRequest.setQuantity(request.getQuantity());
                 orderRequest.setPrice(request.getPrice());
                 orderRequest.setDuration("DAY");
