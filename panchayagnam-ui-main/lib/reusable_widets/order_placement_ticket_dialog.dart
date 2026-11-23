@@ -335,7 +335,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final istMinutes = nowIst.hour * 60 + nowIst.minute;
     final isMarketHours = !isWeekend && (istMinutes >= (9 * 60 + 15) && istMinutes <= (15 * 60 + 30));
     if (!isMarketHours) {
-      _isAmo = true;
+      _isAmo = false; // Always default false so Angel One SmartAPI does not get AB1007
     }
 
     final liveQuote = LiveMarketDataService().getQuote(widget.symbol);
@@ -591,7 +591,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               'orderType': apiOrderType,
               'price': apiPrice,
               'productType': apiProductType,
-              'variety': _isAmo ? 'AMO' : 'NORMAL',
+              'variety': (selectedAcc.broker.toUpperCase().contains('ANGEL') || !_isAmo) ? 'NORMAL' : 'AMO',
               'amo': _isAmo ? 'Y' : 'N',
               'idempotencyKey': idempotencyKey,
             }),
@@ -614,7 +614,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
 
         // ── Auto Copy-Replication across Child Accounts ─────────────────
         final copyEngine = CopyTradingEngine();
-        if (copyEngine.isCopyTradingActive && selectedAcc.isMaster && copyEngine.activeChildAccounts.isNotEmpty) {
+        if (copyEngine.isCopyTradingActive && copyEngine.activeChildAccounts.isNotEmpty) {
           copyEngine.replicateTrade(
             symbol: widget.symbol,
             side: _side,

@@ -197,13 +197,18 @@ public class AngelOneApisService {
                 }
             }
 
-            // Angel One requires CARRYFORWARD instead of DELIVERY for NFO / BFO / MCX
-            if (("NFO".equals(exchange) || "BFO".equals(exchange) || "MCX".equals(exchange))
-                    && ("DELIVERY".equals(productType) || "CNC".equals(productType) || "NRML".equals(productType))) {
-                productType = "CARRYFORWARD";
-            } else if ("CNC".equals(productType)) {
-                productType = "DELIVERY";
-            } else if ("MIS".equals(productType)) {
+            // Angel One requires CARRYFORWARD for NFO / BFO / MCX, and DELIVERY for NSE / BSE cash equity
+            if ("NFO".equals(exchange) || "BFO".equals(exchange) || "MCX".equals(exchange)) {
+                if ("DELIVERY".equals(productType) || "CNC".equals(productType) || "NRML".equals(productType)) {
+                    productType = "CARRYFORWARD";
+                }
+            } else {
+                // Cash market (NSE / BSE) - only DELIVERY, INTRADAY, or MARGIN allowed
+                if ("CARRYFORWARD".equals(productType) || "NRML".equals(productType) || "CNC".equals(productType)) {
+                    productType = "DELIVERY";
+                }
+            }
+            if ("MIS".equals(productType)) {
                 productType = "INTRADAY";
             }
 
@@ -411,27 +416,14 @@ public class AngelOneApisService {
                         + "' on " + exchange + ". Please verify the strike/symbol is active today.");
             }
 
-            // ── Market hours & variety auto-alignment ─────────────────────────
+            // ── Variety sanitization for Angel One SmartAPI ───────────────────
+            // Angel One SmartAPI v2 strictly requires variety to be NORMAL, STOPLOSS, or ROBO (Code: AB1007)
+            // Even after market closure, SmartAPI orders must use NORMAL variety with DAY duration
             String variety = (request.getVariety() != null && !request.getVariety().isBlank())
                     ? request.getVariety().trim().toUpperCase()
                     : "NORMAL";
-
-            try {
-                ZoneId istZone = ZoneId.of("Asia/Kolkata");
-                ZonedDateTime nowIst = ZonedDateTime.now(istZone);
-                boolean isWeekend = nowIst.getDayOfWeek() == DayOfWeek.SATURDAY || nowIst.getDayOfWeek() == DayOfWeek.SUNDAY;
-                int istMinute = nowIst.getHour() * 60 + nowIst.getMinute();
-                boolean isMarketOpen = !isWeekend && (istMinute >= (9 * 60 + 15) && istMinute <= (15 * 60 + 30));
-
-                if (!isMarketOpen && "NORMAL".equalsIgnoreCase(variety)) {
-                    log.info("Market is closed in IST ({}). Auto-routing order for {} to AMO variety", nowIst, tradingSymbol);
-                    variety = "AMO";
-                } else if (isMarketOpen && "AMO".equalsIgnoreCase(variety)) {
-                    log.info("Market is currently open in IST ({}). Auto-routing order for {} to NORMAL variety", nowIst, tradingSymbol);
-                    variety = "NORMAL";
-                }
-            } catch (Exception ex) {
-                log.debug("Time zone check skipped: {}", ex.getMessage());
+            if (!"STOPLOSS".equalsIgnoreCase(variety) && !"ROBO".equalsIgnoreCase(variety)) {
+                variety = "NORMAL";
             }
 
             SmartConnect smartConnect = new SmartConnect(request.getApiKey());
@@ -453,6 +445,22 @@ public class AngelOneApisService {
                         }
                     } catch (Exception ex) {
                         log.warn("Could not fetch live LTP for Option MARKET conversion: {}", ex.getMessage());
+                    }
+                }
+            } else if ("LIMIT".equalsIgnoreCase(orderType) && (price == null || price <= 0.0)) {
+                // Prevent "price exceeds circuit limit" error if LIMIT order has 0 or null price
+                if (!isOption && !isFuture && !isCommodity) {
+                    orderType = "MARKET";
+                    price = 0.0;
+                } else {
+                    try {
+                        JSONObject ltpObj = smartConnect.getLTP(exchange, tradingSymbol, symbolToken, request.getApiKey(), request.getAccessToken());
+                        if (ltpObj != null && ltpObj.has("ltp")) {
+                            price = ltpObj.optDouble("ltp", 0.0);
+                            log.info("Populated zero-price LIMIT order with live LTP ₹{} for {}", price, tradingSymbol);
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Could not fetch live LTP for zero-price LIMIT order: {}", ex.getMessage());
                     }
                 }
             }

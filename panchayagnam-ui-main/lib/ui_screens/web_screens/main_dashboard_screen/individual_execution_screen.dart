@@ -29,7 +29,7 @@ String resolveVariety(String rawVariety, String brokerKey) {
   final v = rawVariety.trim().toUpperCase();
   switch (brokerKey.toUpperCase()) {
     case 'ANGELONE':
-      const angelValid = {'NORMAL', 'STOPLOSS', 'AMO', 'ROBO'};
+      const angelValid = {'NORMAL', 'STOPLOSS', 'ROBO'};
       return angelValid.contains(v) ? v : 'NORMAL';
     case 'MOTILAL':
       if (v == 'AMO') return 'AMO';

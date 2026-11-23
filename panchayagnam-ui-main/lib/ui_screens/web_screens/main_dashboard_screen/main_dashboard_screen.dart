@@ -88,6 +88,148 @@ class _NavSelection {
   int get hashCode => Object.hash(topIndex, subIndex);
 }
 
+class UnifiedOptionChainContainerView extends StatefulWidget {
+  final int initialTab;
+  final VoidCallback? onNavigateToCash;
+  final VoidCallback? onNavigateToFutures;
+  final VoidCallback? onNavigateToOrders;
+  final VoidCallback? onNavigateToPositions;
+  final VoidCallback? onNavigateToCharts;
+
+  const UnifiedOptionChainContainerView({
+    super.key,
+    this.initialTab = 0,
+    this.onNavigateToCash,
+    this.onNavigateToFutures,
+    this.onNavigateToOrders,
+    this.onNavigateToPositions,
+    this.onNavigateToCharts,
+  });
+
+  @override
+  State<UnifiedOptionChainContainerView> createState() => _UnifiedOptionChainContainerViewState();
+}
+
+class _UnifiedOptionChainContainerViewState extends State<UnifiedOptionChainContainerView> {
+  late int _activeTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeTab = widget.initialTab;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeModeService.isDark;
+    final bgCard = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+
+    final tabs = [
+      {'title': 'Options Market (Chain & Greeks)', 'icon': Icons.table_chart_rounded},
+      {'title': 'Stock Option Chain', 'icon': Icons.layers_outlined},
+      {'title': 'Multi-Strike OI & Greeks', 'icon': Icons.auto_graph_rounded},
+      {'title': 'Options Market Overview', 'icon': Icons.dashboard_customize_rounded},
+    ];
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: bgCard,
+              border: Border(bottom: BorderSide(color: borderCol)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(tabs.length, (idx) {
+                        final selected = _activeTab == idx;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () => setState(() => _activeTab = idx),
+                            borderRadius: BorderRadius.circular(8),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selected ? const Color(0xFF059669) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: selected ? const Color(0xFF059669) : borderCol,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    tabs[idx]['icon'] as IconData,
+                                    size: 16,
+                                    color: selected ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    tabs[idx]['title'] as String,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                                      color: selected ? Colors.white : textMain,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: IndexedStack(
+              index: _activeTab,
+              children: [
+                OptionsChainView(
+                  initialTabIndex: 0,
+                  onNavigateToCashMarket: widget.onNavigateToCash,
+                  onNavigateToFuturesMarket: widget.onNavigateToFutures,
+                  onNavigateToOrders: widget.onNavigateToOrders,
+                  onNavigateToPositions: widget.onNavigateToPositions,
+                  onNavigateToCharts: widget.onNavigateToCharts,
+                ),
+                StockOptionsView(
+                  onNavigateToOrders: widget.onNavigateToOrders,
+                  onNavigateToPositions: widget.onNavigateToPositions,
+                  onNavigateToCharts: widget.onNavigateToCharts,
+                ),
+                OptionsChainView(
+                  initialTabIndex: 1,
+                  onNavigateToCashMarket: widget.onNavigateToCash,
+                  onNavigateToFuturesMarket: widget.onNavigateToFutures,
+                  onNavigateToOrders: widget.onNavigateToOrders,
+                  onNavigateToPositions: widget.onNavigateToPositions,
+                  onNavigateToCharts: widget.onNavigateToCharts,
+                ),
+                const TradeMarketStockGroView(initialTabIndex: 0),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});
 
@@ -276,7 +418,19 @@ class _MainDashboardState extends State<MainDashboard> {
         type: _NavItemType.normal,
       ),
 
-      // 3. Trading Markets (Main side heading with Cash, Futures, and Options separate)
+      // 3. Market Overview & Radar (SEBI Alpha Trades, Market Movers & Shockers, Quant Scanners)
+      const _NavItem(
+        icon: Icons.radar_rounded,
+        label: 'Market Overview & Radar',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trades'),
+          _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
+          _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant Scanners'),
+        ],
+      ),
+
+      // 4. Trading Markets (Cash, Futures, Option Chain unified, Indices, Stocks Basket)
       const _NavItem(
         icon: Icons.candlestick_chart_rounded,
         label: 'Trading Markets',
@@ -284,23 +438,26 @@ class _MainDashboardState extends State<MainDashboard> {
         children: [
           _SubNavItem(icon: Icons.account_balance_wallet_outlined, label: '🟢 Cash Market (Stocks / Equity)'),
           _SubNavItem(icon: Icons.trending_up_rounded, label: '🔵 Futures Market (Index & Stock Futures)'),
-          _SubNavItem(icon: Icons.table_chart_rounded, label: '🟣 Options Market (Option Chain & Greeks)'),
-          _SubNavItem(icon: Icons.dashboard_customize_rounded, label: 'Market Overview & Radar'),
-          _SubNavItem(icon: Icons.layers_outlined, label: 'Stock Options Chain'),
+          _SubNavItem(icon: Icons.table_chart_rounded, label: '🟣 Option Chain (Options, Stock Chain, Multi-Strike & Overview)'),
           _SubNavItem(icon: Icons.remove_red_eye_rounded, label: 'Indices Market'),
-          _SubNavItem(icon: Icons.auto_graph_rounded, label: 'Multi-Strike OI & Greeks'),
-          _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
-          _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
-          _SubNavItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions'),
-          _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Holdings'),
-          _SubNavItem(icon: Icons.local_fire_department_rounded, label: 'Alpha Trade Ideas (SEBI)'),
-          _SubNavItem(icon: Icons.query_stats_rounded, label: 'Market Movers & Shockers'),
-          _SubNavItem(icon: Icons.manage_search_rounded, label: 'Quant & F&O Scanners'),
           _SubNavItem(icon: Icons.shopping_basket_rounded, label: 'Stocks Basket'),
         ],
       ),
 
-      // 4. Commodity (All 24 MCX, NCDEX & NSE Commodities)
+      // 5. Clients Data (Charts, Orders, Positions, Holdings & Portfolio)
+      const _NavItem(
+        icon: Icons.people_alt_rounded,
+        label: 'Clients Data',
+        type: _NavItemType.group,
+        children: [
+          _SubNavItem(icon: Icons.candlestick_chart_rounded, label: 'Charts'),
+          _SubNavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
+          _SubNavItem(icon: Icons.pie_chart_outline_rounded, label: 'Positions'),
+          _SubNavItem(icon: Icons.account_balance_wallet_rounded, label: 'Holdings & Portfolio'),
+        ],
+      ),
+
+      // 6. Commodity (All 24 MCX, NCDEX & NSE Commodities)
       const _NavItem(
         icon: Icons.oil_barrel_rounded,
         label: 'Commodity',
@@ -315,10 +472,10 @@ class _MainDashboardState extends State<MainDashboard> {
         ],
       ),
 
-      // 5. Tools & Accounts
+      // 7. Account Tools (Renamed from Tools & Accounts)
       _NavItem(
         icon: Icons.construction_rounded,
-        label: 'Tools & Accounts',
+        label: 'Account Tools',
         type: _NavItemType.group,
         children: [
           const _SubNavItem(icon: Icons.link_rounded, label: 'Broker Accounts'),
@@ -338,7 +495,7 @@ class _MainDashboardState extends State<MainDashboard> {
 
   void _navigateToBrokers() {
     setState(() {
-      _currentSelection = const _NavSelection(4, 0);
+      _currentSelection = const _NavSelection(6, 0); // Broker Accounts in Account Tools
       _bodyKey = UniqueKey();
     });
   }
@@ -374,121 +531,114 @@ class _MainDashboardState extends State<MainDashboard> {
       case 1: // 2. Parent Children Trading (Direct to Master-Child Copy Trading Matrix)
         return const GroupOrdersTab(initialHierarchyIndex: 0);
 
-      case 2: // 3. Trading Markets (Main side heading with Cash, Futures, and Options separate)
+      case 2: // 3. Market Overview & Radar (User Request: Alpha Trades, Market Movers, Quant Scanners)
+        switch (subIdx) {
+          case 0:
+            return const TradeMarketStockGroView(initialTabIndex: 1); // Alpha Trades
+          case 1:
+            return const TradeMarketStockGroView(initialTabIndex: 2); // Market Movers & Shockers
+          case 2:
+            return const TradeMarketStockGroView(initialTabIndex: 3); // Quant Scanners
+          default:
+            return const TradeMarketStockGroView(initialTabIndex: 1);
+        }
+
+      case 3: // 4. Trading Markets (Cash, Futures, Option Chain unified, Indices, Stocks Basket)
         switch (subIdx) {
           case 0:
             return CashMarketView(
               onNavigateToFutures: () => setState(() {
-                _currentSelection = const _NavSelection(2, 1);
+                _currentSelection = const _NavSelection(3, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOptions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 2);
+                _currentSelection = const _NavSelection(3, 2);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOrders: () => setState(() {
-                _currentSelection = const _NavSelection(2, 8);
+                _currentSelection = const _NavSelection(4, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToPositions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 9);
+                _currentSelection = const _NavSelection(4, 2);
                 _bodyKey = UniqueKey();
               }),
             );
           case 1:
             return FuturesMarketView(
               onNavigateToCash: () => setState(() {
-                _currentSelection = const _NavSelection(2, 0);
+                _currentSelection = const _NavSelection(3, 0);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOptions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 2);
+                _currentSelection = const _NavSelection(3, 2);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOrders: () => setState(() {
-                _currentSelection = const _NavSelection(2, 8);
+                _currentSelection = const _NavSelection(4, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToPositions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 9);
+                _currentSelection = const _NavSelection(4, 2);
                 _bodyKey = UniqueKey();
               }),
             );
           case 2:
-            return OptionsChainView(
-              initialTabIndex: 0,
-              onNavigateToCashMarket: () => setState(() {
-                _currentSelection = const _NavSelection(2, 0);
+            return UnifiedOptionChainContainerView(
+              initialTab: 0,
+              onNavigateToCash: () => setState(() {
+                _currentSelection = const _NavSelection(3, 0);
                 _bodyKey = UniqueKey();
               }),
-              onNavigateToFuturesMarket: () => setState(() {
-                _currentSelection = const _NavSelection(2, 1);
+              onNavigateToFutures: () => setState(() {
+                _currentSelection = const _NavSelection(3, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOrders: () => setState(() {
-                _currentSelection = const _NavSelection(2, 8);
+                _currentSelection = const _NavSelection(4, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToPositions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 9);
+                _currentSelection = const _NavSelection(4, 2);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToCharts: () => setState(() {
-                _currentSelection = const _NavSelection(2, 7);
+                _currentSelection = const _NavSelection(4, 0);
                 _bodyKey = UniqueKey();
               }),
             );
           case 3:
-            return const TradeMarketStockGroView(initialTabIndex: 0); // Market Overview & Radar
-          case 4:
-            return StockOptionsView(
-              onNavigateToOrders: () => setState(() {
-                _currentSelection = const _NavSelection(2, 8);
-                _bodyKey = UniqueKey();
-              }),
-              onNavigateToPositions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 9);
-                _bodyKey = UniqueKey();
-              }),
-              onNavigateToCharts: () => setState(() {
-                _currentSelection = const _NavSelection(2, 7);
-                _bodyKey = UniqueKey();
-              }),
-            );
-          case 5:
             return const MarketWatchView(); // Indices Market
-          case 6:
-            return const OptionsChainView(initialTabIndex: 1); // Multi-Strike OI & Greeks
-          case 7:
-            return const ChartsView();
-          case 8:
-            return const OrdersView();
-          case 9:
-            return const PositionsView();
-          case 10:
-            return const HoldingsView();
-          case 11:
-            return const TradeMarketStockGroView(initialTabIndex: 1); // Alpha Trade Ideas
-          case 12:
-            return const TradeMarketStockGroView(initialTabIndex: 2); // Market Movers & Shockers
-          case 13:
-            return const TradeMarketStockGroView(initialTabIndex: 3); // Quant & F&O Scanners
-          case 14:
+          case 4:
             return const BasketOrdersView(); // Stocks Basket
           default:
             return CashMarketView(
               onNavigateToFutures: () => setState(() {
-                _currentSelection = const _NavSelection(2, 1);
+                _currentSelection = const _NavSelection(3, 1);
                 _bodyKey = UniqueKey();
               }),
               onNavigateToOptions: () => setState(() {
-                _currentSelection = const _NavSelection(2, 2);
+                _currentSelection = const _NavSelection(3, 2);
                 _bodyKey = UniqueKey();
               }),
             );
         }
 
-      case 3: // 4. Commodity (All 24 MCX, NCDEX & NSE Commodities)
+      case 4: // 5. Clients Data (Charts, Orders, Positions, Holdings & Portfolio)
+        switch (subIdx) {
+          case 0:
+            return const ChartsView();
+          case 1:
+            return const OrdersView();
+          case 2:
+            return const PositionsView();
+          case 3:
+            return const HoldingsView(); // Holdings & Portfolio
+          default:
+            return const ChartsView();
+        }
+
+      case 5: // 6. Commodity (All 24 MCX, NCDEX & NSE Commodities)
         switch (subIdx) {
           case 0:
             return const CommodityMarketView(initialCommodityIndex: 0);
@@ -506,7 +656,7 @@ class _MainDashboardState extends State<MainDashboard> {
             return const CommodityMarketView(initialCommodityIndex: 0);
         }
 
-      case 4: // 5. Tools & Accounts
+      case 6: // 7. Account Tools (Renamed from Tools & Accounts)
         switch (subIdx) {
           case 0:
             return const ChildAccountsTab();
@@ -797,7 +947,7 @@ class _MainDashboardState extends State<MainDashboard> {
                           },
                           onNavigateToVirtualPractice: () {
                             setState(() {
-                              _currentSelection = const _NavSelection(2, 3);
+                              _currentSelection = const _NavSelection(0, 3);
                               _bodyKey = UniqueKey();
                             });
                           },
@@ -916,7 +1066,7 @@ class _MainDashboardState extends State<MainDashboard> {
                           onTap: () {
                             if (isOwner) {
                               setState(() {
-                                _currentSelection = const _NavSelection(4, 4);
+                                _currentSelection = const _NavSelection(6, 4);
                                 _bodyKey = UniqueKey();
                               });
                             } else {
@@ -1087,7 +1237,7 @@ class _MainDashboardState extends State<MainDashboard> {
                       break;
                     case 'ip_pool':
                       setState(() {
-                        _currentSelection = const _NavSelection(4, 4);
+                        _currentSelection = const _NavSelection(6, 4);
                         _bodyKey = UniqueKey();
                       });
                       break;
@@ -1501,13 +1651,13 @@ class _MainDashboardState extends State<MainDashboard> {
       infyPrice: _infyLivePrice,
       onOpenCharts: () {
         setState(() {
-          _currentSelection = const _NavSelection(2, 7); // Charts in Trading Markets
+          _currentSelection = const _NavSelection(4, 0); // Charts in Clients Data
           _bodyKey = UniqueKey();
         });
       },
       onOpenOptionChain: () {
         setState(() {
-          _currentSelection = const _NavSelection(2, 2); // Options Chain in Trading Markets
+          _currentSelection = const _NavSelection(3, 2); // Option Chain in Trading Markets
           _bodyKey = UniqueKey();
         });
       },
@@ -1519,7 +1669,7 @@ class _MainDashboardState extends State<MainDashboard> {
       },
       onOpenTradeMarket: () {
         setState(() {
-          _currentSelection = const _NavSelection(2, 0); // Cash Market in Trading Markets
+          _currentSelection = const _NavSelection(3, 0); // Cash Market in Trading Markets
           _bodyKey = UniqueKey();
         });
       },
@@ -3477,7 +3627,7 @@ class _MainDashboardState extends State<MainDashboard> {
     final count = engine.totalAccountsCount;
     final brokers = engine.accounts.map((a) => a.broker).toSet().join(', ');
     final dematsSummary = count > 0 ? '$count Demat${count > 1 ? 's' : ''} ($brokers)' : '1 Demat (Angel One)';
-    final pooledStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹10,00,000';
+    final pooledStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹0.00';
 
     showDialog(
       context: context,
@@ -3892,7 +4042,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
                                   setState(() {
-                                    _currentSelection = const _NavSelection(2, 2); // Options Chain
+                                    _currentSelection = const _NavSelection(3, 2); // Option Chain in Trading Markets
                                     _bodyKey = UniqueKey();
                                   });
                                 },
@@ -3910,7 +4060,7 @@ class _MainDashboardState extends State<MainDashboard> {
                                 onPressed: () {
                                   Navigator.of(ctx).pop();
                                   setState(() {
-                                    _currentSelection = const _NavSelection(2, 7); // Charts in Trading Markets
+                                    _currentSelection = const _NavSelection(4, 0); // Charts in Clients Data
                                     _bodyKey = UniqueKey();
                                   });
                                 },
@@ -3952,7 +4102,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(2, 6); // Multi-Strike OI & Greeks in Trading Markets
+                                _currentSelection = const _NavSelection(3, 2); // Option Chain in Trading Markets
                                 _bodyKey = UniqueKey();
                               });
                             },
@@ -4016,7 +4166,7 @@ class _MainDashboardState extends State<MainDashboard> {
                             onPressed: () {
                               Navigator.of(ctx).pop();
                               setState(() {
-                                _currentSelection = const _NavSelection(2, 7); // Charts in Trading Markets
+                                _currentSelection = const _NavSelection(4, 0); // Charts in Clients Data
                                 _bodyKey = UniqueKey();
                               });
                             },

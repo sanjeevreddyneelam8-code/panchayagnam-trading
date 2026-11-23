@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import '../constants/api_url_constants.dart';
+import '../constants/auth_header_helper.dart';
+import 'live_market_data_service.dart';
 
 enum CopySizingMode { lotMultiplier, capitalRatio, fixedQty }
 
@@ -285,6 +289,7 @@ class CopyTradingEngine extends ChangeNotifier {
   CopyTradingEngine._internal() {
     _initDefaultAccounts();
     syncWithStorage();
+    fetchServerChildAccountsAndBalances();
   }
 
   static bool isRealBrokerAccount(dynamic rawCid) {
@@ -489,8 +494,113 @@ class CopyTradingEngine extends ChangeNotifier {
       final customEncoded = jsonEncode(customList);
       html.window.localStorage['panchayagnam_trading_accounts'] = customEncoded;
       html.window.sessionStorage['custom_trading_accounts'] = customEncoded;
+
+      // Push accounts to server PostgreSQL database so child accounts follow the user across all laptops!
+      _pushAccountsToServer();
     } catch (e) {
       debugPrint('Error syncing merged accounts to storage: $e');
+    }
+  }
+
+  Future<void> _pushAccountsToServer() async {
+    try {
+      final pyUserId = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 1;
+      final payload = _accounts.where((a) => !a.isMaster && isRealBrokerAccount(a.clientId)).map((a) => {
+        'clientId': a.clientId,
+        'name': a.name,
+        'broker': a.broker,
+        'multiplier': a.multiplier,
+        'copyMode': a.copyMode,
+        'active': a.isActive,
+        'balance': a.balance,
+        'maxDailyLoss': a.maxDailyLoss,
+      }).toList();
+
+      if (payload.isEmpty) return;
+
+      final url = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/copy-trading/accounts/sync?pyId=$pyUserId');
+      await http.post(
+        url,
+        headers: AuthHeaderHelper.getHeaders(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {}
+  }
+
+  Future<void> fetchServerChildAccountsAndBalances() async {
+    try {
+      final pyUserId = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 1;
+      final url = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/copy-trading/accounts?pyId=$pyUserId');
+      final res = await http.get(url, headers: AuthHeaderHelper.getHeaders()).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        final list = (decoded is Map && decoded['data'] is List)
+            ? decoded['data'] as List
+            : (decoded is List ? decoded : []);
+        if (list.isNotEmpty) {
+          bool addedAny = false;
+          for (final raw in list) {
+            if (raw is Map) {
+              final cid = (raw['clientId'] ?? '').toString().trim();
+              if (cid.isEmpty || !isRealBrokerAccount(cid)) continue;
+              final existingIdx = _accounts.indexWhere((a) => a.clientId.toUpperCase() == cid.toUpperCase());
+              final mult = (raw['multiplier'] as num?)?.toDouble() ?? 1.0;
+              final active = raw['active'] == true;
+              final mode = (raw['copyMode'] ?? 'ALL').toString();
+              final bal = (raw['balance'] as num?)?.toDouble() ?? 1000000.0;
+              final broker = (raw['broker'] ?? 'ANGELONE').toString();
+              final name = (raw['name'] ?? '$broker Demat').toString();
+
+              if (existingIdx >= 0) {
+                _accounts[existingIdx].multiplier = mult;
+                _accounts[existingIdx].isActive = active;
+                _accounts[existingIdx].copyMode = mode;
+                _accounts[existingIdx].status = active ? 'ONLINE' : 'PAUSED';
+              } else {
+                _accounts.add(ChildAccountConfig(
+                  id: (raw['id'] ?? 'child_${DateTime.now().millisecondsSinceEpoch}_$cid').toString(),
+                  name: name,
+                  broker: broker,
+                  clientId: cid,
+                  isMaster: false,
+                  multiplier: mult,
+                  isActive: active,
+                  copyMode: mode,
+                  balance: bal,
+                  status: active ? 'ONLINE' : 'PAUSED',
+                ));
+                addedAny = true;
+              }
+            }
+          }
+          if (addedAny) {
+            _syncMergedToStorage();
+            notifyListeners();
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Pull real funds for all accounts directly from the broker!
+    await refreshAccountBalances();
+  }
+
+  Future<void> refreshAccountBalances() async {
+    bool changed = false;
+    for (final acc in _accounts) {
+      if (acc.clientId.isNotEmpty && isRealBrokerAccount(acc.clientId)) {
+        try {
+          final realFunds = await LiveMarketDataService().fetchLiveFunds(clientId: acc.clientId);
+          if (realFunds != null && realFunds > 0 && (acc.balance - realFunds).abs() > 0.01) {
+            acc.balance = realFunds;
+            changed = true;
+          }
+        } catch (_) {}
+      }
+    }
+    if (changed) {
+      _syncMergedToStorage();
+      notifyListeners();
     }
   }
 
@@ -738,6 +848,17 @@ class CopyTradingEngine extends ChangeNotifier {
         totalQty += childQty;
         totalCapital += childAmount;
         latencySum += childLatency;
+
+        // Automatically dispatch real buy/sell order to broker for this child account!
+        _dispatchChildLiveOrder(
+          child: child,
+          symbol: symbol,
+          side: childSide,
+          qty: childQty,
+          price: price,
+          orderType: orderType,
+          productType: productType,
+        );
       }
     }
 
@@ -767,6 +888,51 @@ class CopyTradingEngine extends ChangeNotifier {
 
     notifyListeners();
     return receipt;
+  }
+
+  Future<void> _dispatchChildLiveOrder({
+    required ChildAccountConfig child,
+    required String symbol,
+    required String side,
+    required int qty,
+    required double price,
+    required String orderType,
+    required String productType,
+  }) async {
+    try {
+      final endpoint = side.toUpperCase() == 'BUY'
+          ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
+          : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
+      final accId = int.tryParse(child.id);
+      final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
+      headers['Idempotency-Key'] = 'COPY-${child.clientId}-${DateTime.now().millisecondsSinceEpoch}';
+
+      final cleanProd = productType.contains('INTRADAY') || productType.contains('MIS')
+          ? 'INTRADAY'
+          : (productType.contains('MARGIN') || productType.contains('PAY_LATER')
+              ? 'MARGIN'
+              : (productType.contains('CARRYFORWARD') || productType.contains('NRML')
+                  ? 'CARRYFORWARD'
+                  : 'DELIVERY'));
+
+      await http.post(
+        Uri.parse(endpoint),
+        headers: headers,
+        body: jsonEncode({
+          if (accId != null && accId > 0) 'accId': accId,
+          'clientId': child.clientId,
+          'tradingSymbol': symbol,
+          'exchange': (symbol.contains('CE') || symbol.contains('PE') || symbol.contains('FUT')) ? 'NFO' : 'NSE',
+          'quantity': qty,
+          'orderType': orderType.toUpperCase().contains('MARKET') ? 'MARKET' : 'LIMIT',
+          'price': orderType.toUpperCase().contains('MARKET') ? 0.0 : price,
+          'productType': cleanProd,
+          'variety': 'NORMAL',
+        }),
+      ).timeout(const Duration(seconds: 15));
+    } catch (e) {
+      debugPrint('Error dispatching copy trade to child ${child.clientId}: $e');
+    }
   }
 
   Future<int> emergencySquareOffAll() async {

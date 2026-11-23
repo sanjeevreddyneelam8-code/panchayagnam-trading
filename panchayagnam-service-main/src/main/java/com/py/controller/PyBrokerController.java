@@ -94,6 +94,9 @@ public class PyBrokerController {
     @Autowired(required = false)
     private com.py.common.util.TotpUtil totpUtil;
 
+    @Autowired(required = false)
+    private com.py.demataccount.repository.PyCopyTradingChildAccountRepository childAccountRepository;
+
     // =========================================================================
     // ✅ ACCOUNT OPERATIONS — unified for both brokers
     //    brokerType is inside DematAccountAddRequest
@@ -715,5 +718,81 @@ public class PyBrokerController {
             return ResponseEntity.badRequest()
                     .body("Convert position failed: " + e.getMessage());
         }
+    }
+
+    // =========================================================================
+    // ✅ COPY TRADING — Persistent Child / Follower Demat Accounts across all laptops
+    // =========================================================================
+    @Operation(summary = "Get Persistent Child Accounts", description = "Fetch configured child/follower accounts for copy trading across all devices")
+    @GetMapping("/copy-trading/accounts")
+    public ResponseEntity<?> getCopyTradingChildAccounts(@RequestParam(required = false) Long pyId) {
+        Long targetPyId = pyId != null && pyId > 0 ? pyId : resolveAuthenticatedUserId();
+        if (targetPyId == null || targetPyId <= 0) targetPyId = 1L;
+        if (childAccountRepository == null) {
+            return ResponseEntity.ok(ApiResponse.success("Empty child accounts", List.of()));
+        }
+        try {
+            var accounts = childAccountRepository.findByPyUserIdOrderByCreatedAtAsc(targetPyId);
+            return ResponseEntity.ok(ApiResponse.success("Fetched child accounts", accounts));
+        } catch (Exception e) {
+            log.error("Failed to fetch copy trading child accounts for pyId={}: {}", targetPyId, e.getMessage());
+            return ResponseEntity.ok(ApiResponse.success("Empty child accounts", List.of()));
+        }
+    }
+
+    @Operation(summary = "Sync Persistent Child Accounts", description = "Save/update child/follower accounts so they persist across any browser/laptop")
+    @PostMapping("/copy-trading/accounts/sync")
+    public ResponseEntity<?> syncCopyTradingChildAccounts(@RequestBody List<Map<String, Object>> accountPayloads, @RequestParam(required = false) Long pyId) {
+        Long targetPyId = pyId != null && pyId > 0 ? pyId : resolveAuthenticatedUserId();
+        if (targetPyId == null || targetPyId <= 0) targetPyId = 1L;
+        if (childAccountRepository == null || accountPayloads == null) {
+            return ResponseEntity.ok(ApiResponse.success("Sync skipped", List.of()));
+        }
+        try {
+            for (Map<String, Object> item : accountPayloads) {
+                String cid = (String) item.getOrDefault("clientId", item.get("loginId"));
+                if (cid == null || cid.isBlank()) continue;
+                String broker = (String) item.getOrDefault("broker", item.getOrDefault("brokerType", "ANGELONE"));
+                String name = (String) item.getOrDefault("name", item.getOrDefault("userName", cid));
+                Number multNum = (Number) item.getOrDefault("multiplier", 1.0);
+                Double mult = multNum != null ? multNum.doubleValue() : 1.0;
+                String copyMode = (String) item.getOrDefault("copyMode", "ALL");
+                Boolean active = (Boolean) item.getOrDefault("active", item.getOrDefault("isActive", true));
+                Number balNum = (Number) item.getOrDefault("balance", item.getOrDefault("availableCash", 1000000.0));
+                Double bal = balNum != null ? balNum.doubleValue() : 1000000.0;
+                Number maxLossNum = (Number) item.getOrDefault("maxDailyLoss", 15000.0);
+                Double maxLoss = maxLossNum != null ? maxLossNum.doubleValue() : 15000.0;
+
+                var existing = childAccountRepository.findByPyUserIdAndClientId(targetPyId, cid.trim());
+                com.py.demataccount.entity.PyCopyTradingChildAccountEntity entity = existing.orElseGet(com.py.demataccount.entity.PyCopyTradingChildAccountEntity::new);
+                entity.setPyUserId(targetPyId);
+                entity.setClientId(cid.trim());
+                entity.setBroker(broker != null ? broker.toUpperCase() : "ANGELONE");
+                entity.setName(name);
+                entity.setMultiplier(mult);
+                entity.setCopyMode(copyMode);
+                entity.setActive(active != null ? active : true);
+                entity.setBalance(bal);
+                entity.setMaxDailyLoss(maxLoss);
+                childAccountRepository.save(entity);
+            }
+            var all = childAccountRepository.findByPyUserIdOrderByCreatedAtAsc(targetPyId);
+            return ResponseEntity.ok(ApiResponse.success("Child accounts synced successfully across all devices", all));
+        } catch (Exception e) {
+            log.error("Failed to sync child accounts: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(ApiResponse.error(500, "Failed to sync: " + e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "Delete Child Account", description = "Remove a child account from cross-device persistence")
+    @DeleteMapping("/copy-trading/accounts/{clientId}")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> deleteCopyTradingChildAccount(@PathVariable String clientId, @RequestParam(required = false) Long pyId) {
+        Long targetPyId = pyId != null && pyId > 0 ? pyId : resolveAuthenticatedUserId();
+        if (targetPyId == null || targetPyId <= 0) targetPyId = 1L;
+        if (childAccountRepository != null && clientId != null) {
+            childAccountRepository.deleteByPyUserIdAndClientId(targetPyId, clientId.trim());
+        }
+        return ResponseEntity.ok(ApiResponse.success("Child account removed", clientId));
     }
 }

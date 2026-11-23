@@ -321,12 +321,12 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
             dto.setHasApiSecretKey(StringUtils.isNotBlank(account.getSecret().getApiSecret()));
         }
 
-        if (amountRequired && StringUtils.isNotEmpty(account.getBrokerRegisteredIp())) {
+        if (amountRequired) {
             try {
                 JSONObject rmsData = getRMS(account);
                 BrokerRmsDto rms = mapToRmsDto(account.getBrokerType(), rmsData);
                 dto.setRms(rms);
-                dto.setAvailableCash(rms.getAvailableCash());
+                dto.setAvailableCash(rms != null ? rms.getAvailableCash() : 0.0);
             } catch (Exception e) {
                 log.warn("RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
                 dto.setAvailableCash(0.0);
@@ -458,8 +458,19 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 log.error("AngelOne RMS skipped — token unavailable for clientId={}", account.getClientId());
                 return new JSONObject();
             }
-            return angelOneClient.getRMS(getBaseUrl(account),
-                    account.getSecret().getApiKey(), accessToken).get();
+            if (account.getBrokerRegisteredIp() != null && !account.getBrokerRegisteredIp().isBlank()) {
+                return angelOneClient.getRMS(getBaseUrl(account),
+                        account.getSecret().getApiKey(), accessToken).get();
+            } else {
+                // Direct Angel One SmartAPI RMS call without microservice dependency
+                String url = routes.get("api.order.rms.data");
+                JSONObject response = apiRequestHandler.getRequest(
+                        account.getSecret().getApiKey(), url, accessToken);
+                if (response != null && response.has("data") && !response.isNull("data")) {
+                    return response.getJSONObject("data");
+                }
+                return new JSONObject();
+            }
         } catch (Exception e) {
             log.error("AngelOne RMS failed for clientId={}: {}", account.getClientId(), e.getMessage());
             return new JSONObject();

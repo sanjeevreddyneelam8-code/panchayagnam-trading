@@ -259,6 +259,13 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     _loadTradingAccountsFromStorage();
     _tabCtrl = TabController(length: 3, vsync: this);
     _load();
+    CopyTradingEngine().fetchServerChildAccountsAndBalances().then((_) {
+      if (mounted) {
+        setState(() {
+          _loadTradingAccountsFromStorage();
+        });
+      }
+    });
   }
 
   void didUpdateWidget(covariant GroupOrdersTab oldWidget) {
@@ -3167,12 +3174,12 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Client ID: ${master.clientId} • Liquid Margin: ₹10,00,000.00 • Status: ${master.status}',
+                            'Client ID: ${master.clientId} • Liquid Margin: ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(master.balance)} • Status: ${master.status}',
                             style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Any BUY / SELL executed on this account automatically cascades to the 7 follower children below.',
+                            'Any BUY / SELL executed on this account automatically cascades to the ${engine.activeFollowersCount} follower children below.',
                             style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 11),
                           ),
                         ],
@@ -3276,7 +3283,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
                   ),
                   Text(
                     children.isNotEmpty
-                        ? 'Pooled Margin: ₹${(children.length * 1000000).toStringAsFixed(0)} • Latency: < 25ms'
+                        ? 'Pooled Margin: ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(children.fold(0.0, (sum, c) => sum + c.balance))} • Latency: < 25ms'
                         : 'No follower accounts connected',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                   ),
@@ -5229,6 +5236,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
       }
 
       html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(list);
+      CopyTradingEngine().syncWithStorage();
     } catch (e) {
       debugPrint('Error saving child account: $e');
     }
@@ -5245,6 +5253,14 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
           html.window.localStorage['py_permanent_demat_accounts_v2'] = jsonEncode(list);
         }
       }
+      CopyTradingEngine().deleteAccount(clientId);
+      try {
+        final pyUserId = int.tryParse(html.window.sessionStorage['user_id'] ?? '') ?? 1;
+        http.delete(
+          Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/copy-trading/accounts/$clientId?pyId=$pyUserId'),
+          headers: AuthHeaderHelper.getHeaders(),
+        );
+      } catch (_) {}
     } catch (e) {
       debugPrint('Error deleting account from storage: $e');
     }
@@ -5256,7 +5272,7 @@ class _GroupOrdersTabState extends State<GroupOrdersTab>
     final userName = UserSession().fullName.isNotEmpty ? UserSession().fullName : 'Primary Demat Owner';
     final userRole = UserSession().role.isNotEmpty ? UserSession().role : 'SUPER_ADMIN';
     final userPhone = UserSession().phoneNumber.isNotEmpty ? UserSession().phoneNumber : '9553382135';
-    final totalPooledStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹10,00,000.00';
+    final totalPooledStr = engine.pooledCapital > 0 ? NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(engine.pooledCapital) : '₹0.00';
     final dematsSummary = engine.accounts.isNotEmpty
         ? '${engine.accounts.length} Demats (${engine.accounts.map((a) => a.broker).toSet().join(', ')})'
         : '1 Demat (Angel One)';
