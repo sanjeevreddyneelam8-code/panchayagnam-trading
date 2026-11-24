@@ -457,6 +457,11 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         ? receipt.legs.first.orderId
         : 'AUTO-${DateTime.now().millisecondsSinceEpoch % 100000}';
 
+    final hasRejection = receipt != null && receipt.legs.any((l) => l.status == 'REJECTED');
+    final firstErr = (receipt != null && receipt.legs.isNotEmpty)
+        ? receipt.legs.firstWhere((l) => l.status == 'REJECTED', orElse: () => receipt!.legs.first).message
+        : 'Broker connection timeout';
+
     final newLog = ExecutionLog(
       id: 'LOG-${Random().nextInt(9000) + 1000}',
       timestamp: timeStr,
@@ -468,7 +473,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       broker: masterBrokerStr,
       latencyMs: receipt?.avgLatencyMs.round() ?? 11,
       orderId: orderId,
-      status: 'FILLED',
+      status: hasRejection ? 'REJECTED' : 'FILLED',
     );
 
     setState(() {
@@ -481,24 +486,45 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
       CopyTradeReceiptDialog.show(context, receipt);
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '✅ Auto $side placed on Master ($masterBrokerStr) & mirrored to ${receipt?.totalAccountsFilled ?? 1} Demat Accounts!',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+    if (hasRejection) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '⚠️ Auto $side rejected: $firstErr',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: side == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '✅ Auto $side placed on Master ($masterBrokerStr) & mirrored to ${receipt?.totalAccountsFilled ?? 1} Demat Accounts!',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: side == 'BUY' ? const Color(0xFF059669) : const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _simulateStrategySignal(AlgoStrategyModel strategy) async {
@@ -1804,6 +1830,16 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
 
   @override
   Widget build(BuildContext context) {
+    final engine = CopyTradingEngine();
+    final connectedCount = engine.accounts.length;
+    final brokerList = engine.accounts.map((a) => a.broker).toSet().toList();
+    final brokerStr = brokerList.isNotEmpty ? brokerList.join(', ') : 'AngelOne, Dhan, Zerodha';
+    final activeBrokerList = engine.accounts.where((a) => a.isActive).map((a) => '${a.broker} (${a.multiplier}x)').toList();
+    final effectiveBrokers = activeBrokerList.isNotEmpty ? activeBrokerList : ['AngelOne (1x)'];
+    for (final strat in _strategies) {
+      strat.deployedBrokers = effectiveBrokers;
+    }
+
     final double totalPnl = _strategies.fold(0.0, (acc, s) => acc + s.todayPnl);
     final int activeCount = _strategies.where((s) => s.status == 'RUNNING').length;
 
@@ -1934,8 +1970,8 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
                     const SizedBox(width: 12),
                     _buildMetricCard(
                       label: 'CONNECTED BROKERS',
-                      value: '8 Accounts Ready',
-                      subtext: 'Dhan, Zerodha, Upstox, Angel...',
+                      value: '$connectedCount Demat Accounts Ready',
+                      subtext: brokerStr,
                       color: const Color(0xFF059669),
                       icon: Icons.hub_rounded,
                     ),

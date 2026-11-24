@@ -21,10 +21,6 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Compile and Verify Panchayagnam Core Service
-        working-directory: ./panchayagnam-service-main
-        run: mvn clean compile -B
-
       - name: Build Panchayagnam Core Service
         working-directory: ./panchayagnam-service-main
         run: mvn clean package -DskipTests -B

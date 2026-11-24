@@ -319,8 +319,17 @@ public class PyBrokerController {
             }
             if (request.getClientId() != null && !request.getClientId().isBlank()
                     && (request.getAccId() == null || pyBrokerAccountRepository.findById(request.getAccId()).isEmpty())) {
-                pyBrokerAccountRepository.findByClientId(request.getClientId().trim())
+                pyBrokerAccountRepository.findByClientIdIgnoreCase(request.getClientId().trim())
                         .ifPresent(acc -> request.setAccId(acc.getId()));
+            }
+            if (request.getAccId() == null) {
+                Long authUser = resolveAuthenticatedUserId();
+                if (authUser != null && authUser > 0) {
+                    List<PyBrokerAccountEntity> userAccounts = pyBrokerAccountRepository.findByPyUserIdAndActiveTrue(authUser);
+                    if (!userAccounts.isEmpty()) {
+                        request.setAccId(userAccounts.get(0).getId());
+                    }
+                }
             }
             if (request.getAccId() == null) {
                 return responseBuilder.buildError(400, "Account ID and order details are required");
@@ -372,8 +381,17 @@ public class PyBrokerController {
             }
             if (request.getClientId() != null && !request.getClientId().isBlank()
                     && (request.getAccId() == null || pyBrokerAccountRepository.findById(request.getAccId()).isEmpty())) {
-                pyBrokerAccountRepository.findByClientId(request.getClientId().trim())
+                pyBrokerAccountRepository.findByClientIdIgnoreCase(request.getClientId().trim())
                         .ifPresent(acc -> request.setAccId(acc.getId()));
+            }
+            if (request.getAccId() == null) {
+                Long authUser = resolveAuthenticatedUserId();
+                if (authUser != null && authUser > 0) {
+                    List<PyBrokerAccountEntity> userAccounts = pyBrokerAccountRepository.findByPyUserIdAndActiveTrue(authUser);
+                    if (!userAccounts.isEmpty()) {
+                        request.setAccId(userAccounts.get(0).getId());
+                    }
+                }
             }
             if (request.getAccId() == null) {
                 return responseBuilder.buildError(400, "Account ID and order details are required");

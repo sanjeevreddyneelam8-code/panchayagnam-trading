@@ -27,6 +27,7 @@ public interface PyBrokerAccountRepository extends JpaRepository<PyBrokerAccount
 
     // Get by clientId
     Optional<PyBrokerAccountEntity> findByClientId(String clientId);
+    Optional<PyBrokerAccountEntity> findByClientIdIgnoreCase(String clientId);
 
     Optional<PyBrokerAccountEntity> findById(Long id);
 

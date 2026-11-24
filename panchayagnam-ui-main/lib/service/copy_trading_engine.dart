@@ -44,6 +44,14 @@ class ChildAccountOrderRecord {
 }
 
 
+class LiveOrderResult {
+  final bool success;
+  final String orderId;
+  final String message;
+
+  const LiveOrderResult({required this.success, required this.orderId, required this.message});
+}
+
 class ChildAccountConfig {
   final String id;
   final String name;
@@ -764,7 +772,7 @@ class CopyTradingEngine extends ChangeNotifier {
     final masterAmount = baseQty * price;
 
     // Dispatch real live order to Master broker
-    final masterRealOrderId = await _dispatchLiveOrder(
+    final masterResult = await _dispatchLiveOrder(
       account: master,
       symbol: symbol,
       side: side,
@@ -774,9 +782,9 @@ class CopyTradingEngine extends ChangeNotifier {
       productType: productType,
     );
 
-    final masterOrderId = masterRealOrderId != null && masterRealOrderId.isNotEmpty
-        ? masterRealOrderId
-        : defaultMasterOrderId;
+    final masterOrderId = masterResult.success && masterResult.orderId.isNotEmpty
+        ? masterResult.orderId
+        : (masterResult.orderId.isNotEmpty ? masterResult.orderId : defaultMasterOrderId);
 
     legs.add(ReplicationLegResult(
       accountName: master.name,
@@ -789,8 +797,8 @@ class CopyTradingEngine extends ChangeNotifier {
       totalAmount: masterAmount,
       orderId: masterOrderId,
       latencyMs: masterLatency,
-      status: 'FILLED',
-      message: 'Order Executed Successfully via ${master.broker}',
+      status: masterResult.success ? 'FILLED' : 'REJECTED',
+      message: masterResult.message,
     ));
 
     master.lastOrderId = masterOrderId;
@@ -835,6 +843,19 @@ class CopyTradingEngine extends ChangeNotifier {
         final childOrderId = '${child.broker.substring(0, 2)}-C-${DateTime.now().millisecondsSinceEpoch % 100000 + rand.nextInt(900)}';
         final childLatency = 9 + rand.nextInt(18); // Sub-25ms realistic async fan-out
 
+        // Automatically dispatch real buy/sell order to broker for this child account!
+        final childResult = await _dispatchLiveOrder(
+          account: child,
+          symbol: symbol,
+          side: childSide,
+          qty: childQty,
+          price: price,
+          orderType: orderType,
+          productType: productType,
+        );
+
+        final resolvedChildOrderId = childResult.orderId.isNotEmpty ? childResult.orderId : childOrderId;
+
         legs.add(ReplicationLegResult(
           accountName: child.name,
           broker: child.broker,
@@ -844,13 +865,13 @@ class CopyTradingEngine extends ChangeNotifier {
           qty: childQty,
           price: price,
           totalAmount: childAmount,
-          orderId: childOrderId,
+          orderId: resolvedChildOrderId,
           latencyMs: childLatency,
-          status: 'FILLED',
-          message: 'Replicated (${child.multiplier}x) ${child.copyMode == 'INVERSE' ? '[INVERSE]' : ''}',
+          status: childResult.success ? 'FILLED' : 'REJECTED',
+          message: childResult.message,
         ));
 
-        child.lastOrderId = childOrderId;
+        child.lastOrderId = resolvedChildOrderId;
         child.lastLatencyMs = childLatency;
         child.totalCopiedOrders++;
         final isChildBuy = childSide.toUpperCase() == 'BUY' || symbol.toUpperCase().contains('CE');
@@ -860,7 +881,7 @@ class CopyTradingEngine extends ChangeNotifier {
           child.sellPutsExecuted++;
         }
         child.orderHistory.insert(0, ChildAccountOrderRecord(
-          orderId: childOrderId,
+          orderId: resolvedChildOrderId,
           timestamp: formattedTime,
           symbol: symbol,
           side: childSide,
@@ -868,24 +889,13 @@ class CopyTradingEngine extends ChangeNotifier {
           qty: childQty,
           price: price,
           totalAmount: childAmount,
-          status: 'FILLED',
+          status: childResult.success ? 'FILLED' : 'REJECTED',
           latencyMs: childLatency,
           broker: child.broker,
         ));
         totalQty += childQty;
         totalCapital += childAmount;
         latencySum += childLatency;
-
-        // Automatically dispatch real buy/sell order to broker for this child account!
-        _dispatchLiveOrder(
-          account: child,
-          symbol: symbol,
-          side: childSide,
-          qty: childQty,
-          price: price,
-          orderType: orderType,
-          productType: productType,
-        );
       }
     }
 
@@ -901,7 +911,7 @@ class CopyTradingEngine extends ChangeNotifier {
       productType: productType,
       timestamp: DateTime.now(),
       totalAccountsTargeted: (specificAccount != null || !_isCopyTradingActive) ? 1 : _accounts.length,
-      totalAccountsFilled: legs.length,
+      totalAccountsFilled: legs.where((l) => l.status == 'FILLED').length,
       aggregateQty: totalQty,
       aggregateCapital: totalCapital,
       avgLatencyMs: avgLatency,
@@ -917,7 +927,7 @@ class CopyTradingEngine extends ChangeNotifier {
     return receipt;
   }
 
-  Future<String?> _dispatchLiveOrder({
+  Future<LiveOrderResult> _dispatchLiveOrder({
     required ChildAccountConfig account,
     required String symbol,
     required String side,
@@ -930,7 +940,28 @@ class CopyTradingEngine extends ChangeNotifier {
       final endpoint = side.toUpperCase() == 'BUY'
           ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
           : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
-      final accId = int.tryParse(account.id);
+      int? accId = int.tryParse(account.id);
+      if (accId == null || accId <= 0) {
+        try {
+          final permRaw = html.window.localStorage['py_permanent_demat_accounts_v2'] ??
+              html.window.localStorage['panchayagnam_trading_accounts'];
+          if (permRaw != null) {
+            final decoded = jsonDecode(permRaw);
+            if (decoded is List) {
+              for (final item in decoded) {
+                if (item is Map) {
+                  final c = (item['clientId'] ?? item['loginId'] ?? '').toString().trim().toUpperCase();
+                  if (c == account.clientId.trim().toUpperCase() && item['id'] != null) {
+                    accId = int.tryParse(item['id'].toString());
+                    if (accId != null && accId > 0) break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
       final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
       headers['Idempotency-Key'] = 'COPY-${account.clientId}-${DateTime.now().millisecondsSinceEpoch}';
 
@@ -974,7 +1005,7 @@ class CopyTradingEngine extends ChangeNotifier {
         headers: headers,
         body: jsonEncode({
           if (accId != null && accId > 0) 'accId': accId,
-          'clientId': account.clientId,
+          'clientId': account.clientId.trim().toUpperCase(),
           'tradingSymbol': resolvedSymbol,
           'exchange': resolvedExchange,
           'quantity': qty,
@@ -985,18 +1016,30 @@ class CopyTradingEngine extends ChangeNotifier {
         }),
       ).timeout(const Duration(seconds: 15));
 
+      final dec = jsonDecode(resp.body);
       if (resp.statusCode == 200 || resp.statusCode == 201) {
-        try {
-          final dec = jsonDecode(resp.body);
-          if (dec is Map) {
-            return (dec['orderId'] ?? dec['uniqueOrderId'] ?? (dec['data'] is Map ? dec['data']['orderId'] : null))?.toString();
+        if (dec is Map) {
+          final isErr = dec['status'] == false || (dec['error'] != null && dec['error'] != false);
+          if (isErr) {
+            return LiveOrderResult(success: false, orderId: '', message: (dec['message'] ?? 'Broker rejected order').toString());
           }
-        } catch (_) {}
+          final orderId = (dec['orderId'] ?? dec['uniqueOrderId'] ?? (dec['data'] is Map ? dec['data']['orderId'] : null))?.toString();
+          if (orderId != null && orderId.isNotEmpty) {
+            return LiveOrderResult(success: true, orderId: orderId, message: 'Order filled on ${account.broker}');
+          }
+        }
+        return LiveOrderResult(success: true, orderId: 'ORD-${DateTime.now().millisecondsSinceEpoch % 100000}', message: 'Order submitted to ${account.broker}');
+      } else {
+        String errMsg = 'Broker rejected order';
+        if (dec is Map && dec['message'] != null) {
+          errMsg = dec['message'].toString();
+        }
+        return LiveOrderResult(success: false, orderId: '', message: errMsg);
       }
     } catch (e) {
       debugPrint('Error dispatching copy trade to ${account.clientId}: $e');
+      return LiveOrderResult(success: false, orderId: '', message: e.toString());
     }
-    return null;
   }
 
   Future<int> emergencySquareOffAll() async {

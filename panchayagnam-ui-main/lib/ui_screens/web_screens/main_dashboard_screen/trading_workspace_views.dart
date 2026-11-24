@@ -1754,10 +1754,27 @@ class _HoldingsViewState extends State<HoldingsView> {
 
     double totalPooledLiquidMargin = 0;
     for (final a in allAccounts) {
-      totalPooledLiquidMargin += (a.balance > 0 ? a.balance : 1000000.0);
+      totalPooledLiquidMargin += (a.balance > 0 ? a.balance : 0.0);
     }
     final totalClientsCount = allAccounts.length;
     final activeClientsCount = allAccounts.where((a) => a.isActive).length;
+
+    double totalCombinedInvested = 0.0;
+    double totalCombinedCurrentVal = 0.0;
+    double totalTodayPnl = 0.0;
+    for (final h in _allHoldings) {
+      final qty = (h['qty'] as num?)?.toDouble() ?? 0.0;
+      final avg = (h['avg'] as num?)?.toDouble() ?? 0.0;
+      final ltp = (h['ltp'] as num?)?.toDouble() ?? 0.0;
+      final dayChange = (h['dayChange'] as num?)?.toDouble() ?? 0.0;
+      final invVal = qty * avg;
+      final currVal = qty * ltp;
+      totalCombinedInvested += invVal;
+      totalCombinedCurrentVal += currVal;
+      totalTodayPnl += (currVal * (dayChange / 100.0));
+    }
+    final totalOverallPnl = totalCombinedCurrentVal - totalCombinedInvested;
+    final totalTodayPnlPct = totalCombinedInvested > 0 ? (totalTodayPnl / totalCombinedInvested) * 100.0 : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1790,18 +1807,18 @@ class _HoldingsViewState extends State<HoldingsView> {
                 ),
                 _buildKpiCard(
                   'Combined Invested Capital',
-                  _formatCurrency(totalPooledLiquidMargin * 0.38),
-                  'Active Delivery Cost Basis',
+                  _formatCurrency(totalCombinedInvested),
+                  'Active Demat Delivery Cost Basis',
                   Icons.payments_rounded,
                   const Color(0xFF475569),
                 ),
                 _buildKpiCard(
                   "Today's Consolidated P&L",
-                  '+${_formatCurrency(26270.00)}',
-                  '+1.24% Net Day Gain Across Demats',
+                  '${totalTodayPnl >= 0 ? '+' : ''}${_formatCurrency(totalTodayPnl)}',
+                  '${totalTodayPnlPct >= 0 ? '+' : ''}${totalTodayPnlPct.toStringAsFixed(2)}% Net Day Gain Across Demats',
                   Icons.insights_rounded,
-                  const Color(0xFF059669),
-                  isProfit: true,
+                  totalTodayPnl >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                  isProfit: totalTodayPnl >= 0,
                 ),
               ],
             );
@@ -1890,13 +1907,30 @@ class _HoldingsViewState extends State<HoldingsView> {
                   separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   itemBuilder: (ctx, i) {
                     final acc = accounts[i];
-                    final bal = acc.balance > 0 ? acc.balance : 1000000.0;
+                    final bal = acc.balance > 0 ? acc.balance : 0.0;
                     final mult = acc.multiplier > 0 ? acc.multiplier : 1.0;
-                    final inv = bal * 0.38;
-                    final dayPnl = (acc.isMaster ? 18420.0 : 7850.0) * mult;
-                    final overallPnl = (acc.isMaster ? 84500.0 : 34200.0) * mult;
-                    final dayPnlPct = inv > 0 ? (dayPnl / inv) * 100 : 1.25;
-                    final overallPnlPct = inv > 0 ? (overallPnl / inv) * 100 : 8.45;
+
+                    final clientHoldings = _allHoldings.where((h) {
+                      final demat = (h['demat'] ?? '').toString().toUpperCase();
+                      return (acc.clientId.isNotEmpty && demat.contains(acc.clientId.toUpperCase())) ||
+                             (acc.name.isNotEmpty && demat.contains(acc.name.toUpperCase()));
+                    }).toList();
+
+                    double inv = 0.0;
+                    double currVal = 0.0;
+                    double dayPnl = 0.0;
+                    for (final h in clientHoldings) {
+                      final q = (h['qty'] as num?)?.toDouble() ?? 0.0;
+                      final a = (h['avg'] as num?)?.toDouble() ?? 0.0;
+                      final l = (h['ltp'] as num?)?.toDouble() ?? 0.0;
+                      final dc = (h['dayChange'] as num?)?.toDouble() ?? 0.0;
+                      inv += q * a;
+                      currVal += q * l;
+                      dayPnl += (q * l * (dc / 100.0));
+                    }
+                    final overallPnl = currVal - inv;
+                    final dayPnlPct = inv > 0 ? (dayPnl / inv) * 100.0 : 0.0;
+                    final overallPnlPct = inv > 0 ? (overallPnl / inv) * 100.0 : 0.0;
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2166,11 +2200,11 @@ class _HoldingsViewState extends State<HoldingsView> {
                 ),
                 _buildKpiCard(
                   "Today's Gain / Loss",
-                  '+₹18,420.00',
-                  '+1.01% Day Change',
+                  '${totalPnl >= 0 ? '+' : ''}${_formatCurrency(totalPnl)}',
+                  '${totalPnlPct >= 0 ? '+' : ''}${totalPnlPct.toStringAsFixed(2)}% Overall Return',
                   Icons.insights_rounded,
-                  const Color(0xFF059669),
-                  isProfit: true,
+                  totalPnl >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                  isProfit: totalPnl >= 0,
                 ),
               ],
             );
@@ -2257,7 +2291,31 @@ class _HoldingsViewState extends State<HoldingsView> {
               ),
 
               // Table Body
-              ListView.separated(
+              if (filtered.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 40, color: Colors.grey.shade400),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'No Demat Delivery Holdings Found',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Connected broker accounts hold 0 equity delivery shares in Demat storage.\nDelivery orders placed in Cash Market or Auto Trading will appear here once settled.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filtered.length,
