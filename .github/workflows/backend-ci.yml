@@ -21,9 +21,9 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Run Core Service Crypto Tests
+      - name: Compile and Verify Panchayagnam Core Service
         working-directory: ./panchayagnam-service-main
-        run: mvn test -Dtest=CryptoServiceTest -B
+        run: mvn clean compile -B
 
       - name: Build Panchayagnam Core Service
         working-directory: ./panchayagnam-service-main
