@@ -755,13 +755,28 @@ class CopyTradingEngine extends ChangeNotifier {
     final List<ReplicationLegResult> legs = [];
     final rand = math.Random();
 
-    // 1. Execute Selected Account Leg
+    // 1. Execute Selected Account Leg (Master first)
     final master = specificAccount ?? masterAccount;
     final bName = master.broker.replaceAll(RegExp(r'[^a-zA-Z]'), '').toUpperCase();
     final pfx = bName.length >= 3 ? bName.substring(0, 3) : (bName.isNotEmpty ? bName : 'ORD');
-    final masterOrderId = '$pfx-${DateTime.now().millisecondsSinceEpoch % 100000}';
+    final defaultMasterOrderId = '$pfx-${DateTime.now().millisecondsSinceEpoch % 100000}';
     final masterLatency = 8 + rand.nextInt(5);
     final masterAmount = baseQty * price;
+
+    // Dispatch real live order to Master broker
+    final masterRealOrderId = await _dispatchLiveOrder(
+      account: master,
+      symbol: symbol,
+      side: side,
+      qty: baseQty,
+      price: price,
+      orderType: orderType,
+      productType: productType,
+    );
+
+    final masterOrderId = masterRealOrderId != null && masterRealOrderId.isNotEmpty
+        ? masterRealOrderId
+        : defaultMasterOrderId;
 
     legs.add(ReplicationLegResult(
       accountName: master.name,
@@ -862,8 +877,8 @@ class CopyTradingEngine extends ChangeNotifier {
         latencySum += childLatency;
 
         // Automatically dispatch real buy/sell order to broker for this child account!
-        _dispatchChildLiveOrder(
-          child: child,
+        _dispatchLiveOrder(
+          account: child,
           symbol: symbol,
           side: childSide,
           qty: childQty,
@@ -902,8 +917,8 @@ class CopyTradingEngine extends ChangeNotifier {
     return receipt;
   }
 
-  Future<void> _dispatchChildLiveOrder({
-    required ChildAccountConfig child,
+  Future<String?> _dispatchLiveOrder({
+    required ChildAccountConfig account,
     required String symbol,
     required String side,
     required int qty,
@@ -915,9 +930,9 @@ class CopyTradingEngine extends ChangeNotifier {
       final endpoint = side.toUpperCase() == 'BUY'
           ? '${ApiUrls.baseUrl}/pyBrokerApi/order/buy'
           : '${ApiUrls.baseUrl}/pyBrokerApi/order/sell';
-      final accId = int.tryParse(child.id);
+      final accId = int.tryParse(account.id);
       final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
-      headers['Idempotency-Key'] = 'COPY-${child.clientId}-${DateTime.now().millisecondsSinceEpoch}';
+      headers['Idempotency-Key'] = 'COPY-${account.clientId}-${DateTime.now().millisecondsSinceEpoch}';
 
       final cleanProd = productType.contains('INTRADAY') || productType.contains('MIS')
           ? 'INTRADAY'
@@ -927,24 +942,61 @@ class CopyTradingEngine extends ChangeNotifier {
                   ? 'CARRYFORWARD'
                   : 'DELIVERY'));
 
-      await http.post(
+      // Clean and map symbol
+      String resolvedSymbol = symbol.trim().toUpperCase();
+      String resolvedExchange = 'NSE';
+
+      if (resolvedSymbol.contains('CE') || resolvedSymbol.contains('PE') || resolvedSymbol.contains('FUT')) {
+        resolvedExchange = (resolvedSymbol.startsWith('SENSEX') || resolvedSymbol.startsWith('BANKEX')) ? 'BFO' : 'NFO';
+      } else if (resolvedSymbol == 'NIFTY 50' || resolvedSymbol == 'NIFTY') {
+        resolvedSymbol = cleanProd == 'INTRADAY' || cleanProd == 'DELIVERY' ? 'NIFTYBEES-EQ' : 'NIFTY';
+        resolvedExchange = resolvedSymbol.endsWith('-EQ') ? 'NSE' : 'NFO';
+      } else if (resolvedSymbol == 'BANK NIFTY' || resolvedSymbol == 'BANKNIFTY') {
+        resolvedSymbol = cleanProd == 'INTRADAY' || cleanProd == 'DELIVERY' ? 'BANKBEES-EQ' : 'BANKNIFTY';
+        resolvedExchange = resolvedSymbol.endsWith('-EQ') ? 'NSE' : 'NFO';
+      } else if (resolvedSymbol == 'FIN NIFTY' || resolvedSymbol == 'FINNIFTY') {
+        resolvedSymbol = cleanProd == 'INTRADAY' || cleanProd == 'DELIVERY' ? 'FINNIFTYBEES-EQ' : 'FINNIFTY';
+        resolvedExchange = resolvedSymbol.endsWith('-EQ') ? 'NSE' : 'NFO';
+      } else {
+        // Plain Cash stock: append -EQ for NSE
+        if (!resolvedSymbol.endsWith('-EQ')) {
+          resolvedSymbol = '$resolvedSymbol-EQ';
+        }
+        resolvedExchange = 'NSE';
+      }
+
+      final isOpt = resolvedSymbol.contains('CE') || resolvedSymbol.contains('PE');
+      final resolvedOrderType = isOpt ? 'LIMIT' : (orderType.toUpperCase().contains('MARKET') ? 'MARKET' : 'LIMIT');
+      final resolvedPrice = resolvedOrderType == 'MARKET' ? 0.0 : price;
+
+      final resp = await http.post(
         Uri.parse(endpoint),
         headers: headers,
         body: jsonEncode({
           if (accId != null && accId > 0) 'accId': accId,
-          'clientId': child.clientId,
-          'tradingSymbol': symbol,
-          'exchange': (symbol.contains('CE') || symbol.contains('PE') || symbol.contains('FUT')) ? 'NFO' : 'NSE',
+          'clientId': account.clientId,
+          'tradingSymbol': resolvedSymbol,
+          'exchange': resolvedExchange,
           'quantity': qty,
-          'orderType': orderType.toUpperCase().contains('MARKET') ? 'MARKET' : 'LIMIT',
-          'price': orderType.toUpperCase().contains('MARKET') ? 0.0 : price,
+          'orderType': resolvedOrderType,
+          'price': resolvedPrice,
           'productType': cleanProd,
           'variety': 'NORMAL',
         }),
       ).timeout(const Duration(seconds: 15));
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        try {
+          final dec = jsonDecode(resp.body);
+          if (dec is Map) {
+            return (dec['orderId'] ?? dec['uniqueOrderId'] ?? (dec['data'] is Map ? dec['data']['orderId'] : null))?.toString();
+          }
+        } catch (_) {}
+      }
     } catch (e) {
-      debugPrint('Error dispatching copy trade to child ${child.clientId}: $e');
+      debugPrint('Error dispatching copy trade to ${account.clientId}: $e');
     }
+    return null;
   }
 
   Future<int> emergencySquareOffAll() async {

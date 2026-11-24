@@ -1766,6 +1766,102 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
         };
     }
 
+    // ── HOLDINGS ──────────────────────────────────────────────────────────────
+    @Override
+    public JSONObject getHoldings(Long accId) {
+        PyBrokerAccountEntity account = pyBrokerAccountRepository
+                .findById(accId)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + accId));
+
+        if (paperTradingService.isPaperTradingEnabled()) {
+            JSONObject response = new JSONObject();
+            response.put("status", true);
+            response.put("message", "SUCCESS");
+            response.put("data", new JSONArray());
+            return response;
+        }
+
+        String accessToken = pyTokenValidationService.getValidAccessToken(accId);
+        if (accessToken == null) throw new RuntimeException(
+                "Token unavailable for clientId: " + account.getClientId());
+
+        return switch (account.getBrokerType()) {
+            case ANGELONE -> {
+                SmartConnect smartConnect = new SmartConnect(account.getSecret().getApiKey());
+                smartConnect.setAccessToken(accessToken);
+                yield smartConnect.getHolding();
+            }
+            case DHAN -> {
+                try {
+                    JSONObject result = dhanClient.getHoldings(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Dhan holdings: " + e.getMessage(), e);
+                }
+            }
+            case PROFITMART -> {
+                try {
+                    JSONArray result = profitmartClient.getHoldings(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    JSONObject response = new JSONObject();
+                    response.put("status", true);
+                    response.put("message", "SUCCESS");
+                    response.put("data", result != null ? result : new JSONArray());
+                    yield response;
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Profitmart holdings: " + e.getMessage(), e);
+                }
+            }
+            case ZERODHA -> {
+                try {
+                    String apiKey = account.getSecret() != null ? account.getSecret().getApiKey() : "";
+                    JSONObject result = zerodhaClient.getHoldings(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            apiKey,
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Zerodha holdings: " + e.getMessage(), e);
+                }
+            }
+            case UPSTOX -> {
+                try {
+                    JSONObject result = upstoxClient.getHoldings(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Upstox holdings: " + e.getMessage(), e);
+                }
+            }
+            case GOODWILL -> {
+                try {
+                    JSONObject result = goodwillClient.getHoldings(
+                            getBaseUrl(account),
+                            account.getClientId(),
+                            accessToken).get();
+                    yield result != null ? result : new JSONObject().put("status", true).put("data", new JSONArray());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to fetch Goodwill holdings: " + e.getMessage(), e);
+                }
+            }
+            default -> {
+                JSONObject res = new JSONObject();
+                res.put("status", true);
+                res.put("message", "SUCCESS");
+                res.put("data", new JSONArray());
+                yield res;
+            }
+        };
+    }
+
     // ── MODIFY ORDER ─────────────────────────────────────────────────────────
     @Override
     public Order modifyIndividualOrder(ModifyOrderRequest request) {

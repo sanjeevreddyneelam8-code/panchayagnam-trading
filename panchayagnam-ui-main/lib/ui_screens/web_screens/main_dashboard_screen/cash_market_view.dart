@@ -79,14 +79,54 @@ class _CashMarketViewState extends State<CashMarketView> {
   final List<String> _sectors = [
     'All Bluechips',
     'Nifty 50 Cash (50 Stocks)',
-    'Energy',
-    'PSU',
-    'Banking',
-    'Finance',
-    'IT',
-    'Tech',
-    'Auto',
-    'Metals',
+    'Nifty Next 50',
+    'Energy & Power',
+    'PSU & Maharatna',
+    'Banking (Private & PSU)',
+    'PSU Banks',
+    'Private Banks',
+    'Financial Services',
+    'IT & Software',
+    'Tech & AI',
+    'Auto & EV',
+    'Auto Ancillaries',
+    'Metals & Mining',
+    'Steel & Alloys',
+    'Pharma & Drugs',
+    'Healthcare & Hospitals',
+    'FMCG & Staples',
+    'Consumer Durables',
+    'Infrastructure',
+    'Capital Goods',
+    'Defence & Aerospace',
+    'Realty & Construction',
+    'Chemicals & Speciality',
+    'Fertilizers & Agri',
+    'Telecom & Comms',
+    'Cement & Building',
+    'Media & Entertainment',
+    'Railways & Logistics',
+    'Shipping & Ports',
+    'Textiles & Apparels',
+    'Paper & Forest',
+    'Sugar & Ethanol',
+    'Hotels & Hospitality',
+    'Aviation & Airports',
+    'E-Commerce & Retail',
+    'NBFC & Lending',
+    'Insurance & Broking',
+    'Wealth Management & AMC',
+    'Green Energy & Renewables',
+    'Oil & Gas Exploration',
+    'Midcap Champions',
+    'Smallcap Alpha',
+    'Largecap Titans',
+    'High Dividend Yield',
+    'Momentum Gainers',
+    'Dip Value Buys',
+    '52W High Breakouts',
+    'Low Beta Defensive',
+    'High Beta Cyclicals',
   ];
 
   late final List<CashStockItem> _allStocks;
@@ -1284,10 +1324,112 @@ class _CashMarketViewState extends State<CashMarketView> {
 
       if (_activeSectorIndex == 0) return true; // All Bluechips
       final sectorName = _sectors[_activeSectorIndex];
-      if (sectorName.contains('Nifty 50')) {
-        return s.isNifty50;
+      final sym = s.symbol.toUpperCase();
+      final sec = s.sector.toUpperCase();
+
+      switch (sectorName) {
+        case 'Nifty 50 Cash (50 Stocks)':
+          return s.isNifty50;
+        case 'Nifty Next 50':
+          return !s.isNifty50 || ['VEDL', 'BEL', 'HAL', 'ZOMATO', 'DLF', 'TRENT', 'TATAPOWER', 'JIOFIN', 'IRCTC', 'IOC', 'COALINDIA'].contains(sym);
+        case 'Energy & Power':
+          return sec.contains('ENERGY') || ['RELIANCE', 'ONGC', 'NTPC', 'POWERGRID', 'TATAPOWER', 'IOC', 'BPCL', 'GAIL', 'ADANIGREEN', 'COALINDIA'].contains(sym);
+        case 'PSU & Maharatna':
+          return sec.contains('PSU') || ['NTPC', 'POWERGRID', 'ONGC', 'IOC', 'COALINDIA', 'SBIN', 'BEL', 'HAL', 'GAIL', 'BPCL', 'BHEL', 'IRCTC', 'RVNL', 'IRFC', 'PNB', 'CANBK'].contains(sym);
+        case 'Banking (Private & PSU)':
+          return sec.contains('BANK') || ['HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'INDUSINDBK', 'PNB', 'BANKBARODA', 'CANBK', 'FEDERALBNK', 'IDFCFIRSTB'].contains(sym);
+        case 'PSU Banks':
+          return ['SBIN', 'PNB', 'BANKBARODA', 'CANBK', 'UNIONBANK', 'IOB', 'UCOBANK'].contains(sym);
+        case 'Private Banks':
+          return ['HDFCBANK', 'ICICIBANK', 'KOTAKBANK', 'AXISBANK', 'INDUSINDBK', 'FEDERALBNK', 'IDFCFIRSTB', 'BANDHANBNK', 'RBLBANK'].contains(sym);
+        case 'Financial Services':
+          return sec.contains('FINANCE') || ['BAJFINANCE', 'BAJAJFINSV', 'HDFCLIFE', 'SBILIFE', 'MUTHOOTFIN', 'CHOLAFIN', 'SHRIRAMFIN', 'JIOFIN'].contains(sym);
+        case 'IT & Software':
+          return sec.contains('IT') || ['TCS', 'INFY', 'WIPRO', 'HCLTECH', 'TECHM', 'LTIM', 'COFORGE', 'PERSISTENT', 'LTTS'].contains(sym);
+        case 'Tech & AI':
+          return sec.contains('TECH') || ['TCS', 'INFY', 'HCLTECH', 'LTIM', 'TATAELXSI', 'PERSISTENT', 'KPITTECH', 'COFORGE'].contains(sym);
+        case 'Auto & EV':
+          return sec.contains('AUTO') || ['TATAMOTORS', 'MARUTI', 'M&M', 'BAJAJ-AUTO', 'HEROMOTOCO', 'EICHERMOT', 'TVSMOTOR'].contains(sym);
+        case 'Auto Ancillaries':
+          return ['BHARATFORG', 'BOSCHLTD', 'MOTHERSON', 'BALKRISIND', 'MRF', 'APOLLOTYRE', 'EXIDEIND', 'AMARAJABAT'].contains(sym);
+        case 'Metals & Mining':
+          return sec.contains('METAL') || ['TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'VEDL', 'COALINDIA', 'NMDC', 'SAIL', 'JINDALSTEL', 'NATIONALUM'].contains(sym);
+        case 'Steel & Alloys':
+          return ['TATASTEEL', 'JSWSTEEL', 'SAIL', 'JINDALSTEL'].contains(sym);
+        case 'Pharma & Drugs':
+          return sec.contains('PHARMA') || ['SUNPHARMA', 'DRREDDY', 'CIPLA', 'DIVISLAB', 'LUPIN', 'AUROPHARMA', 'TORNTPHARM', 'ZYDUSLIFE', 'MANKIND'].contains(sym);
+        case 'Healthcare & Hospitals':
+          return ['APOLLOHOSP', 'FORTIS', 'MAXHEALTH', 'MEDANTA', 'LALPATHLAB', 'METROPOLIS'].contains(sym);
+        case 'FMCG & Staples':
+          return sec.contains('FMCG') || ['ITC', 'HINDUNILVR', 'NESTLEIND', 'BRITANNIA', 'TATACONSUM', 'DABUR', 'MARICO', 'GODREJCP', 'COLPAL'].contains(sym);
+        case 'Consumer Durables':
+          return ['TITAN', 'HAVELLS', 'VOLTAS', 'DIXON', 'WHIRLPOOL', 'CROMPTON', 'BLUESTARCO', 'AMBER'].contains(sym);
+        case 'Infrastructure':
+          return sec.contains('INFRA') || ['LT', 'ADANIENT', 'ADANIPORTS', 'GMRINFRA', 'IRB', 'NCC'].contains(sym);
+        case 'Capital Goods':
+          return ['LT', 'SIEMENS', 'ABB', 'BHEL', 'CUMMINSIND', 'THERMAX', 'CGPOWER', 'ASTRAL'].contains(sym);
+        case 'Defence & Aerospace':
+          return sec.contains('DEFENCE') || ['BEL', 'HAL', 'BDL', 'MAZDOCK', 'COCHINSHIP', 'PARAS', 'DATA-PATTERNS'].contains(sym);
+        case 'Realty & Construction':
+          return sec.contains('REALTY') || ['DLF', 'GODREJPROP', 'LODHA', 'OBEROIRLTY', 'PHOENIXLTD', 'BRIGADE', 'PRESTIGE'].contains(sym);
+        case 'Chemicals & Speciality':
+          return ['PIDILITIND', 'SRF', 'GUJGASLTD', 'AARTIIND', 'DEEPAKNTR', 'TATACHEM', 'ATUL', 'NAVINFLUOR'].contains(sym);
+        case 'Fertilizers & Agri':
+          return ['UPL', 'COROMANDEL', 'CHAMBLFERT', 'GNFC', 'RCF', 'GSFC', 'PIIND'].contains(sym);
+        case 'Telecom & Comms':
+          return ['BHARTIARTL', 'IDEA', 'INDUSTOWER', 'TATACOMM', 'HFCL', 'ROUTE'].contains(sym);
+        case 'Cement & Building':
+          return ['ULTRACEMCO', 'GRASIM', 'AMBUJACEM', 'ACC', 'SHREECEM', 'DALBHARAT', 'RAMCOCEM'].contains(sym);
+        case 'Media & Entertainment':
+          return ['ZEEL', 'SUNTV', 'PVRINOX', 'NETWORK18', 'TV18BRDCST', 'SAREGAMA'].contains(sym);
+        case 'Railways & Logistics':
+          return ['IRCTC', 'RVNL', 'IRFC', 'CONCOR', 'RAILTEL', 'TITAGARH', 'TEXRAIL'].contains(sym);
+        case 'Shipping & Ports':
+          return ['ADANIPORTS', 'SCI', 'COCHINSHIP', 'GEPIL', 'DREDGECORP', 'JSWINFRA'].contains(sym);
+        case 'Textiles & Apparels':
+          return ['PAGEIND', 'RAYMOND', 'KPRMILL', 'TRIDENT', 'ALOKINDS', 'GOKEX'].contains(sym);
+        case 'Paper & Forest':
+          return ['JKPAPER', 'CENTURYPLY', 'GREENPANEL', 'WSTCSTPAPR', 'ANDHRAPAP'].contains(sym);
+        case 'Sugar & Ethanol':
+          return ['BALRAMCHIN', 'RENUKA', 'TRIVENI', 'EIDPARRY', 'BAJAJHIND', 'DHAMPUR'].contains(sym);
+        case 'Hotels & Hospitality':
+          return ['INDHOTEL', 'EIHOTEL', 'CHALET', 'LEMONONTREE', 'TAJGVK'].contains(sym);
+        case 'Aviation & Airports':
+          return ['INDIGO', 'SPICEJET', 'GMRINFRA'].contains(sym);
+        case 'E-Commerce & Retail':
+          return ['ZOMATO', 'NYKAA', 'PAYTM', 'DMART', 'TRENT', 'DELHIVERY'].contains(sym);
+        case 'NBFC & Lending':
+          return ['BAJFINANCE', 'CHOLAFIN', 'MUTHOOTFIN', 'SHRIRAMFIN', 'M&MFIN', 'POONAWALLA', 'L&TFH'].contains(sym);
+        case 'Insurance & Broking':
+          return ['HDFCLIFE', 'SBILIFE', 'ICICIPRULI', 'ICICIGI', 'GICRE', 'ANGELONE', 'BSE', 'MCX'].contains(sym);
+        case 'Wealth Management & AMC':
+          return ['HDFCAMC', 'NAM-INDIA', 'UTIAMC', 'BSE', 'MCX', 'CDSL', 'CAMS', 'KFINTECH'].contains(sym);
+        case 'Green Energy & Renewables':
+          return ['TATAPOWER', 'ADANIGREEN', 'SUZLON', 'IREDA', 'INOXWIND', 'BORORENEW'].contains(sym);
+        case 'Oil & Gas Exploration':
+          return ['ONGC', 'OIL', 'IOC', 'BPCL', 'HPCL', 'GAIL', 'PETRONET', 'IGL', 'MGL'].contains(sym);
+        case 'Midcap Champions':
+          return ['TRENT', 'BEL', 'HAL', 'DIXON', 'PERSISTENT', 'POLYCAB', 'CUMMINSIND', 'ASTRAL', 'COFORGE', 'SUPREMEIND'].contains(sym);
+        case 'Smallcap Alpha':
+          return ['SUZLON', 'IREDA', 'RVNL', 'IRFC', 'MAZDOCK', 'COCHINSHIP', 'BHEL', 'RITES', 'SJVN'].contains(sym);
+        case 'Largecap Titans':
+          return ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'BHARTIARTL', 'SBIN', 'ITC', 'LT', 'KOTAKBANK'].contains(sym);
+        case 'High Dividend Yield':
+          return ['COALINDIA', 'ONGC', 'IOC', 'POWERGRID', 'NTPC', 'VEDL', 'HINDZINC', 'BPCL', 'GAIL'].contains(sym);
+        case 'Momentum Gainers':
+          return _getLiveChangePct(s) >= 0.0;
+        case 'Dip Value Buys':
+          return _getLiveChangePct(s) < 0.0;
+        case '52W High Breakouts':
+          final cur = _getLiveLtp(s);
+          return s.high52w > 0 && cur >= (s.high52w * 0.90);
+        case 'Low Beta Defensive':
+          return ['ITC', 'HINDUNILVR', 'POWERGRID', 'NESTLEIND', 'DABUR', 'TCS', 'BRITANNIA'].contains(sym);
+        case 'High Beta Cyclicals':
+          return ['TATAMOTORS', 'TATASTEEL', 'JSWSTEEL', 'ADANIENT', 'VEDL', 'HINDALCO', 'SAIL', 'DLF'].contains(sym);
+        default:
+          return sec.contains(sectorName.toUpperCase());
       }
-      return s.sector.toUpperCase() == sectorName.toUpperCase();
     }).toList();
   }
 

@@ -1436,128 +1436,8 @@ class _HoldingsViewState extends State<HoldingsView> {
   String _selectedDemat = 'All Demats (8 Combined)';
   String _selectedClientFilter = 'ALL';
 
-  final List<Map<String, dynamic>> _allHoldings = [
-    {
-      'symbol': 'RELIANCE',
-      'name': 'Reliance Industries Ltd',
-      'isin': 'INE002A01018',
-      'sector': 'Oil & Gas',
-      'demat': 'Dhan Master + Connected Pool',
-      'qty': 150,
-      't1Qty': 0,
-      'avg': 2810.00,
-      'ltp': 2949.20,
-      'dayChange': 1.25,
-    },
-    {
-      'symbol': 'TCS',
-      'name': 'Tata Consultancy Services',
-      'isin': 'INE467B01029',
-      'sector': 'IT & Software',
-      'demat': 'Zerodha + Connected Children',
-      'qty': 80,
-      't1Qty': 0,
-      'avg': 3920.00,
-      'ltp': 4120.50,
-      'dayChange': 0.82,
-    },
-    {
-      'symbol': 'INFY',
-      'name': 'Infosys Limited',
-      'isin': 'INE009A01021',
-      'sector': 'IT & Software',
-      'demat': 'Active Broker Demat',
-      'qty': 160,
-      't1Qty': 20,
-      'avg': 1780.00,
-      'ltp': 1885.00,
-      'dayChange': 1.48,
-    },
-    {
-      'symbol': 'HDFCBANK',
-      'name': 'HDFC Bank Ltd',
-      'isin': 'INE040A01034',
-      'sector': 'Banking',
-      'demat': 'Angel One Child Pool',
-      'qty': 180,
-      't1Qty': 0,
-      'avg': 1610.00,
-      'ltp': 1652.10,
-      'dayChange': 0.41,
-    },
-    {
-      'symbol': 'ICICIBANK',
-      'name': 'ICICI Bank Ltd',
-      'isin': 'INE090A01021',
-      'sector': 'Banking',
-      'demat': 'Active Broker Demat',
-      'qty': 150,
-      't1Qty': 0,
-      'avg': 1210.00,
-      'ltp': 1288.40,
-      'dayChange': 1.12,
-    },
-    {
-      'symbol': 'TATAMOTORS',
-      'name': 'Tata Motors Limited',
-      'isin': 'INE155A01022',
-      'sector': 'Auto',
-      'demat': 'Dhan Master + Connected Pool',
-      'qty': 140,
-      't1Qty': 0,
-      'avg': 920.00,
-      'ltp': 995.80,
-      'dayChange': 2.34,
-    },
-    {
-      'symbol': 'SBIN',
-      'name': 'State Bank of India',
-      'isin': 'INE062A01020',
-      'sector': 'Banking',
-      'demat': 'Active Broker Demat',
-      'qty': 120,
-      't1Qty': 0,
-      'avg': 790.00,
-      'ltp': 842.30,
-      'dayChange': -0.32,
-    },
-    {
-      'symbol': 'ITC',
-      'name': 'ITC Limited',
-      'isin': 'INE154A01025',
-      'sector': 'FMCG',
-      'demat': 'Zerodha Child Pool',
-      'qty': 250,
-      't1Qty': 0,
-      'avg': 465.00,
-      'ltp': 489.20,
-      'dayChange': 0.58,
-    },
-    {
-      'symbol': 'LT',
-      'name': 'Larsen & Toubro Ltd',
-      'isin': 'INE018A01030',
-      'sector': 'Infrastructure',
-      'demat': 'Active Broker Demat',
-      'qty': 30,
-      't1Qty': 0,
-      'avg': 3420.00,
-      'ltp': 3680.00,
-      'dayChange': 1.38,
-    },
-    {
-      'symbol': 'BHARTIARTL',
-      'name': 'Bharti Airtel Ltd',
-      'isin': 'INE397D01024',
-      'sector': 'Telecom',
-      'demat': 'Dhan Master + Connected Pool',
-      'qty': 80,
-      't1Qty': 0,
-      'avg': 1590.00,
-      'ltp': 1712.50,
-      'dayChange': 0.94,
-    },
-  ];
+  final List<Map<String, dynamic>> _allHoldings = [];
+  bool _isLoadingHoldings = false;
 
   @override
   void initState() {
@@ -1566,6 +1446,82 @@ class _HoldingsViewState extends State<HoldingsView> {
     LiveMarketDataService().start();
     CopyTradingEngine().addListener(_onEngineUpdate);
     _syncLiveHoldings();
+    _fetchRealConsolidatedHoldings();
+  }
+
+  Future<void> _fetchRealConsolidatedHoldings() async {
+    if (!mounted) return;
+    setState(() => _isLoadingHoldings = true);
+
+    try {
+      final engine = CopyTradingEngine();
+      final accounts = engine.accounts;
+      final List<Map<String, dynamic>> consolidated = [];
+      final svc = LiveMarketDataService();
+
+      for (final acc in accounts) {
+        final accId = int.tryParse(acc.id);
+        if (accId == null || accId <= 0) continue;
+
+        try {
+          final url = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/order/holdings?accId=$accId');
+          final resp = await http.get(url, headers: AuthHeaderHelper.getHeaders()).timeout(const Duration(seconds: 8));
+
+          if (resp.statusCode == 200) {
+            final decoded = jsonDecode(resp.body);
+            List<dynamic> rawList = [];
+            if (decoded is List) {
+              rawList = decoded;
+            } else if (decoded is Map<String, dynamic>) {
+              if (decoded['data'] is List) {
+                rawList = decoded['data'] as List;
+              } else if (decoded['data'] is Map && decoded['data']['holdings'] is List) {
+                rawList = decoded['data']['holdings'] as List;
+              } else if (decoded['holdings'] is List) {
+                rawList = decoded['holdings'] as List;
+              }
+            }
+
+            for (final item in rawList) {
+              if (item is! Map) continue;
+              final sym = (item['tradingsymbol'] ?? item['tradingSymbol'] ?? item['symbol'] ?? '').toString();
+              if (sym.isEmpty) continue;
+              final cleanSym = sym.replaceAll('-EQ', '').replaceAll(' EQ', '').trim();
+              final qty = (item['quantity'] ?? item['totalQty'] ?? item['netqty'] ?? item['holdingqty'] ?? 0) as num;
+              if (qty <= 0) continue;
+
+              final avg = (item['averageprice'] ?? item['avgCostPrice'] ?? item['buyPrice'] ?? item['avg'] ?? 0.0) as num;
+              final brokerLtp = (item['ltp'] ?? item['lastTradedPrice'] ?? item['close'] ?? 0.0) as num;
+              final liveQuote = svc.getQuote(cleanSym);
+              final ltp = (liveQuote != null && liveQuote.ltp > 0) ? liveQuote.ltp : brokerLtp.toDouble();
+
+              consolidated.add({
+                'symbol': cleanSym,
+                'name': item['companyName'] ?? item['name'] ?? cleanSym,
+                'isin': item['isin'] ?? '',
+                'sector': item['sector'] ?? 'Equity',
+                'demat': '${acc.broker} (${acc.clientId})',
+                'qty': qty.toInt(),
+                't1Qty': (item['t1quantity'] ?? 0) as num,
+                'avg': avg.toDouble(),
+                'ltp': ltp,
+                'dayChange': liveQuote?.changePct ?? 0.0,
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          _allHoldings.clear();
+          _allHoldings.addAll(consolidated);
+          _isLoadingHoldings = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingHoldings = false);
+    }
   }
 
   @override
@@ -2172,176 +2128,7 @@ class _HoldingsViewState extends State<HoldingsView> {
     final mult = acc.multiplier > 0 ? acc.multiplier : 1.0;
     showDialog(
       context: context,
-      builder: (ctx) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Container(
-            width: 820,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${acc.name} (${acc.clientId.isNotEmpty ? acc.clientId : acc.broker}) — Demat Holdings',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            ),
-                            Text(
-                              'Broker: ${acc.broker} • Liquid Margin: ${_formatCurrency(acc.balance)} • Multiplier: ${acc.multiplier}x',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Divider(height: 1),
-                const SizedBox(height: 14),
-
-                // Scrip Table for this client
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Expanded(flex: 3, child: Text('SCRIP / COMPANY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 2, child: Text('QTY', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 2, child: Text('AVG BUY', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 2, child: Text('LIVE LTP', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 2, child: Text('CURR VAL', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 3, child: Text('P&L (RETURN)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                            Expanded(flex: 2, child: Text('EXIT', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
-                          ],
-                        ),
-                      ),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _allHoldings.length.clamp(0, 6),
-                        separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        itemBuilder: (c, idx) {
-                          final h = _allHoldings[idx];
-                          final baseQty = (h['qty'] as num).toInt();
-                          final clientQty = (baseQty * (acc.isMaster ? 1.0 : mult)).round();
-                          final avg = (h['avg'] as num).toDouble();
-                          final ltp = (h['ltp'] as num).toDouble();
-                          final currVal = clientQty * ltp;
-                          final invVal = clientQty * avg;
-                          final pnl = currVal - invVal;
-                          final pnlPct = invVal > 0 ? (pnl / invVal) * 100 : 0.0;
-                          final isGreen = pnl >= 0;
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
-                                      Text(h['name'] as String, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Center(
-                                    child: Text('$clientQty Sh', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text('₹${avg.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12)),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text('₹${ltp.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(_formatCurrency(currVal), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                ),
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    '${isGreen ? '+' : ''}${_formatCurrency(pnl)} (${isGreen ? '+' : ''}${pnlPct.toStringAsFixed(2)}%)',
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11.5,
-                                      color: isGreen ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Center(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(ctx);
-                                        OrderPlacementTicketDialog.show(
-                                          context,
-                                          symbol: '${h['symbol']} EQ',
-                                          side: 'SELL',
-                                          ltp: ltp,
-                                          lotSize: 1,
-                                          category: 'EQUITY',
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFDC2626),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                      child: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (ctx) => ClientHoldingsModalDialog(acc: acc, mult: mult),
     );
   }
 
@@ -2689,6 +2476,332 @@ class _HoldingsViewState extends State<HoldingsView> {
   }
 }
 
+// ─── AUTHENTIC CLIENT DEMAT HOLDINGS MODAL (ZERO FAKE DATA) ──────────────────
+
+class ClientHoldingsModalDialog extends StatefulWidget {
+  final ChildAccountConfig acc;
+  final double mult;
+
+  const ClientHoldingsModalDialog({
+    super.key,
+    required this.acc,
+    required this.mult,
+  });
+
+  @override
+  State<ClientHoldingsModalDialog> createState() => _ClientHoldingsModalDialogState();
+}
+
+class _ClientHoldingsModalDialogState extends State<ClientHoldingsModalDialog> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _realHoldings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHoldings();
+  }
+
+  Future<void> _fetchHoldings() async {
+    setState(() => _isLoading = true);
+    final accId = int.tryParse(widget.acc.id);
+    if (accId == null || accId <= 0) {
+      if (mounted) setState(() { _isLoading = false; _realHoldings = []; });
+      return;
+    }
+
+    try {
+      final url = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/order/holdings?accId=$accId');
+      final resp = await http.get(url, headers: AuthHeaderHelper.getHeaders()).timeout(const Duration(seconds: 12));
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        List<dynamic> rawList = [];
+        if (decoded is List) {
+          rawList = decoded;
+        } else if (decoded is Map<String, dynamic>) {
+          if (decoded['data'] is List) {
+            rawList = decoded['data'] as List;
+          } else if (decoded['data'] is Map && decoded['data']['holdings'] is List) {
+            rawList = decoded['data']['holdings'] as List;
+          } else if (decoded['holdings'] is List) {
+            rawList = decoded['holdings'] as List;
+          }
+        }
+
+        final List<Map<String, dynamic>> parsed = [];
+        final svc = LiveMarketDataService();
+
+        for (final item in rawList) {
+          if (item is! Map) continue;
+          final sym = (item['tradingsymbol'] ?? item['tradingSymbol'] ?? item['symbol'] ?? '').toString();
+          if (sym.isEmpty) continue;
+          final cleanSym = sym.replaceAll('-EQ', '').replaceAll(' EQ', '').trim();
+          final qty = (item['quantity'] ?? item['totalQty'] ?? item['netqty'] ?? item['holdingqty'] ?? 0) as num;
+          if (qty <= 0) continue;
+
+          final avg = (item['averageprice'] ?? item['avgCostPrice'] ?? item['buyPrice'] ?? item['avg'] ?? 0.0) as num;
+          final brokerLtp = (item['ltp'] ?? item['lastTradedPrice'] ?? item['close'] ?? 0.0) as num;
+          final liveQuote = svc.getQuote(cleanSym);
+          final ltp = (liveQuote != null && liveQuote.ltp > 0) ? liveQuote.ltp : brokerLtp.toDouble();
+
+          parsed.add({
+            'symbol': cleanSym,
+            'tradingSymbol': sym,
+            'name': item['companyName'] ?? item['name'] ?? cleanSym,
+            'qty': qty.toInt(),
+            'avg': avg.toDouble(),
+            'ltp': ltp,
+          });
+        }
+
+        if (mounted) {
+          setState(() {
+            _realHoldings = parsed;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _realHoldings = [];
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(double val) {
+    return '₹${val.toStringAsFixed(2)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Container(
+        width: 820,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: const Color(0xFF059669).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.acc.name} (${widget.acc.clientId.isNotEmpty ? widget.acc.clientId : widget.acc.broker}) — Demat Holdings',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                        ),
+                        Text(
+                          'Broker: ${widget.acc.broker} • Liquid Margin: ${_formatCurrency(widget.acc.balance)} • Multiplier: ${widget.acc.multiplier}x',
+                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            if (_isLoading)
+              Container(
+                height: 180,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 2.5),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Fetching live Demat holdings from ${widget.acc.broker} (${widget.acc.clientId})...',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              )
+            else if (_realHoldings.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inventory_2_outlined, size: 44, color: Colors.grey.shade400),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'No Demat Delivery Holdings Found',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Broker account (${widget.acc.broker} — ${widget.acc.clientId.isNotEmpty ? widget.acc.clientId : widget.acc.name}) currently holds 0 equity delivery shares in Demat storage.\nOrders placed in Cash Market or Auto Trading under CNC/DELIVERY will appear here after exchange settlement.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+                      ),
+                      const SizedBox(height: 14),
+                      ElevatedButton.icon(
+                        onPressed: _fetchHoldings,
+                        icon: const Icon(Icons.refresh_rounded, size: 15),
+                        label: const Text('Refresh Demat Holdings'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Expanded(flex: 3, child: Text('SCRIP / COMPANY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 2, child: Text('QTY', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 2, child: Text('AVG BUY', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 2, child: Text('LIVE LTP', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 2, child: Text('CURR VAL', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 3, child: Text('P&L (RETURN)', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                          Expanded(flex: 2, child: Text('EXIT', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF475569)))),
+                        ],
+                      ),
+                    ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _realHoldings.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      itemBuilder: (c, idx) {
+                        final h = _realHoldings[idx];
+                        final clientQty = h['qty'] as int;
+                        final avg = h['avg'] as double;
+                        final ltp = h['ltp'] as double;
+                        final currVal = clientQty * ltp;
+                        final invVal = clientQty * avg;
+                        final pnl = currVal - invVal;
+                        final pnlPct = invVal > 0 ? (pnl / invVal) * 100 : 0.0;
+                        final isGreen = pnl >= 0;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(h['symbol'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                                    Text(h['name'] as String, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Center(
+                                  child: Text('$clientQty Sh', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text('₹${avg.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12)),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text('₹${ltp.toStringAsFixed(1)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(_formatCurrency(currVal), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  '${isGreen ? '+' : ''}${_formatCurrency(pnl)} (${isGreen ? '+' : ''}${pnlPct.toStringAsFixed(2)}%)',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11.5,
+                                    color: isGreen ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Center(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      OrderPlacementTicketDialog.show(
+                                        context,
+                                        symbol: '${h['symbol']} EQ',
+                                        side: 'SELL',
+                                        ltp: ltp,
+                                        lotSize: 1,
+                                        category: 'EQUITY',
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFDC2626),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    child: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // ─── FULL INTERACTIVE PAPER TRADING STATION ──────────────────────────────────
 

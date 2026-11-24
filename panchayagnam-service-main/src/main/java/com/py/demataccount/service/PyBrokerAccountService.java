@@ -45,6 +45,8 @@ public interface PyBrokerAccountService {
     // PyBrokerAccountService.java
     JSONObject getPositions(Long accId);
 
+    JSONObject getHoldings(Long accId);
+
     Order modifyIndividualOrder(ModifyOrderRequest request);
 
     Order cancelIndividualOrder(CancelOrderRequest request);

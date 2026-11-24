@@ -621,6 +621,30 @@ public class PyBrokerController {
         }
     }
 
+    @Operation(
+            summary = "Get Demat Holdings",
+            description = "Fetch real equity delivery holdings from broker account. Supports AngelOne, Dhan, Zerodha, Upstox.")
+    @GetMapping("/order/holdings")
+    public ResponseEntity<?> getHoldings(
+            @Parameter(description = "Broker account ID", example = "1")
+            @RequestParam Long accId) {
+        log.info("GET /order/holdings | accId={}", accId);
+        try {
+            validateAccountOwnership(accId);
+            JSONObject response = pyBrokerAccountService.getHoldings(accId);
+            return ResponseEntity.ok(response.toString());
+        } catch (SecurityException se) {
+            log.warn("Security rejection in /order/holdings | accId={}: {}", accId, se.getMessage());
+            return responseBuilder.buildError(403, se.getMessage());
+        } catch (IllegalArgumentException iae) {
+            log.warn("Invalid account in /order/holdings | accId={}: {}", accId, iae.getMessage());
+            return responseBuilder.buildError(404, iae.getMessage());
+        } catch (Exception e) {
+            log.error("Fetch holdings failed | accId={}: {}", accId, e.getMessage(), e);
+            return responseBuilder.buildError(400, "Failed to fetch holdings: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/modifyOrder")
     public ResponseEntity<ApiResponse<Order>> modifyOrder(
             @RequestBody ModifyOrderRequest request) {

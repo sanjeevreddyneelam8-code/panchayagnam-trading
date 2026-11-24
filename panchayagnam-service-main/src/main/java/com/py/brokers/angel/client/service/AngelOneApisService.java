@@ -406,7 +406,7 @@ public class AngelOneApisService {
                             }
                         }
                     }
-                } catch (Exception | SmartAPIException ex) {
+                } catch (Exception ex) {
                     log.warn("AngelOne searchScrip auto-resolve failed for {}: {}", tradingSymbol, ex.getMessage());
                 }
             }

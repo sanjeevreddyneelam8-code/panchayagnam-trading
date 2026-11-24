@@ -21,13 +21,13 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      - name: Compile and Verify Panchayagnam Core Service
+      - name: Run Core Service Crypto Tests
         working-directory: ./panchayagnam-service-main
-        run: mvn clean test-compile -B
+        run: mvn test -Dtest=CryptoServiceTest -B
 
       - name: Build Panchayagnam Core Service
         working-directory: ./panchayagnam-service-main
-        run: mvn package -DskipTests -B
+        run: mvn clean package -DskipTests -B
 
       - name: Upload Core Service JAR
         uses: actions/upload-artifact@v4

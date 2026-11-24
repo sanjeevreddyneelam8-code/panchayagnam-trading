@@ -390,6 +390,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     _livePnlTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
       final svc = LiveMarketDataService();
+      svc.fetchNow();
       setState(() {
         for (int i = 0; i < _strategies.length; i++) {
           final s = _strategies[i];
@@ -428,7 +429,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     required double price,
   }) async {
     setState(() => _isExecutingSimulation = true);
-    final engine = CopyTradingEngine();
+    final engine = CopyTradingEngine()..syncWithStorage();
     final master = engine.masterAccount;
 
     // 1. Replicate trade: Master executes first, followed by parallel child replication
@@ -440,7 +441,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         baseQty: qty,
         price: price,
         orderType: 'MARKET',
-        productType: 'INTRADAY',
+        productType: _terminalProduct.contains('CNC') ? 'DELIVERY' : (_terminalProduct.contains('NRML') ? 'CARRYFORWARD' : 'INTRADAY'),
         lotSize: symbol.contains('NIFTY') ? 25 : (symbol.contains('BANK') ? 15 : 1),
       );
     } catch (e) {
@@ -2094,14 +2095,74 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     final master = engine.masterAccount;
     final childCount = engine.activeFollowersCount;
 
+    final svc = LiveMarketDataService();
+    double getLivePrice(String symKey, double defaultPrice) {
+      final q = svc.getQuote(symKey);
+      if (q != null && q.ltp > 0) return q.ltp;
+      return defaultPrice;
+    }
+
     final symbols = [
-      {'name': 'NIFTY 50', 'price': 24550.0},
-      {'name': 'BANK NIFTY', 'price': 52400.0},
-      {'name': 'FIN NIFTY', 'price': 23800.0},
-      {'name': 'RELIANCE', 'price': 1363.0},
-      {'name': 'TCS', 'price': 4185.0},
-      {'name': 'HDFCBANK', 'price': 1742.0},
-      {'name': 'INFY', 'price': 1855.0},
+      {'name': 'NIFTY 50', 'price': getLivePrice('NIFTY', 25278.0)},
+      {'name': 'BANK NIFTY', 'price': getLivePrice('BANKNIFTY', 52125.0)},
+      {'name': 'FIN NIFTY', 'price': getLivePrice('FINNIFTY', 23945.0)},
+      {'name': 'MIDCAP NIFTY', 'price': getLivePrice('MIDCPNIFTY', 12684.0)},
+      {'name': 'SENSEX', 'price': getLivePrice('SENSEX', 79845.0)},
+      {'name': 'RELIANCE', 'price': getLivePrice('RELIANCE', 1351.0)},
+      {'name': 'TCS', 'price': getLivePrice('TCS', 4180.0)},
+      {'name': 'HDFCBANK', 'price': getLivePrice('HDFCBANK', 817.8)},
+      {'name': 'INFY', 'price': getLivePrice('INFY', 1105.2)},
+      {'name': 'ICICIBANK', 'price': getLivePrice('ICICIBANK', 1264.0)},
+      {'name': 'BHARTIARTL', 'price': getLivePrice('BHARTIARTL', 1610.0)},
+      {'name': 'SBIN', 'price': getLivePrice('SBIN', 815.3)},
+      {'name': 'ITC', 'price': getLivePrice('ITC', 472.5)},
+      {'name': 'LT', 'price': getLivePrice('LT', 3680.0)},
+      {'name': 'KOTAKBANK', 'price': getLivePrice('KOTAKBANK', 1745.0)},
+      {'name': 'HINDUNILVR', 'price': getLivePrice('HINDUNILVR', 2380.0)},
+      {'name': 'AXISBANK', 'price': getLivePrice('AXISBANK', 1145.0)},
+      {'name': 'TATAMOTORS', 'price': getLivePrice('TATAMOTORS', 965.4)},
+      {'name': 'MARUTI', 'price': getLivePrice('MARUTI', 12450.0)},
+      {'name': 'SUNPHARMA', 'price': getLivePrice('SUNPHARMA', 1845.0)},
+      {'name': 'BAJFINANCE', 'price': getLivePrice('BAJFINANCE', 6850.0)},
+      {'name': 'TITAN', 'price': getLivePrice('TITAN', 3240.0)},
+      {'name': 'NTPC', 'price': getLivePrice('NTPC', 374.8)},
+      {'name': 'ONGC', 'price': getLivePrice('ONGC', 222.85)},
+      {'name': 'POWERGRID', 'price': getLivePrice('POWERGRID', 324.5)},
+      {'name': 'ADANIENT', 'price': getLivePrice('ADANIENT', 2677.9)},
+      {'name': 'ADANIPORTS', 'price': getLivePrice('ADANIPORTS', 1195.0)},
+      {'name': 'COALINDIA', 'price': getLivePrice('COALINDIA', 438.0)},
+      {'name': 'TATASTEEL', 'price': getLivePrice('TATASTEEL', 148.5)},
+      {'name': 'HCLTECH', 'price': getLivePrice('HCLTECH', 1820.0)},
+      {'name': 'WIPRO', 'price': getLivePrice('WIPRO', 545.0)},
+      {'name': 'TECHM', 'price': getLivePrice('TECHM', 1690.0)},
+      {'name': 'BAJAJFINSV', 'price': getLivePrice('BAJAJFINSV', 1620.0)},
+      {'name': 'ASIANPAINT', 'price': getLivePrice('ASIANPAINT', 2480.0)},
+      {'name': 'ULTRACEMCO', 'price': getLivePrice('ULTRACEMCO', 10950.0)},
+      {'name': 'NESTLEIND', 'price': getLivePrice('NESTLEIND', 2240.0)},
+      {'name': 'JSWSTEEL', 'price': getLivePrice('JSWSTEEL', 945.0)},
+      {'name': 'GRASIM', 'price': getLivePrice('GRASIM', 2520.0)},
+      {'name': 'M&M', 'price': getLivePrice('M&M', 2890.0)},
+      {'name': 'BPCL', 'price': getLivePrice('BPCL', 295.0)},
+      {'name': 'CIPLA', 'price': getLivePrice('CIPLA', 1490.0)},
+      {'name': 'DRREDDY', 'price': getLivePrice('DRREDDY', 1240.0)},
+      {'name': 'APOLLOHOSP', 'price': getLivePrice('APOLLOHOSP', 6950.0)},
+      {'name': 'DIVISLAB', 'price': getLivePrice('DIVISLAB', 5850.0)},
+      {'name': 'EICHERMOT', 'price': getLivePrice('EICHERMOT', 4820.0)},
+      {'name': 'HEROMOTOCO', 'price': getLivePrice('HEROMOTOCO', 4650.0)},
+      {'name': 'HINDALCO', 'price': getLivePrice('HINDALCO', 645.0)},
+      {'name': 'INDUSINDBK', 'price': getLivePrice('INDUSINDBK', 985.0)},
+      {'name': 'BRITANNIA', 'price': getLivePrice('BRITANNIA', 4850.0)},
+      {'name': 'TRENT', 'price': getLivePrice('TRENT', 6450.0)},
+      {'name': 'BEL', 'price': getLivePrice('BEL', 292.0)},
+      {'name': 'HAL', 'price': getLivePrice('HAL', 4150.0)},
+      {'name': 'VEDL', 'price': getLivePrice('VEDL', 445.0)},
+      {'name': 'BHEL', 'price': getLivePrice('BHEL', 235.0)},
+      {'name': 'DLF', 'price': getLivePrice('DLF', 785.0)},
+      {'name': 'IRCTC', 'price': getLivePrice('IRCTC', 815.0)},
+      {'name': 'TATAPOWER', 'price': getLivePrice('TATAPOWER', 412.0)},
+      {'name': 'ZOMATO', 'price': getLivePrice('ZOMATO', 265.0)},
+      {'name': 'JIOFIN', 'price': getLivePrice('JIOFIN', 315.0)},
+      {'name': 'SUZLON', 'price': getLivePrice('SUZLON', 65.5)},
     ];
 
     return Container(
