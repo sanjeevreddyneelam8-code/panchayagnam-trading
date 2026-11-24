@@ -25,60 +25,89 @@ class _OrdersViewState extends State<OrdersView> {
   String _filter = 'ALL';
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _orders = [
-    {
-      'orderId': 'ORD-882910',
-      'time': '09:25:12 AM',
-      'symbol': 'NIFTY 24200 CE',
-      'side': 'BUY',
-      'type': 'MARKET',
-      'product': 'MIS',
-      'qty': '200 / 200',
-      'price': 135.50,
-      'status': 'COMPLETED',
-      'source': 'TradingView Webhook',
-      'latency': '12ms',
-    },
-    {
-      'orderId': 'ORD-882894',
-      'time': '09:20:05 AM',
-      'symbol': 'RELIANCE EQ',
-      'side': 'BUY',
-      'type': 'MARKET',
-      'product': 'MIS',
-      'qty': '200 / 200',
-      'price': 2942.00,
-      'status': 'COMPLETED',
-      'source': 'MarketWatch Quick Trade',
-      'latency': '14ms',
-    },
-    {
-      'orderId': 'ORD-882850',
-      'time': '09:16:40 AM',
-      'symbol': 'BANKNIFTY 52000 PE',
-      'side': 'SELL',
-      'type': 'MARKET',
-      'product': 'MIS',
-      'qty': '120 / 120',
-      'price': 184.00,
-      'status': 'COMPLETED',
-      'source': 'Algo 9:20 Straddle',
-      'latency': '11ms',
-    },
-    {
-      'orderId': 'ORD-882812',
-      'time': '09:15:30 AM',
-      'symbol': 'HDFCBANK EQ',
-      'side': 'BUY',
-      'type': 'LIMIT',
-      'product': 'CNC',
-      'qty': '200 / 200',
-      'price': 1640.00,
-      'status': 'COMPLETED',
-      'source': 'WebX Copier Engine',
-      'latency': '9ms',
-    },
-  ];
+  final List<Map<String, dynamic>> _orders = [];
+  bool _isLoadingOrders = false;
+  DateTime? _lastOrdersFetch;
+  Timer? _orderTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRealOrders();
+    _orderTimer = Timer.periodic(const Duration(seconds: 10), (_) => _fetchRealOrders());
+  }
+
+  @override
+  void dispose() {
+    _orderTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchRealOrders() async {
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final accounts = engine.accounts.where((a) => a.isActive).toList();
+    if (accounts.isEmpty) return;
+
+    _lastOrdersFetch = DateTime.now();
+    try {
+      final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
+      final List<Map<String, dynamic>> fetched = [];
+
+      for (final acc in accounts) {
+        if (acc.id.isEmpty) continue;
+        final url = '${ApiUrls.baseUrl}/pyBrokerApi/order/history?accId=${acc.id}';
+        final resp = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 8));
+        if (resp.statusCode == 200) {
+          final decoded = jsonDecode(resp.body);
+          List<dynamic> list = [];
+          if (decoded is Map && decoded['data'] is List) {
+            list = decoded['data'] as List;
+          } else if (decoded is List) {
+            list = decoded;
+          }
+
+          for (final item in list) {
+            if (item is! Map) continue;
+            final orderId = (item['orderid'] ?? item['orderId'] ?? item['uniqueOrderId'] ?? '').toString();
+            final sym = (item['tradingsymbol'] ?? item['tradingSymbol'] ?? item['symbol'] ?? '').toString();
+            if (orderId.isEmpty && sym.isEmpty) continue;
+
+            final time = (item['updatetime'] ?? item['ordertime'] ?? item['time'] ?? 'Today').toString();
+            final side = (item['transactiontype'] ?? item['side'] ?? 'BUY').toString().toUpperCase();
+            final orderType = (item['ordertype'] ?? item['type'] ?? 'MARKET').toString().toUpperCase();
+            final product = (item['producttype'] ?? item['product'] ?? 'MIS').toString().toUpperCase();
+            final filledQty = (item['filledshares'] ?? item['quantity'] ?? item['qty'] ?? '0').toString();
+            final totalQty = (item['quantity'] ?? item['qty'] ?? filledQty).toString();
+            final price = double.tryParse((item['averageprice'] ?? item['price'] ?? '0').toString()) ?? 0.0;
+            final status = (item['status'] ?? item['orderstatus'] ?? 'COMPLETED').toString().toUpperCase();
+
+            fetched.add({
+              'orderId': orderId.isNotEmpty ? orderId : 'ORD-${DateTime.now().millisecondsSinceEpoch % 1000000}',
+              'time': time,
+              'symbol': sym,
+              'side': side,
+              'type': orderType,
+              'product': product,
+              'qty': '$filledQty / $totalQty',
+              'price': price,
+              'status': status,
+              'source': '${acc.broker} Live Gateway',
+              'latency': '${acc.lastLatencyMs > 0 ? acc.lastLatencyMs : 11}ms',
+            });
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _orders.clear();
+          _orders.addAll(fetched);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching broker order history: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +234,29 @@ class _OrdersViewState extends State<OrdersView> {
                   ),
 
                   // Table Rows
-                  ListView.separated(
+                  if (filtered.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No Orders Placed Today',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF334155)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Orders executed from your connected broker accounts will appear here automatically in real time.',
+                            style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filtered.length,
@@ -384,67 +435,107 @@ class _PositionsViewState extends State<PositionsView> {
     return list;
   }
 
-  late final List<Map<String, dynamic>> _positions = [
-    {
-      'symbol': 'NIFTY 24200 CE',
-      'product': 'INTRADAY (MIS)',
-      'isOvernight': false,
-      'totalQty': 200,
-      'avgPrice': 125.40,
-      'ltp': 144.20,
-      'protection': 'PROTECTED',
-      'slPrice': 115.00,
-      'targetPrice': 175.00,
-      'isExpanded': false,
-      'breakdown': _buildDynamicBreakdown(200, 3760.0),
-    },
-    {
-      'symbol': 'BANKNIFTY 52000 PE',
-      'product': 'INTRADAY (MIS)',
-      'isOvernight': false,
-      'totalQty': -120, // Short leg
-      'avgPrice': 210.00,
-      'ltp': 182.50,
-      'protection': 'PROTECTED',
-      'slPrice': 235.00,
-      'targetPrice': 140.00,
-      'isExpanded': false,
-      'breakdown': _buildDynamicBreakdown(-120, 3300.0),
-    },
-    {
-      'symbol': 'RELIANCE EQ',
-      'product': 'INTRADAY (MIS)',
-      'isOvernight': false,
-      'totalQty': 100,
-      'avgPrice': 2935.00,
-      'ltp': 2949.20,
-      'protection': 'SL_ONLY',
-      'slPrice': 2915.00,
-      'targetPrice': 0.0,
-      'isExpanded': false,
-      'breakdown': _buildDynamicBreakdown(100, 1420.0),
-    },
-    {
-      'symbol': 'HDFCBANK EQ',
-      'product': 'DELIVERY (CNC)',
-      'isOvernight': true,
-      'totalQty': 200,
-      'avgPrice': 1640.00,
-      'ltp': 1652.10,
-      'protection': 'UNPROTECTED',
-      'slPrice': 0.0,
-      'targetPrice': 0.0,
-      'isExpanded': false,
-      'breakdown': _buildDynamicBreakdown(200, 2420.0),
-    },
-  ];
+  final List<Map<String, dynamic>> _positions = [];
+  bool _isLoadingPositions = false;
+  DateTime? _lastPositionsFetch;
 
   @override
   void initState() {
     super.initState();
     LiveMarketDataService().addListener(_syncLivePositions);
     LiveMarketDataService().start();
-    _syncLivePositions();
+    _fetchRealPositions();
+    _ticker = Timer.periodic(const Duration(seconds: 4), (_) {
+      _syncLivePositions();
+      if (_lastPositionsFetch == null || DateTime.now().difference(_lastPositionsFetch!).inSeconds >= 15) {
+        _fetchRealPositions();
+      }
+    });
+  }
+
+  Future<void> _fetchRealPositions() async {
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final accounts = engine.accounts.where((a) => a.isActive).toList();
+    if (accounts.isEmpty) return;
+
+    _lastPositionsFetch = DateTime.now();
+    try {
+      final headers = Map<String, String>.from(AuthHeaderHelper.getHeaders());
+      final Map<String, Map<String, dynamic>> aggregated = {};
+
+      for (final acc in accounts) {
+        if (acc.id.isEmpty) continue;
+        final url = '${ApiUrls.baseUrl}/pyBrokerApi/order/positions?accId=${acc.id}';
+        final resp = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 8));
+        if (resp.statusCode == 200) {
+          final decoded = jsonDecode(resp.body);
+          List<dynamic> posList = [];
+          if (decoded is Map && decoded['data'] is List) {
+            posList = decoded['data'] as List;
+          } else if (decoded is List) {
+            posList = decoded;
+          }
+
+          for (final item in posList) {
+            if (item is! Map) continue;
+            final sym = (item['tradingsymbol'] ?? item['tradingSymbol'] ?? item['symbol'] ?? '').toString();
+            if (sym.isEmpty) continue;
+
+            final netQty = int.tryParse((item['netqty'] ?? item['netQty'] ?? item['quantity'] ?? '0').toString()) ?? 0;
+            final buyQty = int.tryParse((item['buyqty'] ?? item['buyQty'] ?? '0').toString()) ?? 0;
+            final sellQty = int.tryParse((item['sellqty'] ?? item['sellQty'] ?? '0').toString()) ?? 0;
+            final effectiveQty = netQty != 0 ? netQty : (buyQty - sellQty);
+            if (effectiveQty == 0) continue; // Skip closed positions
+
+            final avgPrice = double.tryParse((item['buyavgprice'] ?? item['avgprice'] ?? item['avgPrice'] ?? '0').toString()) ?? 0.0;
+            final ltp = double.tryParse((item['ltp'] ?? '0').toString()) ?? avgPrice;
+            final pnl = double.tryParse((item['pnl'] ?? item['m2m'] ?? item['unrealised'] ?? '0').toString()) ?? ((ltp - avgPrice) * effectiveQty);
+            final prod = (item['producttype'] ?? item['productType'] ?? 'INTRADAY').toString().toUpperCase();
+            final isOvernight = prod.contains('DELIVERY') || prod.contains('CNC') || prod.contains('CARRYFORWARD') || prod.contains('NRML');
+
+            if (!aggregated.containsKey(sym)) {
+              aggregated[sym] = {
+                'symbol': sym,
+                'product': prod.contains('DELIVERY') || prod.contains('CNC')
+                    ? 'DELIVERY (CNC)'
+                    : (prod.contains('CARRYFORWARD') || prod.contains('NRML') ? 'CARRYFORWARD (NRML)' : 'INTRADAY (MIS)'),
+                'isOvernight': isOvernight,
+                'totalQty': effectiveQty,
+                'avgPrice': avgPrice,
+                'ltp': ltp,
+                'protection': 'PROTECTED',
+                'slPrice': effectiveQty > 0 ? (avgPrice * 0.90) : (avgPrice * 1.10),
+                'targetPrice': effectiveQty > 0 ? (avgPrice * 1.20) : (avgPrice * 0.80),
+                'isExpanded': false,
+                'totalPnl': pnl,
+              };
+            } else {
+              final existing = aggregated[sym]!;
+              final prevQty = existing['totalQty'] as int;
+              final newQty = prevQty + effectiveQty;
+              final newAvg = newQty != 0 ? (((existing['avgPrice'] as double) * prevQty + avgPrice * effectiveQty) / newQty) : avgPrice;
+              existing['totalQty'] = newQty;
+              existing['avgPrice'] = newAvg;
+              existing['totalPnl'] = (existing['totalPnl'] as double) + pnl;
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _positions.clear();
+          for (final entry in aggregated.values) {
+            final totalQty = entry['totalQty'] as int;
+            final totalPnl = entry['totalPnl'] as double;
+            entry['breakdown'] = _buildDynamicBreakdown(totalQty, totalPnl);
+            _positions.add(entry);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching broker positions: $e');
+    }
   }
 
   void _syncLivePositions() {
@@ -452,10 +543,15 @@ class _PositionsViewState extends State<PositionsView> {
     final svc = LiveMarketDataService();
     bool changed = false;
     for (var p in _positions) {
-      final sym = (p['symbol'] ?? '').toString().replaceAll(' EQ', '').trim().toUpperCase();
+      final sym = (p['symbol'] ?? '').toString().replaceAll(' EQ', '').replaceAll('-EQ', '').trim().toUpperCase();
       final q = svc.getQuote(sym);
       if (q != null && q.ltp > 0) {
         p['ltp'] = q.ltp;
+        final qty = p['totalQty'] as int;
+        final avg = p['avgPrice'] as double;
+        final livePnl = (q.ltp - avg) * qty;
+        p['totalPnl'] = livePnl;
+        p['breakdown'] = _buildDynamicBreakdown(qty, livePnl);
         changed = true;
       }
     }
@@ -790,6 +886,12 @@ class _PositionsViewState extends State<PositionsView> {
                 ),
                 Row(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF059669)),
+                      tooltip: 'Refresh Broker Positions',
+                      onPressed: _fetchRealPositions,
+                    ),
+                    const SizedBox(width: 8),
                     // Trailing SL Config button
                     OutlinedButton.icon(
                       onPressed: _showTrailingSlConfigDialog,

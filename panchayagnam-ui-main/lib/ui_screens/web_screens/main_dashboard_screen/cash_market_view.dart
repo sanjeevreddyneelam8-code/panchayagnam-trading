@@ -1219,31 +1219,8 @@ class _CashMarketViewState extends State<CashMarketView> {
   void _startLiveTickSimulation() {
     _tickTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (!mounted) return;
-      final targetIdx = _random.nextInt(_allStocks.length);
-      final item = _allStocks[targetIdx];
-      final currentLtp = _getLiveLtp(item);
-      final delta = (_random.nextDouble() - 0.48) * (currentLtp * 0.003);
-      final newLtp = double.parse((currentLtp + delta).toStringAsFixed(2));
-
-      setState(() {
-        _liveLtpOverrides[item.symbol] = newLtp;
-        if (delta >= 0) {
-          _tickFlashGreen[item.symbol] = true;
-          _tickFlashRed[item.symbol] = false;
-        } else {
-          _tickFlashRed[item.symbol] = true;
-          _tickFlashGreen[item.symbol] = false;
-        }
-      });
-
-      Timer(const Duration(milliseconds: 900), () {
-        if (mounted) {
-          setState(() {
-            _tickFlashGreen[item.symbol] = false;
-            _tickFlashRed[item.symbol] = false;
-          });
-        }
-      });
+      LiveMarketDataService().fetchNow();
+      setState(() {});
     });
   }
 

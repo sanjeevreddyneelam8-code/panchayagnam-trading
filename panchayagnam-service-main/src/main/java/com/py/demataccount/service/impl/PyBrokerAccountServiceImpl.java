@@ -809,8 +809,21 @@ public class PyBrokerAccountServiceImpl implements PyBrokerAccountService {
                 String productType = request.getProductType() != null ? request.getProductType().trim().toUpperCase() : "DELIVERY";
                 String tradingSymbol = request.getTradingSymbol() != null ? request.getTradingSymbol().trim().toUpperCase() : "";
 
-                // RMS Safeguard: For NSE/BSE Cash market equities, CARRYFORWARD/NRML is not allowed. Map to DELIVERY.
-                if (exchange.equals("NSE") || exchange.equals("BSE") || tradingSymbol.endsWith("-EQ") || tradingSymbol.endsWith(" EQ")) {
+                // RMS Safeguard: For Cash market equities, CARRYFORWARD/NRML is not allowed. Map to DELIVERY.
+                boolean isOptSym = tradingSymbol.endsWith("CE") || tradingSymbol.endsWith("PE") || tradingSymbol.contains(" CE") || tradingSymbol.contains(" PE");
+                boolean isFutSym = tradingSymbol.endsWith("FUT") || tradingSymbol.contains("FUT");
+                boolean isCommSym = "MCX".equalsIgnoreCase(exchange);
+
+                if (!isOptSym && !isFutSym && !isCommSym) {
+                    if ("NFO".equalsIgnoreCase(exchange) || "BFO".equalsIgnoreCase(exchange)) {
+                        exchange = "NSE";
+                    }
+                    if ("CARRYFORWARD".equalsIgnoreCase(productType) || "NRML".equalsIgnoreCase(productType) || "CNC".equalsIgnoreCase(productType)) {
+                        productType = "DELIVERY";
+                    } else if ("MIS".equalsIgnoreCase(productType)) {
+                        productType = "INTRADAY";
+                    }
+                } else if (exchange.equals("NSE") || exchange.equals("BSE") || tradingSymbol.endsWith("-EQ") || tradingSymbol.endsWith(" EQ")) {
                     if ("CARRYFORWARD".equals(productType) || "NRML".equals(productType) || "CNC".equals(productType)) {
                         productType = "DELIVERY";
                     } else if ("MIS".equals(productType)) {

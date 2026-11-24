@@ -465,6 +465,28 @@ public class AngelOneApisService {
                 }
             }
 
+            // ── Instrument & Exchange Safeguards ──────────────────────────────
+            if (!isOption && !isFuture && !isCommodity) {
+                // Pure Cash Equity: Can NEVER use NFO or CARRYFORWARD/NRML
+                if ("NFO".equalsIgnoreCase(exchange) || "BFO".equalsIgnoreCase(exchange)) {
+                    exchange = "NSE";
+                }
+                if ("CARRYFORWARD".equalsIgnoreCase(productType) || "NRML".equalsIgnoreCase(productType) || "CNC".equalsIgnoreCase(productType)) {
+                    productType = "DELIVERY";
+                } else if ("MIS".equalsIgnoreCase(productType)) {
+                    productType = "INTRADAY";
+                }
+            }
+            if ("NSE".equalsIgnoreCase(exchange) || "BSE".equalsIgnoreCase(exchange)) {
+                if ("CARRYFORWARD".equalsIgnoreCase(productType) || "NRML".equalsIgnoreCase(productType) || "CNC".equalsIgnoreCase(productType)) {
+                    productType = "DELIVERY";
+                }
+            } else if ("NFO".equalsIgnoreCase(exchange) || "BFO".equalsIgnoreCase(exchange) || "MCX".equalsIgnoreCase(exchange)) {
+                if ("DELIVERY".equalsIgnoreCase(productType) || "CNC".equalsIgnoreCase(productType) || "NRML".equalsIgnoreCase(productType)) {
+                    productType = "CARRYFORWARD";
+                }
+            }
+
             // ── Cash equity symbol check: NSE cash equities require -EQ ────────
             if (!isOption && !isFuture && !isCommodity && "NSE".equals(exchange)) {
                 if (!tradingSymbol.endsWith("-EQ")) {

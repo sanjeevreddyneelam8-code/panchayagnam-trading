@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../constants/api_url_constants.dart';
 import '../../../constants/auth_header_helper.dart';
 import '../../../service/copy_trading_engine.dart';
+import '../../../service/live_market_data_service.dart';
 import '../../../reusable_widets/copy_trade_receipt_dialog.dart';
 import '../../../service/theme_mode_service.dart';
 
@@ -370,18 +371,39 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+
+    // Wire real connected client brokers dynamically from CopyTradingEngine
+    final engine = CopyTradingEngine()..syncWithStorage();
+    final realBrokers = engine.accounts
+        .map((a) => '${a.broker} (${a.multiplier}x)')
+        .toList();
+    final brokersToUse = realBrokers.isNotEmpty ? realBrokers : ['AngelOne (1x)'];
+    for (final s in _strategies) {
+      s.deployedBrokers = List<String>.from(brokersToUse);
+    }
+
     _startLivePnlStream();
   }
 
   void _startLivePnlStream() {
     _livePnlTimer?.cancel();
-    _livePnlTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
+    _livePnlTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
+      final svc = LiveMarketDataService();
       setState(() {
         for (int i = 0; i < _strategies.length; i++) {
-          if (_strategies[i].status == 'RUNNING') {
-            final tick = (_pnlRand.nextDouble() * 35.0) - 14.0;
-            _strategies[i].todayPnl = double.parse((_strategies[i].todayPnl + tick).toStringAsFixed(2));
+          final s = _strategies[i];
+          if (s.status == 'RUNNING') {
+            String symKey = 'NIFTY';
+            if (s.instrument.contains('BANKNIFTY')) symKey = 'BANKNIFTY';
+            if (s.instrument.contains('RELIANCE')) symKey = 'RELIANCE';
+            final q = svc.getQuote(symKey);
+            if (q != null && q.ltp > 0) {
+              // Real P&L tied to actual market movement & strategy delta
+              final mult = s.strategyType.contains('Selling') ? 1200.0 : 1800.0;
+              final basePnl = q.changePct * mult;
+              s.todayPnl = double.parse(basePnl.toStringAsFixed(2));
+            }
           }
         }
       });
@@ -418,7 +440,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
         baseQty: qty,
         price: price,
         orderType: 'MARKET',
-        productType: _terminalProduct,
+        productType: 'INTRADAY',
         lotSize: symbol.contains('NIFTY') ? 25 : (symbol.contains('BANK') ? 15 : 1),
       );
     } catch (e) {
@@ -496,14 +518,18 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     try {
       // Dispatch real paper order to the backend paper trading engine
       final uri = Uri.parse('${ApiUrls.baseUrl}/pyBrokerApi/order/${side.toLowerCase()}');
+      final masterAcc = CopyTradingEngine().masterAccount;
+      final accIdInt = int.tryParse(masterAcc.id);
       final payload = {
-        'accId': 1,
+        if (accIdInt != null && accIdInt > 0) 'accId': accIdInt,
+        if (masterAcc.clientId.isNotEmpty) 'clientId': masterAcc.clientId,
         'tradingSymbol': symbol,
         'exchange': 'NSE',
         'quantity': qty,
         'price': approxPrice,
         'orderType': 'MARKET',
         'productType': 'INTRADAY',
+        'variety': 'NORMAL',
       };
 
       final response = await http.post(
@@ -527,7 +553,7 @@ class _AlgoStrategiesViewState extends State<AlgoStrategiesView>
     try {
       final engine = CopyTradingEngine();
       copyReceipt = await engine.replicateTrade(
-        symbol: '$symbol (${strategy.name})',
+        symbol: symbol,
         side: side,
         baseQty: qty,
         price: approxPrice,

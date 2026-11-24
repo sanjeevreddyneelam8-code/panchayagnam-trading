@@ -339,34 +339,55 @@ class _ChartsViewState extends State<ChartsView> {
     }
   }
 
-  /// Generates 45 authentic, realistic continuous OHLC candles with realistic trends & volatility
+  /// Generates authentic, realistic continuous OHLC candles starting strictly at 09:15 AM IST market open
   List<ChartCandle> _generateRealisticCandles(double basePrice, String tf) {
     final List<ChartCandle> list = [];
     final rand = math.Random(_selectedInstrument.name.hashCode + tf.hashCode);
-    final int count = 48;
+
+    final now = DateTime.now();
+    // Resolve Indian trading session date (skip weekends)
+    DateTime sessionDate = DateTime(now.year, now.month, now.day);
+    if (sessionDate.weekday == DateTime.saturday) {
+      sessionDate = sessionDate.subtract(const Duration(days: 1));
+    } else if (sessionDate.weekday == DateTime.sunday) {
+      sessionDate = sessionDate.subtract(const Duration(days: 2));
+    }
+
+    // Indian stock exchange (NSE/BSE) trading session strictly starts at 09:15 AM IST
+    final sessionStart = DateTime(sessionDate.year, sessionDate.month, sessionDate.day, 9, 15);
 
     Duration step;
+    int count;
     switch (tf) {
       case '5m':
         step = const Duration(minutes: 5);
+        count = 50; // 09:15 through 13:25
         break;
       case '15m':
         step = const Duration(minutes: 15);
+        count = 25; // 09:15 through 15:15
         break;
       case '1h':
         step = const Duration(hours: 1);
+        count = 7;  // 09:15 through 15:15
         break;
       case '1D':
       default:
         step = const Duration(days: 1);
+        count = 45;
         break;
     }
 
-    final startTime = DateTime.now().subtract(step * count);
-    double runningPrice = basePrice * (0.975 + (rand.nextDouble() * 0.015));
+    final startTime = (tf == '1D')
+        ? sessionDate.subtract(step * count)
+        : sessionStart;
+
+    double runningPrice = basePrice * (0.985 + (rand.nextDouble() * 0.015));
 
     for (int i = 0; i < count; i++) {
-      final t = startTime.add(step * (i + 1));
+      final t = (tf == '1D')
+          ? startTime.add(step * (i + 1))
+          : sessionStart.add(step * i);
       final trendDrift = math.sin((i / count) * math.pi * 2) * (basePrice * 0.002);
       final volatility = (basePrice * 0.004) * (0.7 + rand.nextDouble() * 0.8);
 
@@ -983,9 +1004,21 @@ class _PanchayagnamCandlestickPainter extends CustomPainter {
       tp.paint(canvas, Offset(chartWidth + 6, y - 6));
     }
 
-    // 2. Candlesticks / Line / Area
+    // Bottom Time Axis Labels (strictly starts at 09:15 AM)
     final int n = candles.length;
     final double spacing = chartWidth / n;
+    final int stepCount = math.min(6, n);
+    final int tInterval = (n / stepCount).floor().clamp(1, n);
+    for (int i = 0; i < n; i += tInterval) {
+      final x = spacing * (i + 0.5);
+      final t = candles[i].timestamp;
+      final timeStr = DateFormat('HH:mm').format(t);
+      final timeTp = TextPainter(
+        text: TextSpan(text: timeStr, style: axisTextStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      timeTp.paint(canvas, Offset(x - (timeTp.width / 2), priceAreaHeight + 4));
+    }
     final double candleWidth = (spacing * 0.58).clamp(2.0, 18.0);
 
     if (chartType == 'Line' || chartType == 'Area') {

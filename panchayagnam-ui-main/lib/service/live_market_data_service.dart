@@ -135,10 +135,12 @@ class LiveMarketDataService extends ChangeNotifier {
     if (_pollTimer != null && _pollTimer!.isActive) return;
     _fetchServerModeAndIp();
     fetchNow();
-    // Poll quotes every 20s only while the tab is visible to prevent Render/Cloudflare 429 rate limits.
+    fetchCommoditiesNow();
+    // Poll quotes & commodities periodically while the tab is visible
     _pollTimer = Timer.periodic(_quotesPollInterval, (_) {
       if (_isTabHidden || _isBackingOff) return;
       fetchNow();
+      fetchCommoditiesNow();
     });
   }
 

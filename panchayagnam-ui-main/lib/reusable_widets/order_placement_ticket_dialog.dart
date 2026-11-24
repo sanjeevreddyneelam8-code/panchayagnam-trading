@@ -260,10 +260,6 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     final upperSym = widget.symbol.toUpperCase().trim();
     if (upperSym.endsWith('-EQ') || upperSym.endsWith(' EQ')) return false;
 
-    if (upperCat == 'F&O' || upperCat == 'OPTIONS' || upperCat == 'OPTION' || upperCat == 'FUTURES') {
-      return true;
-    }
-
     if (upperSym.endsWith(' CE') || upperSym.endsWith(' PE') || upperSym.endsWith(' FUT')) {
       return true;
     }
@@ -278,6 +274,13 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
       return true;
     }
 
+    // Indices can be traded as F&O derivatives
+    if ((upperSym == 'NIFTY' || upperSym == 'BANKNIFTY' || upperSym == 'FINNIFTY' || upperSym == 'MIDCPNIFTY' || upperSym == 'SENSEX' || upperSym == 'BANKEX') &&
+        (upperCat == 'F&O' || upperCat == 'OPTIONS' || upperCat == 'OPTION' || upperCat == 'FUTURES')) {
+      return true;
+    }
+
+    // Pure stock tickers (e.g. RELIANCE, NTPC, TCS) are Cash Equities, not F&O contracts
     return false;
   }
 
@@ -325,7 +328,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     } else {
       _selectedExchange = 'NSE';
       _productType = 'DELIVERY'; // Default to normal Delivery for Cash Equity
-      _orderType = 'MARKET'; // Default Cash equity to MARKET for fast instant execution without circuit rejections!
+      _orderType = 'LIMIT'; // Default to LIMIT
     }
 
     // Auto-detect if Indian market is currently closed -> enable AMO (After Market Order)
@@ -524,10 +527,17 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
     }
 
     final effectivePrice = _orderType == 'MARKET' ? _currentLtp : _limitPrice;
-    final isDerivativeEx = _selectedExchange == 'NFO' || _selectedExchange == 'BFO' || _selectedExchange == 'MCX';
+    String resolvedExchange = _selectedExchange;
+    if (!_isFnO && !_isCommodity) {
+      if (resolvedExchange == 'NFO' || resolvedExchange == 'BFO') {
+        resolvedExchange = 'NSE';
+      }
+    }
+
+    final isDerivativeEx = resolvedExchange == 'NFO' || resolvedExchange == 'BFO' || resolvedExchange == 'MCX';
 
     // Format proper equity symbol (-EQ for NSE cash equities)
-    final apiSymbol = (!_isFnO && !_isCommodity && _selectedExchange == 'NSE' && !widget.symbol.toUpperCase().endsWith('-EQ'))
+    final apiSymbol = (!_isFnO && !_isCommodity && resolvedExchange == 'NSE' && !widget.symbol.toUpperCase().endsWith('-EQ'))
         ? '${widget.symbol.toUpperCase()}-EQ'
         : widget.symbol;
 
@@ -538,14 +548,14 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
         : (_orderType == 'MARKET' ? 0.0 : _limitPrice);
 
     String apiProductType;
-    if (_productType == 'INTRADAY') {
-      apiProductType = 'INTRADAY';
-    } else if (_productType == 'PAY_LATER') {
-      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'MARGIN';
-    } else if (_productType == 'CARRYFORWARD') {
-      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
+    if (!_isFnO && !_isCommodity) {
+      apiProductType = _productType == 'INTRADAY' ? 'INTRADAY' : (_productType == 'PAY_LATER' ? 'MARGIN' : 'DELIVERY');
     } else {
-      apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
+      if (_productType == 'INTRADAY') {
+        apiProductType = 'INTRADAY';
+      } else {
+        apiProductType = isDerivativeEx ? 'CARRYFORWARD' : 'DELIVERY';
+      }
     }
 
     final idempotencyKey =
@@ -586,7 +596,7 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
               'clientId': selectedAcc.clientId,
               'tradingSymbol': apiSymbol,
               'symbolToken': resolvedToken,
-              'exchange': _selectedExchange,
+              'exchange': resolvedExchange,
               'quantity': _quantity,
               'orderType': apiOrderType,
               'price': apiPrice,
@@ -1100,9 +1110,9 @@ class _OrderPlacementTicketDialogState extends State<OrderPlacementTicketDialog>
                                   ),
                                   Row(
                                     children: [
-                                      _buildTypeChip('MARKET'),
-                                      const SizedBox(width: 6),
                                       _buildTypeChip('LIMIT'),
+                                      const SizedBox(width: 6),
+                                      _buildTypeChip('MARKET'),
                                       const SizedBox(width: 6),
                                       InkWell(
                                         onTap: () => setState(() => _isAmo = !_isAmo),
