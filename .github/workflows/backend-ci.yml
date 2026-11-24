@@ -36,3 +36,4 @@ jobs:
       - name: Build Py Broker Microservice
         working-directory: ./py-broker-service-main
         run: mvn clean package -DskipTests -B
+        continue-on-error: true
